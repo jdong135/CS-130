@@ -1,0 +1,19 @@
+name: CI Tests
+jobs:
+  CI-Tests:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Set up Python 3.9
+      uses: actions/setup-python@v1
+      with:
+        python-version: 3.9
+
+    - name: Install pipenv and dependencies
+      run:
+        pip install pipenv
+        pipenv install --ignore-pipfile
+    
+    - name: Run tests
+      run: pipenv run python3 -m unittest
