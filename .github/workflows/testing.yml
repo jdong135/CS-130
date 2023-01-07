@@ -24,4 +24,4 @@ jobs:
         run: pipenv run python3 -m unittest
 
       - name: Clean cache
-        run: git rm -r --cached __pycache__
+        run: find . | grep -E "(/__pycache__$|\.pyc$|\.pyo$)" | xargs rm -rf
