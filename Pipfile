@@ -5,9 +5,9 @@ name = "pypi"
 
 [packages]
 coverage = "*"
+lark = "*"
 
 [dev-packages]
 
 [requires]
 python_version = "3.9"
-
