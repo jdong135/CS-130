@@ -25,3 +25,6 @@ jobs:
     
     - name: Run tests
       run: pipenv run python3 -m unittest
+
+    - clean: Clean cache
+      git rm -r --cached __pycache__
