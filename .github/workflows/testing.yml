@@ -22,6 +22,3 @@ jobs:
 
       - name: Run tests
         run: pipenv run python3 -m unittest
-
-      - name: Clean cache
-        run: find . | grep -E "(/__pycache__$|\.pyc$|\.pyo$)" | xargs rm -rf
