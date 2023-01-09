@@ -1,3 +1,5 @@
+from typing import *
+
 class Workbook:
     # A workbook containing zero or more named spreadsheets.
     #
