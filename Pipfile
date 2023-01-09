@@ -8,6 +8,7 @@ coverage = "*"
 lark = "*"
 pyclean = "*"
 typing = "*"
+flake8 = "*"
 
 [dev-packages]
 
