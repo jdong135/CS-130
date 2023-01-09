@@ -1,2 +1,3 @@
+.PHONY: clean
 clean:
 	pyclean .
