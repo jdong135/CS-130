@@ -1,5 +1,6 @@
 import lark
 
+
 class Cell:
     def get_cell_type(self, contents):
         """_summary_
@@ -28,7 +29,7 @@ class Cell:
             contents (str): user input into the cell before evaluation
         """
         self.sheet = sheet
-        self.col = col 
+        self.col = col
         self.row = row
         self.contents = contents
         self.evaluation = None

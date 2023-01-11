@@ -1,5 +1,6 @@
 from typing import *
 
+
 class Workbook:
     # A workbook containing zero or more named spreadsheets.
     #
@@ -7,7 +8,7 @@ class Workbook:
     # values should cause the workbook's contents to be updated properly.
 
     def __init__(self):
-        self.spreadsheets = {} # map name -> sheet object
+        self.spreadsheets = {}  # map name -> sheet object
 
     def num_sheets(self) -> int:
         return len(self.spreadsheets)
