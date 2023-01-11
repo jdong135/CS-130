@@ -34,6 +34,7 @@ class Cell:
         self.contents = contents
         self.evaluation = None
         self.type = self.get_cell_type(contents)
+        self.neighbors = []
 
     def set_evaluation(self, evaluation):
         """_summary_

@@ -1,4 +1,5 @@
 from typing import *
+from tarjan import strongly_connected_components
 
 
 class Workbook:
