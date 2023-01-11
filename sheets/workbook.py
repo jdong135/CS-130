@@ -1,5 +1,6 @@
 from typing import *
 from tarjan import strongly_connected_components
+from sheet import Sheet
 
 
 class Workbook:
@@ -26,7 +27,7 @@ class Workbook:
         #
         # A user should be able to mutate the return-value without affecting the
         # workbook's internal state.
-        pass
+        return self.spreadsheets.keys()
 
     def new_sheet(self, sheet_name: Optional[str] = None) -> Tuple[int, str]:
         # Add a new sheet to the workbook.  If the sheet name is specified, it
@@ -40,7 +41,17 @@ class Workbook:
         #
         # If the spreadsheet name is an empty string (not None), or it is
         # otherwise invalid, a ValueError is raised.
-        pass
+        if not sheet_name:
+            # handle null name
+            return (len(self.spreadsheets) - 1, sheet_name)
+        elif sheet_name == "":
+            raise ValueError("Empty string")
+        elif sheet_name.lower() in self.spreadsheets.keys():
+            raise ValueError("Duplicate spreadsheet name")
+        # raise other value errors here
+        elif sheet_name.lower() not in self.spreadsheets.keys():
+            self.spreadsheets[sheet_name] = Sheet(sheet_name)
+            return (len(self.spreadsheets) - 1, sheet_name)
 
     def del_sheet(self, sheet_name: str) -> None:
         # Delete the spreadsheet with the specified name.
@@ -83,6 +94,8 @@ class Workbook:
         # invalid for some reason, this method does not raise an exception;
         # rather, the cell's value will be a CellError object indicating the
         # naure of the issue.
+
+        # Set cell contents and then evaluate with lark
         pass
 
     def get_cell_contents(self, sheet_name: str, location: str) -> Optional[str]:
@@ -121,4 +134,6 @@ class Workbook:
         # decimal place, and will not include a decimal place if the value is a
         # whole number.  For example, this function would not return
         # Decimal('1.000'); rather it would return Decimal('1').
+
+        # Return evaluation field of cell
         pass

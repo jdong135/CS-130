@@ -32,14 +32,14 @@ class Cell:
         self.col = col
         self.row = row
         self.contents = contents
-        self.evaluation = None
+        self.value = None
         self.type = self.get_cell_type(contents)
         self.neighbors = []
 
-    def set_evaluation(self, evaluation):
+    def set_value(self, value):
         """_summary_
 
         Args:
-            evaluation (_type_): _description_
+            value (_type_): _description_
         """
-        self.evaluation = evaluation
+        self.value = value
