@@ -1,6 +1,8 @@
 from typing import *
 from . import Sheet
 
+ALLOWED_PUNC = set([".", "?", "!", ",", ":", ";", "@", "#", "$", "%", "^", "&", "*", "(", ")", "-", "_"])
+
 class Workbook:
     # A workbook containing zero or more named spreadsheets.
     #
@@ -9,6 +11,8 @@ class Workbook:
 
     def __init__(self):
         self.spreadsheets = {}  # map name -> sheet object
+        self.lower_names = {}
+        self.curr_lowest = 1 # current open
 
     def num_sheets(self) -> int:
         return len(self.spreadsheets)
@@ -41,14 +45,29 @@ class Workbook:
         # otherwise invalid, a ValueError is raised.
         if not sheet_name:
             # handle null name
-            return (len(self.spreadsheets) - 1, sheet_name)
-        elif sheet_name == "":
-            raise ValueError("Empty string")
-        elif sheet_name.lower() in self.spreadsheets.keys():
+            i = self.curr_lowest
+            while True:
+                if "sheet" + str(i) not in self.lower_names:
+                    sheet_name = "Sheet" + str(i)
+                    self.spreadsheets[sheet_name] = Sheet(sheet_name)
+                    self.lower_names.add(sheet_name.lower())
+                    self.curr_lowest = i + 1
+                    return (len(self.spreadsheets) - 1, sheet_name)
+                i += 1
+        for ch in sheet_name:
+            if not ch.isalnum() and ch != " " and ch not in ALLOWED_PUNC:
+                raise ValueError(f"Invalid character in name: {ch} not allowed")
+        if sheet_name == "":
+            raise ValueError("Sheet name is empty string")
+        elif sheet_name[0] == " ":
+            raise ValueError("Sheet name starts with white space")
+        elif sheet_name[-1] == " ":
+            raise ValueError("Sheet name ends with white space")
+        elif sheet_name.lower() in self.lower_names:
             raise ValueError("Duplicate spreadsheet name")
-        # raise other value errors here
-        elif sheet_name.lower() not in self.spreadsheets.keys():
+        elif sheet_name.lower() not in self.lower_names:
             self.spreadsheets[sheet_name] = Sheet(sheet_name)
+            self.lower_names.add(sheet_name.lower())
             return (len(self.spreadsheets) - 1, sheet_name)
 
     def del_sheet(self, sheet_name: str) -> None:
@@ -68,7 +87,8 @@ class Workbook:
         # case does not have to.
         #
         # If the specified sheet name is not found, a KeyError is raised.
-        pass
+        if sheet_name.lower() not in self.lower_names:
+            raise KeyError("Non existent sheet name")
 
     def set_cell_contents(self, sheet_name: str, location: str,
                           contents: Optional[str]) -> None:
