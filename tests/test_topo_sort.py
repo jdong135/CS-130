@@ -11,7 +11,8 @@ PROJECT_ROOT = os.path.abspath(os.path.join(
     os.pardir)
 )
 sys.path.append(PROJECT_ROOT)
-from sheets import *
+from sheets import *  # noqa
+
 
 class GitAction(unittest.TestCase):
     def test_lecture_example(self):

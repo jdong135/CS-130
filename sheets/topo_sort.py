@@ -13,7 +13,7 @@ class DFSState(enum.Enum):
     LEAVE = 2
 
 
-def topo_sort(v: Node):
+def topo_sort(v: Node) -> list:
     call_stack = [(v, DFSState.ENTER)]
 
     result = []

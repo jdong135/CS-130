@@ -13,14 +13,20 @@ PROJECT_ROOT = os.path.abspath(os.path.join(
     os.pardir)
 )
 sys.path.append(PROJECT_ROOT)
-from sheets import *
+from sheets import *  # noqa
 
 MAX_SHEETS_TEST = 100000
-MAX_STR_LEN_TEST = 8
-INVALID_CHARS = ["¿", "\"", "░", "Ä", "ô"]
+MAX_STR_LEN_TEST = 500
+INVALID_CHARS = ["¿", "\"", "░", "😀", "\n", "\t"]
 
 
 class Workbook_New_Sheet(unittest.TestCase):
+    def test_num_sheets(self):
+        wb = Workbook()
+        for _ in range(MAX_SHEETS_TEST):
+            wb.new_sheet()
+        self.assertEqual(wb.num_sheets(), MAX_SHEETS_TEST)
+
     def test_new_sheet1(self):
         wb = Workbook()
         wb.new_sheet()
@@ -66,7 +72,7 @@ class Workbook_New_Sheet(unittest.TestCase):
         with self.assertRaises(ValueError):
             wb.new_sheet("")
 
-    def test_new_sheet_white_space(self):  # failing
+    def test_new_sheet_white_space(self):
         wb = Workbook()
         with self.assertRaises(ValueError):
             wb.new_sheet(" ")
@@ -78,6 +84,26 @@ class Workbook_New_Sheet(unittest.TestCase):
         sheet_name[0] = " "
         with self.assertRaises(ValueError):
             wb.new_sheet(''.join(sheet_name))
+
+    def test_new_sheet_tail_white_space(self):
+        wb = Workbook()
+        sheet_name = list(''.join(random.choices(
+            string.ascii_lowercase, k=MAX_STR_LEN_TEST)))
+        sheet_name[-1] = " "
+        with self.assertRaises(ValueError):
+            wb.new_sheet(''.join(sheet_name))
+    
+    def test_new_sheet_duplicate1(self):
+        wb = Workbook()
+        wb.new_sheet("Sheet1")
+        with self.assertRaises(ValueError):
+            wb.new_sheet("sheet1")
+    
+    def test_new_sheet_duplicate2(self):
+        wb = Workbook()
+        wb.new_sheet()
+        with self.assertRaises(ValueError):
+            wb.new_sheet("sheet1")
 
 
 if __name__ == "__main__":
