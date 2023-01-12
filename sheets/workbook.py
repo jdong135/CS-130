@@ -1,7 +1,5 @@
 from typing import *
-from tarjan import strongly_connected_components
-from sheet import Sheet
-
+from . import Sheet
 
 class Workbook:
     # A workbook containing zero or more named spreadsheets.
