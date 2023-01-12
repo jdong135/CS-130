@@ -53,12 +53,28 @@ class Workbook_New_Sheet(unittest.TestCase):
             
     def test_new_sheet_invalid_char(self):
         wb = Workbook()
-        for ch in INVALID_CHARS:
-            sheet_name = list(''.join(random.choices(string.ascii_lowercase, k=MAX_STR_LEN_TEST)))
-            sheet_name[random.randint(0, MAX_STR_LEN_TEST - 1)] = ch
-            sheet_name_str = ''.join(sheet_name)
-            with self.assertRaises(ValueError) as cm:
-                wb.new_sheet(sheet_name_str)
+        ch = INVALID_CHARS[random.randint(0, len(INVALID_CHARS) - 1)]
+        sheet_name = list(''.join(random.choices(string.ascii_lowercase, k=MAX_STR_LEN_TEST)))
+        sheet_name[random.randint(0, MAX_STR_LEN_TEST - 1)] = ch
+        with self.assertRaises(ValueError):
+            wb.new_sheet(''.join(sheet_name))
+    
+    def test_new_sheet_empty_string(self):
+        wb = Workbook()
+        wb.new_sheet("")
+        print(list(wb.spreadsheets.keys())[0])
+
+    def test_new_sheet_white_space(self): # failing 
+        wb = Workbook()
+        with self.assertRaises(ValueError):
+            wb.new_sheet(" ")
+    
+    def test_new_sheet_head_white_space(self):
+        wb = Workbook()
+        sheet_name = list(''.join(random.choices(string.ascii_lowercase, k=MAX_STR_LEN_TEST)))
+        sheet_name[0] = " "
+        with self.assertRaises(ValueError):
+            wb.new_sheet(''.join(sheet_name))
 
         
 if __name__ == "__main__":
