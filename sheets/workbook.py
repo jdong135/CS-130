@@ -11,7 +11,7 @@ class Workbook:
 
     def __init__(self):
         self.spreadsheets = {}  # map name -> sheet object
-        self.lower_names = {}
+        self.lower_names = set()
         self.curr_lowest = 1 # current open
 
     def num_sheets(self) -> int:
