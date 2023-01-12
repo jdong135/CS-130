@@ -1,7 +1,9 @@
 from typing import *
 from . import Sheet
 
-ALLOWED_PUNC = set([".", "?", "!", ",", ":", ";", "@", "#", "$", "%", "^", "&", "*", "(", ")", "-", "_"])
+ALLOWED_PUNC = set([".", "?", "!", ",", ":", ";", "@", "#",
+                    "$", "%", "^", "&", "*", "(", ")", "-", "_"])
+
 
 class Workbook:
     # A workbook containing zero or more named spreadsheets.
@@ -11,8 +13,8 @@ class Workbook:
 
     def __init__(self):
         self.spreadsheets = {}  # lower case name -> sheet object
-        self.lower_names = set() # set of lower case name
-        self.curr_lowest = 1 # current open
+        self.lower_names = set()  # set of lower case name
+        self.curr_lowest = 1  # current open
 
     def num_sheets(self) -> int:
         return len(self.spreadsheets)
@@ -43,7 +45,9 @@ class Workbook:
         #
         # If the spreadsheet name is an empty string (not None), or it is
         # otherwise invalid, a ValueError is raised.
-        if not sheet_name:
+        if sheet_name == "":
+            raise ValueError("Sheet name is empty string")
+        elif not sheet_name:
             # handle null name
             i = self.curr_lowest
             while True:
@@ -56,10 +60,9 @@ class Workbook:
                 i += 1
         for ch in sheet_name:
             if not ch.isalnum() and ch != " " and ch not in ALLOWED_PUNC:
-                raise ValueError(f"Invalid character in name: {ch} not allowed")
-        if sheet_name == "":
-            raise ValueError("Sheet name is empty string")
-        elif sheet_name[0] == " ":
+                raise ValueError(
+                    f"Invalid character in name: {ch} not allowed")
+        if sheet_name[0] == " ":
             raise ValueError("Sheet name starts with white space")
         elif sheet_name[-1] == " ":
             raise ValueError("Sheet name ends with white space")
