@@ -2,16 +2,16 @@
 Test for implementation of Tarjan's algorithm.
 """
 
+from sheets import *
 import unittest
 import os
 import sys
 
 PROJECT_ROOT = os.path.abspath(os.path.join(
-                  os.path.dirname(__file__), 
-                  os.pardir)
+    os.path.dirname(__file__),
+    os.pardir)
 )
 sys.path.append(PROJECT_ROOT)
-from sheets import *
 
 
 class GitAction(unittest.TestCase):
@@ -29,7 +29,7 @@ class GitAction(unittest.TestCase):
         d.neighbors = [g]
         e.neighbors = [f]
         g.neighbors = [e, f]
-        iter_res = tarjan_iter(g)
+        iter_res = topo_sort(g)
         for node in iter_res:
             print(node.value)
 

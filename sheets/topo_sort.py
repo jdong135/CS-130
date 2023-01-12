@@ -13,7 +13,7 @@ class DFSState(enum.Enum):
     LEAVE = 2
 
 
-def tarjan_iter(v: Node):
+def topo_sort(v: Node):
     call_stack = [(v, DFSState.ENTER)]
 
     result = []
@@ -31,7 +31,6 @@ def tarjan_iter(v: Node):
         else:
             result.append(v)
     return result[::-1]
-
 
 
 # graph = Graph()
@@ -53,10 +52,9 @@ def tarjan_iter(v: Node):
 # for r in res:
 #     print(r.value)
 
-# iter_res = tarjan_iter(b)
+# iter_res = topo_sort(b)
 # for node in iter_res:
 #     print(node.value)
-
 a = Node(1)
 b = Node(2)
 c = Node(3)
@@ -70,6 +68,6 @@ c.neighbors = [f]
 d.neighbors = [g]
 e.neighbors = [f]
 g.neighbors = [e, f]
-iter_res = tarjan_iter(g)
+iter_res = topo_sort(g)
 for node in iter_res:
     print(node.value)
