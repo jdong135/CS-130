@@ -5,8 +5,7 @@ format:
 
 .PHONY: test
 test:
-	python3 tests/test_github.py
-	python3 tests/test_tarjan.py
+	python3 tests/test_workbook.py
 
 .PHONY: clean
 clean:
