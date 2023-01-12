@@ -4,10 +4,8 @@ import enum
 class Node:
     def __init__(self, value):
         self.onStack = False
-        self.index = None
         self.value = value
         self.neighbors = []
-        self.lowlink = None
 
 
 class DFSState(enum.Enum):
@@ -16,63 +14,24 @@ class DFSState(enum.Enum):
 
 
 def tarjan_iter(v: Node):
+    call_stack = [(v, DFSState.ENTER)]
+
     result = []
-    stack = [(v, DFSState.ENTER)]
-    index = 0
     visited = set()
 
-    while stack:
-        node, state = stack.pop()
-        if state == DFSState.LEAVE:
-            result.append(node)
+    while call_stack:
+        v, type = call_stack.pop()
+        if type == DFSState.ENTER:
+            visited.add(v)
+            v.onStack = True
+            call_stack.append((v, DFSState.LEAVE))
+            for w in v.neighbors:
+                if w not in visited:
+                    call_stack.append((w, DFSState.ENTER))
         else:
-            visited.add(node)
-            node.index = index
-            node.lowlink = index
-            index += 1
-            stack.append((node, DFSState.LEAVE))
-            for neighbor in node.neighbors:
-                if neighbor not in visited:
-                    stack.append((neighbor, DFSState.ENTER))
-                    neighbor.onStack = True
-                elif neighbor.onStack:
-                    node.lowlink = min(node.lowlink, neighbor.lowlink)
-
+            result.append(v)
     return result[::-1]
 
-
-def tarjan_recursive(v: Node):
-    result = []
-    index = 0
-    stack = []
-
-    def strongconnect(v: Node):
-        nonlocal index
-        v.index = index
-        v.lowlink = index
-        index += 1
-        stack.append(v)
-        v.onStack = True
-
-        for w in v.neighbors:
-            if not w.index:
-                strongconnect(w)
-                v.lowlink = min(v.lowlink, w.lowlink)
-            elif w.onStack:
-                v.lowlink = min(v.lowlink, w.index)
-
-        if v.lowlink == v.index:
-            if stack:
-                w = stack.pop()
-                w.onStack = False
-                result.append(w)
-                while w != v:
-                    if stack:
-                        w = stack.pop()
-                        w.onStack = False
-                        result.append(w)
-    strongconnect(v)
-    return result[::-1]
 
 
 # graph = Graph()

@@ -1,5 +1,3 @@
-import lark
-
 
 class Cell:
     def get_cell_type(self, contents):
