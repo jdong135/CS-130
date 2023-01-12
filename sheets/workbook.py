@@ -10,8 +10,8 @@ class Workbook:
     # values should cause the workbook's contents to be updated properly.
 
     def __init__(self):
-        self.spreadsheets = {}  # map name -> sheet object
-        self.lower_names = set()
+        self.spreadsheets = {}  # lower case name -> sheet object
+        self.lower_names = set() # set of lower case name
         self.curr_lowest = 1 # current open
 
     def num_sheets(self) -> int:
@@ -47,9 +47,9 @@ class Workbook:
             # handle null name
             i = self.curr_lowest
             while True:
-                if "sheet" + str(i) not in self.lower_names:
-                    sheet_name = "Sheet" + str(i)
-                    self.spreadsheets[sheet_name] = Sheet(sheet_name)
+                sheet_name = "Sheet" + str(i)
+                if sheet_name.lower() not in self.lower_names:
+                    self.spreadsheets[sheet_name.lower()] = Sheet(sheet_name)
                     self.lower_names.add(sheet_name.lower())
                     self.curr_lowest = i + 1
                     return (len(self.spreadsheets) - 1, sheet_name)
@@ -66,7 +66,7 @@ class Workbook:
         elif sheet_name.lower() in self.lower_names:
             raise ValueError("Duplicate spreadsheet name")
         elif sheet_name.lower() not in self.lower_names:
-            self.spreadsheets[sheet_name] = Sheet(sheet_name)
+            self.spreadsheets[sheet_name.lower()] = Sheet(sheet_name)
             self.lower_names.add(sheet_name.lower())
             return (len(self.spreadsheets) - 1, sheet_name)
 
@@ -88,7 +88,10 @@ class Workbook:
         #
         # If the specified sheet name is not found, a KeyError is raised.
         if sheet_name.lower() not in self.lower_names:
-            raise KeyError("Non existent sheet name")
+            raise KeyError("Specified sheet name not found")
+        else:
+            sheet = self.spreadsheets[sheet_name.lower()]
+            return((sheet.extent_col, sheet.extent_row))
 
     def set_cell_contents(self, sheet_name: str, location: str,
                           contents: Optional[str]) -> None:
@@ -132,7 +135,15 @@ class Workbook:
         #
         # This method will never return a zero-length string; instead, empty
         # cells are indicated by a value of None.
-        pass
+        if sheet_name.lower() not in self.lower_names:
+            raise KeyError("Specified sheet name not found")
+        sheet = self.spreadsheets[sheet_name.lower()]
+        if not sheet.check_valid_location(location):
+            raise ValueError(f"Cell location {location} is invalid")
+        if location in sheet.cells:
+            return sheet.cells[location].contents
+        else:
+            return None
 
     def get_cell_value(self, sheet_name: str, location: str) -> Any:
         # Return the evaluated value of the specified cell on the specified
@@ -154,4 +165,12 @@ class Workbook:
         # Decimal('1.000'); rather it would return Decimal('1').
 
         # Return evaluation field of cell
-        pass
+        if sheet_name.lower() not in self.lower_names:
+            raise KeyError("Specified sheet name not found")
+        sheet = self.spreadsheets[sheet_name.lower()]
+        if not sheet.check_valid_location(location):
+            raise ValueError(f"Cell location {location} is invalid")
+        if location in sheet.cells:
+            return sheet.cells[location].value
+        else:
+            return None
