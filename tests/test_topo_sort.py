@@ -16,22 +16,9 @@ from sheets import *  # noqa
 
 class GitAction(unittest.TestCase):
     def test_lecture_example(self):
-        a = Node(1)
-        b = Node(2)
-        c = Node(3)
-        d = Node(4)
-        e = Node(5)
-        f = Node(6)
-        g = Node(7)
-        a.neighbors = [b, d]
-        b.neighbors = [c, e]
-        c.neighbors = [f]
-        d.neighbors = [g]
-        e.neighbors = [f]
-        g.neighbors = [e, f]
-        # iter_res = topo_sort(g)
-        # for node in iter_res:
-        #     print(node.value)
+        wb = Workbook()
+        wb.new_sheet("S1")
+        # complete when set cell contents is implemented
 
 
 # if __name__ == '__main__':
