@@ -32,7 +32,6 @@ class FormulaEvaluator(lark.visitors.Interpreter):
     def __init__(self):
         self.error = None
         self.sub_evaluator = None
-        self.parser = lark.Lark.open('sheets/formulas.lark', start='formula')
 
     @visit_children_decor
     def add_expr(self, values):
@@ -76,6 +75,7 @@ class FormulaEvaluator(lark.visitors.Interpreter):
 
 
 # evaluator = FormulaEvaluator()
-# tree = evaluator.parser.parse('=(5 + 7)')
+# parser = lark.Lark.open('sheets/formulas.lark', start='formula')
+# tree = parser.parse('=(5 + 7)')
 # value = evaluator.visit(tree)
 # print(f'value={value} type is {type(value)}')
