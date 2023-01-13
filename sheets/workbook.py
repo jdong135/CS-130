@@ -31,7 +31,10 @@ class Workbook:
         #
         # A user should be able to mutate the return-value without affecting the
         # workbook's internal state.
-        return self.spreadsheets.keys()
+        output = []
+        for sheet in self.spreadsheets:
+            output.append(sheet.name)
+        return output
 
     def new_sheet(self, sheet_name: Optional[str] = None) -> Tuple[int, str]:
         # Add a new sheet to the workbook.  If the sheet name is specified, it
