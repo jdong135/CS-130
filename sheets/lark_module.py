@@ -74,8 +74,8 @@ class FormulaEvaluator(lark.visitors.Interpreter):
         return self.error
 
 
-evaluator = FormulaEvaluator()
-parser = lark.Lark.open('sheets/formulas.lark', start='formula')
-tree = parser.parse('=(5 + 7)')
-value = evaluator.visit(tree)
-print(f'value={value} type is {type(value)}')
+# evaluator = FormulaEvaluator()
+# parser = lark.Lark.open('sheets/formulas.lark', start='formula')
+# tree = parser.parse('=(5 + 7)')
+# value = evaluator.visit(tree)
+# print(f'value={value} type is {type(value)}')
