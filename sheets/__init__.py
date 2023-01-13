@@ -5,3 +5,4 @@ from sheets.cell import *
 from sheets.sheet import *
 from sheets.topo_sort import *
 from sheets.workbook import *
+from sheets.lark_module import *

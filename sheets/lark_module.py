@@ -1,7 +1,7 @@
 import lark
 import decimal
 from lark.visitors import visit_children_decor
-import cell_error
+from . import cell_error
 
 
 # class CellRefFinder(lark.Visitor):
@@ -31,6 +31,8 @@ class FormulaEvaluator(lark.visitors.Interpreter):
     #         assert False, 'Unexpecter operator: ' + values[1]
     def __init__(self):
         self.error = None
+        self.sub_evaluator = None
+        self.parser = lark.Lark.open('sheets/formulas.lark', start='formula')
 
     @visit_children_decor
     def add_expr(self, values):
@@ -59,8 +61,9 @@ class FormulaEvaluator(lark.visitors.Interpreter):
     def concat_expr(self, values):
         return values[0] + values[1]
 
-    def parens(self, values):
-        return
+    def parens(self, tree):
+        self.sub_evaluator = FormulaEvaluator()
+        return self.sub_evaluator.visit(tree.children[0])
 
     def number(self, tree):
         return decimal.Decimal(tree.children[0])
@@ -72,8 +75,7 @@ class FormulaEvaluator(lark.visitors.Interpreter):
         return self.error
 
 
-parser = lark.Lark.open('sheets/formulas.lark', start='formula')
-evaluator = FormulaEvaluator()
-tree = parser.parse('=a1 & b1')
-value = evaluator.visit(tree)
-print(f'value={value} type is {type(value)}')
+# evaluator = FormulaEvaluator()
+# tree = evaluator.parser.parse('=(5 + 7)')
+# value = evaluator.visit(tree)
+# print(f'value={value} type is {type(value)}')

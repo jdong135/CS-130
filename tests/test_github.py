@@ -11,5 +11,5 @@ class GitAction(unittest.TestCase):
         print("GitActions functional.")
 
 
-# if __name__ == '__main__':
-#     unittest.main()
+if __name__ == '__main__':
+    unittest.main()

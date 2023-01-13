@@ -1,3 +1,3 @@
 # CS-130
 
-Testing that i can commit -jake
+Spreadsheet engine designed by Jake Goldman, Jay Dong, and Andy Sun for Caltech's CS 130 "Software Engineering" course. 

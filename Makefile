@@ -5,7 +5,8 @@ format:
 
 .PHONY: test
 test:
-	python3 tests/test_workbook.py
+	# python3 tests/test_workbook.py
+	python3 tests/test_lark_module.py
 
 .PHONY: clean
 clean:

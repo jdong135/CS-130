@@ -92,13 +92,13 @@ class Workbook_New_Sheet(unittest.TestCase):
         sheet_name[-1] = " "
         with self.assertRaises(ValueError):
             wb.new_sheet(''.join(sheet_name))
-    
+
     def test_new_sheet_duplicate1(self):
         wb = Workbook()
         wb.new_sheet("Sheet1")
         with self.assertRaises(ValueError):
             wb.new_sheet("sheet1")
-    
+
     def test_new_sheet_duplicate2(self):
         wb = Workbook()
         wb.new_sheet()
