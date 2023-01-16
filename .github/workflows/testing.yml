@@ -18,7 +18,7 @@ jobs:
 
       - name: Install pipenv and dependencies
         run: pip install pipenv
-          pipenv install --ignore-pipfile
+          pipenv sync
 
       - name: Run tests
         run: pipenv run make test
