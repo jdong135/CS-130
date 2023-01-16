@@ -140,9 +140,18 @@ class Workbook:
         if location in sheet.cells:
             # delete the cell
             if len(contents) == 0 or contents == None:
-                del sheet.cells[location]
                 # UPDATE DEPENDENTS
-                # UPDATE EXTENT
+                del sheet.cells[location]
+                sheet_col, sheet_row = sheet.extent_col, sheet.extent_row
+                col, row = sheet.str_to_tuple(location)
+                max_col, max_row = 0
+                if col == sheet_col or row == sheet_row:
+                    for c in sheet.cells:
+                        c_col, c_row = sheet.str_to_tuple(c.location)
+                        max_col = max(max_col, c_col)
+                        max_row = max(max_row, c_row)
+                    sheet.extent_col = max_col
+                    sheet.extent_row = max_row
             curr_cell = sheet.cells[location]
             cell.contents = contents
             if contents[0] == "=":
@@ -176,6 +185,7 @@ class Workbook:
                 curr_cell = cell.Cell(sheet_name, location, contents, value, cell.CellType.FORMULA)
                 sheet = self.spreadsheets[sheet_name.lower()]
                 sheet.cells[location] = curr_cell
+                
             elif contents[0] == "'":
                 value = contents[1:] 
                 curr_cell = cell.Cell(sheet_name, location, contents, value, cell.CellType.STRING)
@@ -195,6 +205,10 @@ class Workbook:
                     sheet = self.spreadsheets[sheet_name.lower()]
                     sheet.cells[location] = curr_cell
             # UPDATE DEPENDENTS
+            # update extent
+            curr_col, curr_row = sheet.str_to_tuple(location)
+            sheet.extent_col = max(curr_col, sheet.extent_col)
+            sheet.extent_row = max(curr_row, sheet.extent_row)
             
 
     def get_cell_contents(self, sheet_name: str, location: str) -> Optional[str]:
