@@ -1,7 +1,7 @@
 from typing import *
 from sheets.lark_module import FormulaEvaluator
 from . import Sheet
-from sheets import Cell
+from sheets import cell
 import lark
 import decimal
 
@@ -151,19 +151,19 @@ class Workbook:
                 tree = parser.parse(contents)
                 value = eval.visit(tree)
                 cell.value = value
-                cell.type = Cell.CellType.FORMULA
+                cell.type = cell.CellType.FORMULA
             elif contents[0] == "'":
                 cell.value = contents[1:] 
-                cell.type = Cell.CellType.STRING
+                cell.type = cell.CellType.STRING
             else: # literal
                 if contents.isnumeric():
                     # number stuff 
                     cell.value = decimal.Decimal(contents)
-                    cell.type = Cell.CellType.LITERAL_NUM
+                    cell.type = cell.CellType.LITERAL_NUM
                 else:
                     # undefined literal
                     cell.value = contents
-                    cell.type = Cell.CellType.LITERAL_STRING
+                    cell.type = cell.CellType.LITERAL_STRING
             # UPDATE DEPENDENTS
         else: # cell does not exist
             if len(contents) == 0 or contents == None:
@@ -173,25 +173,25 @@ class Workbook:
                 parser = lark.Lark.open('sheets/formula.lark', start = 'formula')
                 tree = parser.parse(contents)
                 value = eval.visit(tree)
-                cell = Cell(sheet_name, location, contents, value, Cell.CellType.FORMULA)
+                cell = cell.Cell(sheet_name, location, contents, value, cell.CellType.FORMULA)
                 sheet = self.spreadsheets[sheet_name.lower()]
                 sheet.cells[location] = cell
             elif contents[0] == "'":
                 value = contents[1:] 
-                cell = Cell(sheet_name, location, contents, value, Cell.CellType.STRING)
+                cell = cell.Cell(sheet_name, location, contents, value, cell.CellType.STRING)
                 sheet = self.spreadsheets[sheet_name.lower()]
                 sheet.cells[location] = cell
             else: # literal
                 if contents.isnumeric():
                     # number stuff 
                     value = decimal.Decimal(contents)
-                    cell = Cell(sheet_name, location, contents, value, Cell.CellType.LITERAL_NUM)
+                    cell = cell.Cell(sheet_name, location, contents, value, cell.CellType.LITERAL_NUM)
                     sheet = self.spreadsheets[sheet_name.lower()]
                     sheet.cells[location] = cell
                 else:
                     # undefined literal
                     value = contents
-                    cell = Cell(sheet_name, location, contents, value, Cell.CellType.LITERAL_STRING)
+                    cell = cell.Cell(sheet_name, location, contents, value, cell.CellType.LITERAL_STRING)
                     sheet = self.spreadsheets[sheet_name.lower()]
                     sheet.cells[location] = cell
             # UPDATE DEPENDENTS
