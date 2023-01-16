@@ -136,7 +136,8 @@ class Workbook:
         sheet = self.spreadsheets[sheet_name.lower()]
         if not sheet.check_valid_location(location):
             raise ValueError(f"Cell location {location} is invalid")
-        contents = contents.strip()
+        if contents:
+            contents = contents.strip()
         if location in sheet.cells:
             # delete the cell
             if len(contents) == 0 or contents == None:
