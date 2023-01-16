@@ -114,7 +114,7 @@ class Workbook_Get_Sheet_Extent(unittest.TestCase):
         wb.set_cell_contents("S1", "A1", "test")
         extent = wb.get_sheet_extent("S1")
         self.assertEqual(extent, (1, 1))
-    
+
     def test_max_extent(self):
         wb = Workbook()
         for i in range(MAX_SHEETS_TEST):

@@ -20,15 +20,6 @@ from . import cell_error
 
 
 class FormulaEvaluator(lark.visitors.Interpreter):
-    # def add_expr(self, tree):
-    #     values = self.visit_children(tree)
-    #     print(values)
-    #     if values[1] == '+':
-    #         return values[0] + values[2]
-    #     elif values[1] == '-':
-    #         return values[0] - values[2]
-    #     else:
-    #         assert False, 'Unexpecter operator: ' + values[1]
     def __init__(self):
         self.error = None
         self.sub_evaluator = None
@@ -77,10 +68,3 @@ class FormulaEvaluator(lark.visitors.Interpreter):
 
     def error(self, tree):
         return self.error
-
-
-# evaluator = FormulaEvaluator()
-# parser = lark.Lark.open('sheets/formulas.lark', start='formula')
-# tree = parser.parse('=(5 + 7)')
-# value = evaluator.visit(tree)
-# print(f'value={value} type is {type(value)}')

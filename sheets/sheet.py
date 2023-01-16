@@ -1,9 +1,12 @@
 from typing import *
 
+
 class Sheet:
     def __init__(self, name: str):
         """
-        Initialize an empty sheet object with a given name. This sheet has a current extent of (0, 0) and empty dictionary of cell locations to Cell objects. 
+        Initialize an empty sheet object with a given name. This sheet has a
+        current extent of (0, 0) and empty dictionary of cell locations to Cell
+        objects. 
 
         Args:
             name (str): name of the spreadsheet object.
@@ -15,13 +18,15 @@ class Sheet:
 
     def str_to_tuple(self, location: str) -> Tuple[int, int]:
         """
-        Take in a string location ranging from A1 to ZZZZ9999 and return the integer coordinates of the location.
+        Take in a string location ranging from A1 to ZZZZ9999 and return the 
+        integer coordinates of the location.
 
         Args:
             location (str): string location on the sheet.
 
         Returns:
-            Tuple[int, int]: numeric coordinates on the sheet equivalent to input location. 
+            Tuple[int, int]: numeric coordinates on the sheet equivalent to 
+            input location. 
         """
         chars = list(location)
         rows = 0
@@ -51,4 +56,3 @@ class Sheet:
         if col > 475254 or row > 9999:
             return False
         return True
-
