@@ -1,3 +1,10 @@
+import enum
+
+class CellType(enum.Enum):
+    FORMULA = 1
+    STRING = 2
+    LITERAL_NUM = 3
+
 
 class Cell:
     def get_cell_type(self, contents):
@@ -19,7 +26,7 @@ class Cell:
     def __eq__(self, obj):
         return isinstance(obj, Cell) and obj.__dict__ == self.__dict__
 
-    def __init__(self, sheet: str, col: str, row: int, contents: str) -> None:
+    def __init__(self, sheet: str, location: str, contents: str, value, type) -> None:
         """
         Initialize a cell object
 
@@ -30,11 +37,10 @@ class Cell:
             contents (str): user input into the cell before evaluation
         """
         self.sheet = sheet
-        self.col = col
-        self.row = row
+        self.location = location
         self.contents = contents
-        self.value = None
-        self.type = self.get_cell_type(contents)
+        self.value = value
+        self.type = type
         self.neighbors = []
 
     def set_value(self, value):
