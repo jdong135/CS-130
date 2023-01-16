@@ -24,7 +24,7 @@ class Workbook:
     def num_sheets(self) -> int:
         return len(self.spreadsheets)
 
-    def get_cell(self, sheet_name: str, location: str) -> Cell:
+    def get_cell(self, sheet_name: str, location: str) -> cell.Cell:
         return self.spreadsheets[sheet_name].cells[location]
 
     def list_sheets(self) -> List[str]:
