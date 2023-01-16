@@ -153,6 +153,7 @@ class Workbook:
                         max_row = max(max_row, c_row)
                     sheet.extent_col = max_col
                     sheet.extent_row = max_row
+                return
             curr_cell = sheet.cells[location]
             cell.contents = contents
             if contents[0] == "=":
