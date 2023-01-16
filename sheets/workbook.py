@@ -41,7 +41,7 @@ class Workbook:
         # workbook's internal state.
         output = []
         for sheet in self.spreadsheets:
-            output.append(sheet.name)
+            output.append(self.spreadsheets[sheet].name)
         return output
 
     def new_sheet(self, sheet_name: Optional[str] = None) -> Tuple[int, str]:

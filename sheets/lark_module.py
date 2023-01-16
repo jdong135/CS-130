@@ -1,7 +1,7 @@
 import lark
 import decimal
 from lark.visitors import visit_children_decor
-from . import cell_error
+from sheets import cell_error
 
 
 # class CellRefFinder(lark.Visitor):
@@ -68,3 +68,9 @@ class FormulaEvaluator(lark.visitors.Interpreter):
 
     def error(self, tree):
         return self.error
+
+# eval = FormulaEvaluator()
+# parser = lark.Lark.open('sheets/formulas.lark', start='formula')
+# tree = parser.parse("=A1")
+# value = eval.visit(tree)
+# print(f"value is {str(value)} with type {type(value)}")
