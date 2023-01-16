@@ -105,6 +105,11 @@ class Workbook_New_Sheet(unittest.TestCase):
         with self.assertRaises(ValueError):
             wb.new_sheet("sheet1")
 
+class Workbook_Get_Sheet_Extent(unittest.main):
+    def test_single_cell(self):
+        wb = Workbook()
+        wb.new_sheet()
+
 
 if __name__ == "__main__":
     unittest.main()

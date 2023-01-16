@@ -14,12 +14,16 @@ sys.path.append(PROJECT_ROOT)
 from sheets import *  # noqa
 
 
-class GitAction(unittest.TestCase):
-    def test_lecture_example(self):
+class Topo_Sort(unittest.TestCase):
+    def test_two(self):
         wb = Workbook()
         wb.new_sheet("S1")
-        # complete when set cell contents is implemented
+        # wb.set_cell_contents("S1", "A1", "=4")
+        # wb.set_cell_contents("S1", "A2", "=A1")
+        # c1 = wb.get_cell("S1", "A1")
+        # sort = topo_sort(c1)
+        # print(sort)
 
 
-# if __name__ == '__main__':
-#     unittest.main()
+if __name__ == '__main__':
+    unittest.main()
