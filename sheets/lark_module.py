@@ -58,14 +58,12 @@ class FormulaEvaluator(lark.visitors.Interpreter):
         return values[0] + values[1]
 
     @visit_children_decor
-    def cell(self, values):
+    def cell(self, values, sheet=None):
         if len(values) > 1:
             sheet_name = values[0]
             sheet = workbook.spreadsheets[sheet_name]
             location = values[1]
-            return sheet[location].value
-        else:
-            return values[0]
+        return sheet[location].value
 
     def parens(self, tree):
         self.sub_evaluator = FormulaEvaluator()
