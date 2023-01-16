@@ -159,9 +159,11 @@ class Workbook:
                 if contents.isnumeric():
                     # number stuff 
                     cell.value = decimal.Decimal(contents)
+                    cell.type = Cell.CellType.LITERAL_NUM
                 else:
                     # undefined literal
-                    raise KeyError("Undefined literal!!")
+                    cell.value = contents
+                    cell.type = Cell.CellType.LITERAL_STRING
             # UPDATE DEPENDENTS
         else: # cell does not exist
             if len(contents) == 0 or contents == None:
@@ -188,7 +190,10 @@ class Workbook:
                     sheet.cells[location] = cell
                 else:
                     # undefined literal
-                    raise KeyError("Undefined literal!!")
+                    value = contents
+                    cell = Cell(sheet_name, location, contents, value, Cell.CellType.LITERAL_STRING)
+                    sheet = self.spreadsheets[sheet_name.lower()]
+                    sheet.cells[location] = cell
             # UPDATE DEPENDENTS
             
 
