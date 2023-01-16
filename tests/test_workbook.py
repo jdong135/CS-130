@@ -7,7 +7,6 @@ import os
 import sys
 import string
 import random
-from sheets.cell import Cell
 
 PROJECT_ROOT = os.path.abspath(os.path.join(
     os.path.dirname(__file__),
@@ -109,7 +108,8 @@ class Workbook_New_Sheet(unittest.TestCase):
 class Workbook_Get_Sheet_Extent(unittest.main):
     def test_single_cell(self):
         wb = Workbook()
-        wb.new_sheet()
+        wb.new_sheet("S1")
+        wb.set_cell_contents("S1", "A1", "test")
 
 
 class Workbook_Set_Cell_Contents(unittest.TestCase):
