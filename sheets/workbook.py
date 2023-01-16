@@ -140,7 +140,7 @@ class Workbook:
             contents = contents.strip()
         if location in sheet.cells:
             # delete the cell
-            if len(contents) == 0 or contents == None:
+            if not contents or len(contents) == 0:
                 # UPDATE DEPENDENTS
                 del sheet.cells[location]
                 sheet_col, sheet_row = sheet.extent_col, sheet.extent_row
@@ -176,7 +176,7 @@ class Workbook:
                     curr_cell.type = cell.CellType.LITERAL_STRING
             # UPDATE DEPENDENTS
         else:  # cell does not exist
-            if len(contents) == 0 or contents == None:
+            if not contents or len(contents) == 0:
                 return
             if contents[0] == "=":
                 eval = FormulaEvaluator()
