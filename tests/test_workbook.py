@@ -105,6 +105,21 @@ class Workbook_New_Sheet(unittest.TestCase):
         with self.assertRaises(ValueError):
             wb.new_sheet("sheet1")
 
+class Workbook_Get_Sheet_Extent(unittest.main):
+    def test_single_cell(self):
+        wb = Workbook()
+        wb.new_sheet("S1")
+        wb.set_cell_contents("S1", "A1", "test")
+
+
+class Workbook_Set_Cell_Contents(unittest.TestCase):
+    def test_add_cell(self):
+        wb = Workbook()
+        wb.new_sheet("sheet1")
+        wb.set_cell_contents("sheet1", "A1", "test")
+        cell = Cell("sheet1", "A", "1", "test")
+        self.assertEqual(wb.spreadsheets["sheet1"].cells["A1"] == cell)
+
 
 if __name__ == "__main__":
     unittest.main()

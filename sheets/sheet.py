@@ -10,7 +10,7 @@ class Sheet:
         self.extent_col = 0
         self.cells = {}  # {string: Cell}
 
-    def str_to_tuple(location: str):
+    def str_to_tuple(self, location: str):
         chars = list(location)
         rows = 0
         cols = 0
@@ -27,7 +27,7 @@ class Sheet:
 
     def check_valid_location(self, location: str):
         col, row = self.str_to_tuple(location)
-        if col > self.extent_col or row > self.extent_row:
+        if col > 475254 or row > 9999:
             return False
         return True
 

@@ -7,6 +7,25 @@ class CellType(enum.Enum):
 
 
 class Cell:
+    def get_cell_type(self, contents):
+        """_summary_
+
+        Args:
+            contents (_type_): _description_
+
+        Returns:
+            _type_: _description_
+        """
+        if contents[0] == "=":
+            return "FORMULA"
+        elif contents[0] == "'":
+            return "STRING"
+        else:
+            return "NORMAL"
+
+    def __eq__(self, obj):
+        return isinstance(obj, Cell) and obj.__dict__ == self.__dict__
+
     def __init__(self, sheet: str, location: str, contents: str, value, type) -> None:
         """
         Initialize a cell object

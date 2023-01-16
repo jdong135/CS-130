@@ -24,6 +24,9 @@ class Workbook:
     def num_sheets(self) -> int:
         return len(self.spreadsheets)
 
+    def get_cell(self, sheet_name: str, location: str) -> Cell:
+        return self.spreadsheets[sheet_name].cells[location]
+
     def list_sheets(self) -> List[str]:
         # Return a list of the spreadsheet names in the workbook, with the
         # capitalization specified at creation, and in the order that the sheets
