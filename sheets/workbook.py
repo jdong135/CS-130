@@ -1,5 +1,10 @@
 from typing import *
+from sheets.lark_module import FormulaEvaluator
 from . import Sheet
+from sheets import Cell
+import lark
+import decimal
+
 
 ALLOWED_PUNC = set([".", "?", "!", ",", ":", ";", "@", "#",
                     "$", "%", "^", "&", "*", "(", ")", "-", "_"])
@@ -123,7 +128,66 @@ class Workbook:
         # naure of the issue.
 
         # Set cell contents and then evaluate with lark
-        pass
+        if sheet_name.lower() not in self.lower_names:
+            raise KeyError("Specified sheet name not found")
+        sheet = self.spreadsheets[sheet_name.lower()]
+        if not sheet.check_valid_location(location):
+            raise ValueError(f"Cell location {location} is invalid")
+        contents = contents.strip()
+        if location in sheet.cells:
+            # delete the cell
+            if len(contents) == 0 or contents == None:
+                del sheet.cells[location]
+                # UPDATE DEPENDENTS
+                # UPDATE EXTENT
+            cell = sheet.cells[location]
+            cell.contents = contents
+            if contents[0] == "=":
+                eval = FormulaEvaluator()
+                parser = lark.Lark.open('sheets/formula.lark', start = 'formula')
+                tree = parser.parse(contents)
+                value = eval.visit(tree)
+                cell.value = value
+                cell.type = Cell.CellType.FORMULA
+            elif contents[0] == "'":
+                cell.value = contents[1:] 
+                cell.type = Cell.CellType.STRING
+            else: # literal
+                if contents.isnumeric():
+                    # number stuff 
+                    cell.value = decimal.Decimal(contents)
+                else:
+                    # undefined literal
+                    raise KeyError("Undefined literal!!")
+            # UPDATE DEPENDENTS
+        else: # cell does not exist
+            if len(contents) == 0 or contents == None:
+                return
+            if contents[0] == "=":
+                eval = FormulaEvaluator()
+                parser = lark.Lark.open('sheets/formula.lark', start = 'formula')
+                tree = parser.parse(contents)
+                value = eval.visit(tree)
+                cell = Cell(sheet_name, location, contents, value, Cell.CellType.FORMULA)
+                sheet = self.spreadsheets[sheet_name.lower()]
+                sheet.cells[location] = cell
+            elif contents[0] == "'":
+                value = contents[1:] 
+                cell = Cell(sheet_name, location, contents, value, Cell.CellType.STRING)
+                sheet = self.spreadsheets[sheet_name.lower()]
+                sheet.cells[location] = cell
+            else: # literal
+                if contents.isnumeric():
+                    # number stuff 
+                    value = decimal.Decimal(contents)
+                    cell = Cell(sheet_name, location, contents, value, Cell.CellType.LITERAL_NUM)
+                    sheet = self.spreadsheets[sheet_name.lower()]
+                    sheet.cells[location] = cell
+                else:
+                    # undefined literal
+                    raise KeyError("Undefined literal!!")
+            # UPDATE DEPENDENTS
+            
 
     def get_cell_contents(self, sheet_name: str, location: str) -> Optional[str]:
         # Return the contents of the specified cell on the specified sheet.
