@@ -16,6 +16,9 @@ class Cell:
         else:
             return "NORMAL"
 
+    def __eq__(self, obj):
+        return isinstance(obj, Cell) and obj.__dict__ == self.__dict__
+
     def __init__(self, sheet: str, col: str, row: int, contents: str) -> None:
         """
         Initialize a cell object
