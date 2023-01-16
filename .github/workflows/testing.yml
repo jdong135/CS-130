@@ -21,4 +21,4 @@ jobs:
           pipenv install
 
       - name: Run tests
-        run: pipenv run python3 -m unittest
+        run: pipenv run make test
