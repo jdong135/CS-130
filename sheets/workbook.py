@@ -105,7 +105,7 @@ class Workbook:
             raise KeyError("Specified sheet name not found")
         else:
             sheet = self.spreadsheets[sheet_name.lower()]
-            return((sheet.extent_col, sheet.extent_row))
+            return ((sheet.extent_col, sheet.extent_row))
 
     def set_cell_contents(self, sheet_name: str, location: str,
                           contents: Optional[str]) -> None:
@@ -148,7 +148,8 @@ class Workbook:
                 max_col, max_row = 0, 0
                 if col == sheet_col or row == sheet_row:
                     for c in sheet.cells:
-                        c_col, c_row = sheet.str_to_tuple(sheet.cells[c].location)
+                        c_col, c_row = sheet.str_to_tuple(
+                            sheet.cells[c].location)
                         max_col = max(max_col, c_col)
                         max_row = max(max_row, c_row)
                     sheet.extent_col = max_col
@@ -158,7 +159,8 @@ class Workbook:
             cell.contents = contents
             if contents[0] == "=":
                 eval = FormulaEvaluator()
-                parser = lark.Lark.open('sheets/formula.lark', start='formula')
+                parser = lark.Lark.open(
+                    'sheets/formulas.lark', start='formula')
                 tree = parser.parse(contents)
                 value = eval.visit(tree)
                 curr_cell.value = value
@@ -181,14 +183,15 @@ class Workbook:
                 return
             if contents[0] == "=":
                 eval = FormulaEvaluator()
-                parser = lark.Lark.open('sheets/formula.lark', start='formula')
+                parser = lark.Lark.open(
+                    'sheets/formulas.lark', start='formula')
                 tree = parser.parse(contents)
                 value = eval.visit(tree)
                 curr_cell = cell.Cell(
                     sheet_name, location, contents, value, cell.CellType.FORMULA)
                 sheet = self.spreadsheets[sheet_name.lower()]
                 sheet.cells[location] = curr_cell
-                
+
             elif contents[0] == "'":
                 value = contents[1:]
                 curr_cell = cell.Cell(
@@ -215,7 +218,6 @@ class Workbook:
             curr_col, curr_row = sheet.str_to_tuple(location)
             sheet.extent_col = max(curr_col, sheet.extent_col)
             sheet.extent_row = max(curr_row, sheet.extent_row)
-            
 
     def get_cell_contents(self, sheet_name: str, location: str) -> Optional[str]:
         # Return the contents of the specified cell on the specified sheet.
