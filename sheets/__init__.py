@@ -1,9 +1,9 @@
 """
 Spreadsheets Package developed for CS 130
 """
-from .cell import *
-from .cell_error import *
-from .sheet import *
-from .topo_sort import *
-from .workbook import *
-from .lark_module import *
+from sheets.cell import *
+from sheets.cell_error import *
+from sheets.sheet import *
+from sheets.topo_sort import *
+from sheets.workbook import *
+from sheets.lark_module import *
