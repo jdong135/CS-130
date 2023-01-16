@@ -122,7 +122,7 @@ class Workbook_Get_Sheet_Extent(unittest.TestCase):
             wb.set_cell_contents(f"sheet{str(i + 1)}", "ZZZZ9999", "test")
         for i in range(MAX_SHEETS_TEST):
             extent = wb.get_sheet_extent(f"sheet{str(i + 1)}")
-            self.assertEqual(extent, (9999, 456976))
+            self.assertEqual(extent, (475254, 9999))
 
     def test_extent_key_error(self):
         wb = Workbook()
@@ -136,9 +136,9 @@ class Workbook_Set_Cell_Contents(unittest.TestCase):
     def test_add_cell(self):
         wb = Workbook()
         wb.new_sheet("sheet1")
-        wb.set_cell_contents("sheet1", "A1", "test")
+        wb.set_cell_contents("sheet1", "A1", "'test")
         c = Cell("sheet1", "A1", "'test", "test",
-                 cell.CellType.LITERAL_STRING)
+                 cell.CellType.STRING)
         self.assertEqual(wb.spreadsheets["sheet1"].cells["A1"], c)
 
 
