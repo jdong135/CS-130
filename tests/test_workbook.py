@@ -7,7 +7,6 @@ import os
 import sys
 import string
 import random
-from sheets.cell import Cell
 
 PROJECT_ROOT = os.path.abspath(os.path.join(
     os.path.dirname(__file__),
