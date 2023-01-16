@@ -17,6 +17,7 @@ from sheets import *  # noqa
 
 MAX_SHEETS_TEST = 100000
 MAX_STR_LEN_TEST = 500
+MAX_ROW_COL_SIZE = 10000
 INVALID_CHARS = ["¿", "\"", "░", "😀", "\n", "\t"]
 
 
@@ -105,11 +106,30 @@ class Workbook_New_Sheet(unittest.TestCase):
         with self.assertRaises(ValueError):
             wb.new_sheet("sheet1")
 
-class Workbook_Get_Sheet_Extent(unittest.main):
-    def test_single_cell(self):
+
+class Workbook_Get_Sheet_Extent(unittest.TestCase):
+    def test_single_cell_extent(self):
         wb = Workbook()
         wb.new_sheet("S1")
         wb.set_cell_contents("S1", "A1", "test")
+        extent = wb.get_sheet_extent("S1")
+        self.assertEqual(extent, (1, 1))
+    
+    def test_max_extent(self):
+        wb = Workbook()
+        for i in range(MAX_SHEETS_TEST):
+            wb.new_sheet()
+            wb.set_cell_contents(f"sheet{str(i + 1)}", "ZZZZ9999", "test")
+        for i in range(MAX_SHEETS_TEST):
+            extent = wb.get_sheet_extent(f"sheet{str(i + 1)}")
+            self.assertEqual(extent, (9999, 456976))
+
+    def test_extent_key_error(self):
+        wb = Workbook()
+        wb.new_sheet("S1")
+        wb.set_cell_contents("S1", "A1", "test")
+        with self.assertRaises(KeyError):
+            wb.get_sheet_extent("S2")
 
 
 class Workbook_Set_Cell_Contents(unittest.TestCase):
