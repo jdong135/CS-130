@@ -18,6 +18,7 @@ jobs:
 
       - name: Install pipenv and dependencies
         run: pip install pipenv
+          pipenv lock
           pipenv install
 
       - name: Run tests
