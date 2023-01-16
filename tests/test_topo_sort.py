@@ -24,6 +24,9 @@ class Topo_Sort(unittest.TestCase):
         # sort = topo_sort(c1)
         # print(sort)
 
+    def test_cycle(self):
+        pass
+
 
 if __name__ == '__main__':
     unittest.main()
