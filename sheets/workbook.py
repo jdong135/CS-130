@@ -148,7 +148,7 @@ class Workbook:
                 max_col, max_row = 0, 0
                 if col == sheet_col or row == sheet_row:
                     for c in sheet.cells:
-                        c_col, c_row = sheet.str_to_tuple(c.location)
+                        c_col, c_row = sheet.str_to_tuple(sheet.cells[c].location)
                         max_col = max(max_col, c_col)
                         max_row = max(max_row, c_row)
                     sheet.extent_col = max_col
