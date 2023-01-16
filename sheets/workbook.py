@@ -145,7 +145,7 @@ class Workbook:
                 del sheet.cells[location]
                 sheet_col, sheet_row = sheet.extent_col, sheet.extent_row
                 col, row = sheet.str_to_tuple(location)
-                max_col, max_row = 0
+                max_col, max_row = 0, 0
                 if col == sheet_col or row == sheet_row:
                     for c in sheet.cells:
                         c_col, c_row = sheet.str_to_tuple(c.location)
