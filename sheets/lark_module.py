@@ -57,6 +57,11 @@ class FormulaEvaluator(lark.visitors.Interpreter):
             assert False, 'Unexpected operator: ' + values[1]
 
     @visit_children_decor
+    def unary_op(self, values):
+        if values[0] == "-":
+            return -1 * values[1]
+
+    @visit_children_decor
     def concat_expr(self, values):
         return values[0] + values[1]
 

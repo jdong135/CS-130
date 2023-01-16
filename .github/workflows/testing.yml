@@ -20,7 +20,7 @@ jobs:
         run: pip install pipenv
           pipenv install
 
-      - name: Install Python dependences
+      - name: Install Python dependencies
         run: pipenv install lark
 
       - name: Run tests

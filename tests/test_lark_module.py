@@ -58,6 +58,13 @@ class Lark_Module_Basic(unittest.TestCase):
         value = eval.visit(tree)
         self.assertEqual(value, 1)
 
+    def test_negative(self):
+        eval = FormulaEvaluator()
+        parser = lark.Lark.open('sheets/formulas.lark', start='formula')
+        tree = parser.parse("= -1")
+        value = eval.visit(tree)
+        self.assertEqual(value, -1)
+
 
 if __name__ == "__main__":
     unittest.main()
