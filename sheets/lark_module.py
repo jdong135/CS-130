@@ -2,6 +2,7 @@ import lark
 import decimal
 from lark.visitors import visit_children_decor
 from sheets import cell_error
+from sheets import workbook
 
 
 # class CellRefFinder(lark.Visitor):
@@ -56,6 +57,16 @@ class FormulaEvaluator(lark.visitors.Interpreter):
     def concat_expr(self, values):
         return values[0] + values[1]
 
+    @visit_children_decor
+    def cell(self, values):
+        if len(values) > 1:
+            sheet_name = values[0]
+            sheet = workbook.spreadsheets[sheet_name]
+            location = values[1]
+            return sheet[location].value
+        else:
+            return values[0]
+
     def parens(self, tree):
         self.sub_evaluator = FormulaEvaluator()
         return self.sub_evaluator.visit(tree.children[0])
@@ -69,8 +80,9 @@ class FormulaEvaluator(lark.visitors.Interpreter):
     def error(self, tree):
         return self.error
 
+
 # eval = FormulaEvaluator()
 # parser = lark.Lark.open('sheets/formulas.lark', start='formula')
-# tree = parser.parse("=A1")
+# tree = parser.parse("=Sheets1!A1")
 # value = eval.visit(tree)
 # print(f"value is {str(value)} with type {type(value)}")
