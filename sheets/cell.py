@@ -1,5 +1,6 @@
 import enum
 
+
 class CellType(enum.Enum):
     FORMULA = 1
     STRING = 2

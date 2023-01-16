@@ -114,7 +114,7 @@ class Workbook_Get_Sheet_Extent(unittest.TestCase):
         wb.set_cell_contents("S1", "A1", "test")
         extent = wb.get_sheet_extent("S1")
         self.assertEqual(extent, (1, 1))
-    
+
     def test_max_extent(self):
         wb = Workbook()
         for i in range(MAX_SHEETS_TEST):
@@ -137,8 +137,9 @@ class Workbook_Set_Cell_Contents(unittest.TestCase):
         wb = Workbook()
         wb.new_sheet("sheet1")
         wb.set_cell_contents("sheet1", "A1", "test")
-        cell = Cell("sheet1", "A", "1", "test")
-        self.assertEqual(wb.spreadsheets["sheet1"].cells["A1"] == cell)
+        c = Cell("sheet1", "A1", "'test", "test",
+                 cell.CellType.LITERAL_STRING)
+        self.assertEqual(wb.spreadsheets["sheet1"].cells["A1"], c)
 
 
 if __name__ == "__main__":

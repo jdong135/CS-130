@@ -41,7 +41,7 @@ class Workbook:
         # workbook's internal state.
         output = []
         for sheet in self.spreadsheets:
-            output.append(sheet.name)
+            output.append(self.spreadsheets[sheet].name)
         return output
 
     def new_sheet(self, sheet_name: Optional[str] = None) -> Tuple[int, str]:
@@ -156,17 +156,17 @@ class Workbook:
             cell.contents = contents
             if contents[0] == "=":
                 eval = FormulaEvaluator()
-                parser = lark.Lark.open('sheets/formula.lark', start = 'formula')
+                parser = lark.Lark.open('sheets/formula.lark', start='formula')
                 tree = parser.parse(contents)
                 value = eval.visit(tree)
                 curr_cell.value = value
                 curr_cell.type = cell.CellType.FORMULA
             elif contents[0] == "'":
-                curr_cell.value = contents[1:] 
+                curr_cell.value = contents[1:]
                 curr_cell.type = cell.CellType.STRING
-            else: # literal
+            else:  # literal
                 if contents.isnumeric():
-                    # number stuff 
+                    # number stuff
                     curr_cell.value = decimal.Decimal(contents)
                     curr_cell.type = cell.CellType.LITERAL_NUM
                 else:
@@ -174,34 +174,38 @@ class Workbook:
                     curr_cell.value = contents
                     curr_cell.type = cell.CellType.LITERAL_STRING
             # UPDATE DEPENDENTS
-        else: # cell does not exist
+        else:  # cell does not exist
             if len(contents) == 0 or contents == None:
                 return
             if contents[0] == "=":
                 eval = FormulaEvaluator()
-                parser = lark.Lark.open('sheets/formula.lark', start = 'formula')
+                parser = lark.Lark.open('sheets/formula.lark', start='formula')
                 tree = parser.parse(contents)
                 value = eval.visit(tree)
-                curr_cell = cell.Cell(sheet_name, location, contents, value, cell.CellType.FORMULA)
+                curr_cell = cell.Cell(
+                    sheet_name, location, contents, value, cell.CellType.FORMULA)
                 sheet = self.spreadsheets[sheet_name.lower()]
                 sheet.cells[location] = curr_cell
                 
             elif contents[0] == "'":
-                value = contents[1:] 
-                curr_cell = cell.Cell(sheet_name, location, contents, value, cell.CellType.STRING)
+                value = contents[1:]
+                curr_cell = cell.Cell(
+                    sheet_name, location, contents, value, cell.CellType.STRING)
                 sheet = self.spreadsheets[sheet_name.lower()]
                 sheet.cells[location] = curr_cell
-            else: # literal
+            else:  # literal
                 if contents.isnumeric():
-                    # number stuff 
+                    # number stuff
                     value = decimal.Decimal(contents)
-                    curr_cell = cell.Cell(sheet_name, location, contents, value, cell.CellType.LITERAL_NUM)
+                    curr_cell = cell.Cell(
+                        sheet_name, location, contents, value, cell.CellType.LITERAL_NUM)
                     sheet = self.spreadsheets[sheet_name.lower()]
                     sheet.cells[location] = curr_cell
                 else:
                     # undefined literal
                     value = contents
-                    curr_cell = cell.Cell(sheet_name, location, contents, value, cell.CellType.LITERAL_STRING)
+                    curr_cell = cell.Cell(
+                        sheet_name, location, contents, value, cell.CellType.LITERAL_STRING)
                     sheet = self.spreadsheets[sheet_name.lower()]
                     sheet.cells[location] = curr_cell
             # UPDATE DEPENDENTS
