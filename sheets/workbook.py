@@ -143,27 +143,27 @@ class Workbook:
                 del sheet.cells[location]
                 # UPDATE DEPENDENTS
                 # UPDATE EXTENT
-            cell = sheet.cells[location]
+            curr_cell = sheet.cells[location]
             cell.contents = contents
             if contents[0] == "=":
                 eval = FormulaEvaluator()
                 parser = lark.Lark.open('sheets/formula.lark', start = 'formula')
                 tree = parser.parse(contents)
                 value = eval.visit(tree)
-                cell.value = value
-                cell.type = cell.CellType.FORMULA
+                curr_cell.value = value
+                curr_cell.type = cell.CellType.FORMULA
             elif contents[0] == "'":
-                cell.value = contents[1:] 
-                cell.type = cell.CellType.STRING
+                curr_cell.value = contents[1:] 
+                curr_cell.type = cell.CellType.STRING
             else: # literal
                 if contents.isnumeric():
                     # number stuff 
-                    cell.value = decimal.Decimal(contents)
-                    cell.type = cell.CellType.LITERAL_NUM
+                    curr_cell.value = decimal.Decimal(contents)
+                    curr_cell.type = cell.CellType.LITERAL_NUM
                 else:
                     # undefined literal
-                    cell.value = contents
-                    cell.type = cell.CellType.LITERAL_STRING
+                    curr_cell.value = contents
+                    curr_cell.type = cell.CellType.LITERAL_STRING
             # UPDATE DEPENDENTS
         else: # cell does not exist
             if len(contents) == 0 or contents == None:
@@ -173,27 +173,27 @@ class Workbook:
                 parser = lark.Lark.open('sheets/formula.lark', start = 'formula')
                 tree = parser.parse(contents)
                 value = eval.visit(tree)
-                cell = cell.Cell(sheet_name, location, contents, value, cell.CellType.FORMULA)
+                curr_cell = cell.Cell(sheet_name, location, contents, value, cell.CellType.FORMULA)
                 sheet = self.spreadsheets[sheet_name.lower()]
-                sheet.cells[location] = cell
+                sheet.cells[location] = curr_cell
             elif contents[0] == "'":
                 value = contents[1:] 
-                cell = cell.Cell(sheet_name, location, contents, value, cell.CellType.STRING)
+                curr_cell = cell.Cell(sheet_name, location, contents, value, cell.CellType.STRING)
                 sheet = self.spreadsheets[sheet_name.lower()]
-                sheet.cells[location] = cell
+                sheet.cells[location] = curr_cell
             else: # literal
                 if contents.isnumeric():
                     # number stuff 
                     value = decimal.Decimal(contents)
-                    cell = cell.Cell(sheet_name, location, contents, value, cell.CellType.LITERAL_NUM)
+                    curr_cell = cell.Cell(sheet_name, location, contents, value, cell.CellType.LITERAL_NUM)
                     sheet = self.spreadsheets[sheet_name.lower()]
-                    sheet.cells[location] = cell
+                    sheet.cells[location] = curr_cell
                 else:
                     # undefined literal
                     value = contents
-                    cell = cell.Cell(sheet_name, location, contents, value, cell.CellType.LITERAL_STRING)
+                    curr_cell = cell.Cell(sheet_name, location, contents, value, cell.CellType.LITERAL_STRING)
                     sheet = self.spreadsheets[sheet_name.lower()]
-                    sheet.cells[location] = cell
+                    sheet.cells[location] = curr_cell
             # UPDATE DEPENDENTS
             
 
