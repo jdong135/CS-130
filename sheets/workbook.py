@@ -170,7 +170,7 @@ class Workbook:
             contents = contents.strip()
         if location in sheet.cells:
             curr_cell = sheet.cells[location]
-            past_relies_on = list(curr_cell.relies_on)
+            past_relies_on = curr_cell.relies_on
             # No one depends on this cell: delete without traversal
             if (not contents or len(contents) == 0) and len(curr_cell.dependents) == 0:
                 del sheet.cells[location]
@@ -196,18 +196,15 @@ class Workbook:
                     value=value, type=cell.CellType.FORMULA, relies_on=eval.relies_on)
             elif contents[0] == "'":
                 curr_cell.set_fields(
-                    value=contents[1:], type=cell.CellType.STRING, relies_on=[])
+                    value=contents[1:], type=cell.CellType.STRING, relies_on=set())
             elif contents.isnumeric():
                 curr_cell.set_fields(value=decimal.Decimal(
-                    contents), type=cell.CellType.LITERAL_NUM, relies_on=[])
+                    contents), type=cell.CellType.LITERAL_NUM, relies_on=set())
             else:
                 curr_cell.set_fields(
-                    value=contents, type=cell.CellType.LITERAL_STRING, relies_on=[])
+                    value=contents, type=cell.CellType.LITERAL_STRING, relies_on=set())
             # update relies on
-            list_diff = []
-            for c in past_relies_on:
-                if c not in curr_cell.relies_on:
-                    list_diff.append(c)
+            list_diff = past_relies_on - curr_cell.relies_on
             for c in list_diff:
                 c.dependents.remove(curr_cell)
             # update dependents
