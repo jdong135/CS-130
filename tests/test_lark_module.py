@@ -19,7 +19,7 @@ class Lark_Module_Basic(unittest.TestCase):
     def test_single_dec(self):
         wb = Workbook()
         wb.new_sheet()
-        eval = FormulaEvaluator(wb, "sheet1")
+        eval = FormulaEvaluator(wb, wb.spreadsheets["sheet1"])
         parser = lark.Lark.open('sheets/formulas.lark', start='formula')
         tree = parser.parse("=1")
         value = eval.visit(tree)
@@ -28,7 +28,7 @@ class Lark_Module_Basic(unittest.TestCase):
     def test_single_str(self):
         wb = Workbook()
         wb.new_sheet()
-        eval = FormulaEvaluator(wb, "sheet1")
+        eval = FormulaEvaluator(wb, wb.spreadsheets["sheet1"])
         parser = lark.Lark.open('sheets/formulas.lark', start='formula')
         tree = parser.parse("=\"str\"")
         value = eval.visit(tree)
@@ -37,7 +37,7 @@ class Lark_Module_Basic(unittest.TestCase):
     def test_basic1(self):
         wb = Workbook()
         wb.new_sheet()
-        eval = FormulaEvaluator(wb, "sheet1")
+        eval = FormulaEvaluator(wb, wb.spreadsheets["sheet1"])
         parser = lark.Lark.open('sheets/formulas.lark', start='formula')
         tree = parser.parse("=1 + 7 - 124 * 7 / 14")
         value = eval.visit(tree)
@@ -46,7 +46,7 @@ class Lark_Module_Basic(unittest.TestCase):
     def test_basic2(self):
         wb = Workbook()
         wb.new_sheet()
-        eval = FormulaEvaluator(wb, "sheet1")
+        eval = FormulaEvaluator(wb, wb.spreadsheets["sheet1"])
         parser = lark.Lark.open('sheets/formulas.lark', start='formula')
         tree = parser.parse("=2 * 6 - 4 + 2 / 2")
         value = eval.visit(tree)
@@ -55,7 +55,7 @@ class Lark_Module_Basic(unittest.TestCase):
     def test_basic_parens(self):
         wb = Workbook()
         wb.new_sheet()
-        eval = FormulaEvaluator(wb, "sheet1")
+        eval = FormulaEvaluator(wb, wb.spreadsheets["sheet1"])
         parser = lark.Lark.open('sheets/formulas.lark', start='formula')
         tree = parser.parse("= 4 - 7 + (4 * 8 - 7) - 2 / 2 + (7 - 4)")
         value = eval.visit(tree)
@@ -64,7 +64,7 @@ class Lark_Module_Basic(unittest.TestCase):
     def test_nested_parens(self):
         wb = Workbook()
         wb.new_sheet()
-        eval = FormulaEvaluator(wb, "sheet1")
+        eval = FormulaEvaluator(wb, wb.spreadsheets["sheet1"])
         parser = lark.Lark.open('sheets/formulas.lark', start='formula')
         tree = parser.parse("= 4 / 2 * (7 + 8 - (6 + (2 * 4)) - 4) + 7")
         value = eval.visit(tree)
@@ -73,7 +73,7 @@ class Lark_Module_Basic(unittest.TestCase):
     def test_negative1(self):
         wb = Workbook()
         wb.new_sheet()
-        eval = FormulaEvaluator(wb, "sheet1")
+        eval = FormulaEvaluator(wb, wb.spreadsheets["sheet1"])
         parser = lark.Lark.open('sheets/formulas.lark', start='formula')
         tree = parser.parse("= -1")
         value = eval.visit(tree)
@@ -82,7 +82,7 @@ class Lark_Module_Basic(unittest.TestCase):
     def test_negative2(self):
         wb = Workbook()
         wb.new_sheet()
-        eval = FormulaEvaluator(wb, "sheet1")
+        eval = FormulaEvaluator(wb, wb.spreadsheets["sheet1"])
         parser = lark.Lark.open('sheets/formulas.lark', start='formula')
         tree = parser.parse("= -1 + 2 * (-2 - 2 / (1 * -4))")
         value = eval.visit(tree)
@@ -112,13 +112,25 @@ class Lark_Module_Basic(unittest.TestCase):
         value = eval.visit(tree)
         self.assertEqual(value, 7)
 
-    # def test_div_zero1(self):
-    #     wb = Workbook()
-    #     wb.new_sheet()
-    #     eval = FormulaEvaluator(wb, "sheet1")
-    #     parser = lark.Lark.open('sheets/formulas.lark', start='formula')
-    #     tree = parser.parse("= 2 * 8 / 0 + 1")
-    #     eval.visit(tree)
+    def test_div_zero1(self):
+        wb = Workbook()
+        wb.new_sheet()
+        eval = FormulaEvaluator(wb, wb.spreadsheets["sheet1"])
+        parser = lark.Lark.open('sheets/formulas.lark', start='formula')
+        tree = parser.parse("= 2 * 8 / 0 + 1")
+        eval.visit(tree)
+        self.assertEqual(eval.error.get_detail(), "divide by zero")
+
+    def test_div_zero2(self):
+        wb = Workbook()
+        wb.new_sheet()
+        wb.set_cell_contents("sheet1", "A1", "=1")
+        wb.set_cell_contents("sheet1", "A2", "=0")
+        eval = FormulaEvaluator(wb, wb.spreadsheets["sheet1"])
+        parser = lark.Lark.open('sheets/formulas.lark', start='formula')
+        tree = parser.parse("=A1 / A2")
+        eval.visit(tree)
+        self.assertEqual(eval.error.get_detail(), "divide by zero")
 
 
 if __name__ == "__main__":
