@@ -61,7 +61,7 @@ class FormulaEvaluator(lark.visitors.Interpreter):
                     # FIX THIS
                     new_empty_cell = cell.Cell(sheet, location, "", 0, cell.CellType.EMPTY)
                     sheet.cells[location] = new_empty_cell
-                    new_empty_cell.add(self.calling_cell)
+                    new_empty_cell.neighbors.add(self.calling_cell)
                     return 0 # FIX THIS
                 return sheet.cells[location].value
             # =[col][row]
