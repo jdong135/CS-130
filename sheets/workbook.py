@@ -2,6 +2,7 @@ from typing import *
 from sheets.lark_module import FormulaEvaluator
 from . import Sheet
 from sheets import cell
+from sheets import topo_sort
 import lark
 import decimal
 
@@ -86,6 +87,12 @@ class Workbook:
 
     def update_values(self, cell):
         contents = cell.contents
+        eval = FormulaEvaluator(self, cell.sheet, cell)
+        parser = lark.Lark.open(
+            'sheets/formulas.lark', start='formula')
+        tree = parser.parse(contents)
+        value = eval.visit(tree)
+        cell.value = value
 
     def del_sheet(self, sheet_name: str) -> None:
         # Delete the spreadsheet with the specified name.
@@ -152,7 +159,9 @@ class Workbook:
                     cell_to_delete.contents = ""
                     cell_to_delete.value = ""
                     cell_to_delete.type = cell.CellType.EMPTY
-                    # UPDATE DEPENDENTS
+                    sorted_components = topo_sort.topo_sort(cell_to_delete)
+                    for node in sorted_components:
+                        self.update_values(node)
                 sheet_col, sheet_row = sheet.extent_col, sheet.extent_row
                 col, row = sheet.str_to_tuple(location)
                 max_col, max_row = 0, 0
@@ -188,7 +197,9 @@ class Workbook:
                     # undefined literal
                     curr_cell.value = contents
                     curr_cell.type = cell.CellType.LITERAL_STRING
-            # UPDATE DEPENDENTS
+            sorted_components = topo_sort.topo_sort(curr_cell)
+            for node in sorted_components:
+                self.update_values(node)
         else:  # cell does not exist
             if not contents or len(contents) == 0:
                 return
