@@ -2,10 +2,11 @@ import enum
 
 
 class CellType(enum.Enum):
-    FORMULA = 1
-    STRING = 2
-    LITERAL_NUM = 3
-    LITERAL_STRING = 4
+    EMPTY = 1
+    FORMULA = 2
+    STRING = 3
+    LITERAL_NUM = 4
+    LITERAL_STRING = 5
 
 
 class Cell:
