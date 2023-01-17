@@ -68,6 +68,7 @@ class FormulaEvaluator(lark.visitors.Interpreter):
             else:
                 if values[0].value not in self.sheet.cells:
                     # FIX THIS
+                    location = values[0].value
                     new_empty_cell = cell.Cell(self.sheet, location, "", 0, cell.CellType.EMPTY)
                     sheet.cells[location] = new_empty_cell
                     new_empty_cell.add(self.calling_cell)
