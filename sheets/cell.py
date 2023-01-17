@@ -31,6 +31,9 @@ class Cell:
         self.relies_on = []  # which cells self calls
         self.dependents = []  # which cells call self
 
+    def set_fields(self, **kwargs):
+        self.__dict__.update(kwargs)
+
     def set_value(self, value):
         """_summary_
 
