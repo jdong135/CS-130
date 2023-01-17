@@ -13,6 +13,9 @@ class Cell:
     def __eq__(self, obj):
         return isinstance(obj, Cell) and obj.__dict__ == self.__dict__
 
+    def __hash__(self):
+        return hash((self.sheet, self.location))
+
     def __init__(self, sheet: str, location: str, contents: str, value, type) -> None:
         """
         Initialize a cell object
@@ -28,7 +31,11 @@ class Cell:
         self.contents = contents
         self.value = value
         self.type = type
-        self.neighbors = []
+        self.relies_on = set()  # which cells self calls
+        self.dependents = set()  # which cells call self
+
+    def set_fields(self, **kwargs):
+        self.__dict__.update(kwargs)
 
     def set_value(self, value):
         """_summary_

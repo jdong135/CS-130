@@ -2,8 +2,10 @@ from typing import *
 from sheets.lark_module import FormulaEvaluator
 from . import Sheet
 from sheets import cell
+from sheets import topo_sort
 import lark
 import decimal
+from sheets import lark_module
 
 
 ALLOWED_PUNC = set([".", "?", "!", ",", ":", ";", "@", "#",
@@ -86,7 +88,27 @@ class Workbook:
 
     def update_values(self, cell):
         contents = cell.contents
-        
+        value = lark_module.evaluate_expr(self, cell, cell.sheet, contents)
+        cell.value = value
+
+    def update_extent(self, sheet, location, deletingCell: bool):
+        if deletingCell:
+            sheet_col, sheet_row = sheet.extent_col, sheet.extent_row
+            col, row = sheet.str_to_tuple(location)
+            max_col, max_row = 0, 0
+            if col == sheet_col or row == sheet_row:
+                for c in sheet.cells:
+                    if sheet.cells[c].type != cell.CellType.EMPTY:
+                        c_col, c_row = sheet.str_to_tuple(
+                            sheet.cells[c].location)
+                        max_col = max(max_col, c_col)
+                        max_row = max(max_row, c_row)
+                sheet.extent_col = max_col
+                sheet.extent_row = max_row
+        else:
+            curr_col, curr_row = sheet.str_to_tuple(location)
+            sheet.extent_col = max(curr_col, sheet.extent_col)
+            sheet.extent_row = max(curr_row, sheet.extent_row)
 
     def del_sheet(self, sheet_name: str) -> None:
         # Delete the spreadsheet with the specified name.
@@ -143,86 +165,79 @@ class Workbook:
         if contents:
             contents = contents.strip()
         if location in sheet.cells:
-            # delete the cell
-            if not contents or len(contents) == 0:
-                # UPDATE DEPENDENTS
-                del sheet.cells[location]
-                sheet_col, sheet_row = sheet.extent_col, sheet.extent_row
-                col, row = sheet.str_to_tuple(location)
-                max_col, max_row = 0, 0
-                if col == sheet_col or row == sheet_row:
-                    for c in sheet.cells:
-                        c_col, c_row = sheet.str_to_tuple(
-                            sheet.cells[c].location)
-                        max_col = max(max_col, c_col)
-                        max_row = max(max_row, c_row)
-                    sheet.extent_col = max_col
-                    sheet.extent_row = max_row
-                return
             curr_cell = sheet.cells[location]
-            cell.contents = contents
+            past_relies_on = curr_cell.relies_on
+            # No one depends on this cell: delete without traversal
+            if (not contents or len(contents) == 0) and len(curr_cell.dependents) == 0:
+                del sheet.cells[location]
+                self.update_extent(sheet, location, True)
+                return
+            # Some cell depends on this cell: delete with traversal
+            elif not contents or len(contents) == 0:
+                curr_cell.set_fields(contents="", value="",
+                                     type=cell.CellType.EMPTY)
+                sorted_components = topo_sort(curr_cell)[1:]
+                for node in sorted_components:
+                    self.update_values(node)
+                self.update_extent(sheet, location, True)
+                return
+            curr_cell.contents = contents
+            # Update cell contents and value
             if contents[0] == "=":
-                eval = FormulaEvaluator(self, sheet)
-                parser = lark.Lark.open(
-                    'sheets/formulas.lark', start='formula')
-                tree = parser.parse(contents)
-                value = eval.visit(tree)
-                curr_cell.value = value
-                curr_cell.type = cell.CellType.FORMULA
+                value = lark_module.evaluate_expr(
+                    self, curr_cell, sheet, contents)
+                curr_cell.set_fields(
+                    value=value, type=cell.CellType.FORMULA, relies_on=eval.relies_on)
             elif contents[0] == "'":
-                curr_cell.value = contents[1:]
-                curr_cell.type = cell.CellType.STRING
-            else:  # literal
-                if contents.isnumeric():
-                    # number stuff
-                    curr_cell.value = decimal.Decimal(contents)
-                    curr_cell.type = cell.CellType.LITERAL_NUM
-                else:
-                    # undefined literal
-                    curr_cell.value = contents
-                    curr_cell.type = cell.CellType.LITERAL_STRING
-            # UPDATE DEPENDENTS
-        else:  # cell does not exist
+                curr_cell.set_fields(
+                    value=contents[1:], type=cell.CellType.STRING, relies_on=set())
+            elif contents.isnumeric():
+                curr_cell.set_fields(value=decimal.Decimal(
+                    contents), type=cell.CellType.LITERAL_NUM, relies_on=set())
+            else:
+                curr_cell.set_fields(
+                    value=contents, type=cell.CellType.LITERAL_STRING, relies_on=set())
+            # update relies on
+            list_diff = past_relies_on - curr_cell.relies_on
+            for c in list_diff:
+                c.dependents.remove(curr_cell)
+            # update dependents
+            sorted_components = topo_sort(curr_cell)[1:]
+            for node in sorted_components:
+                self.update_values(node)
+        # cell does not exist: add cell
+        else:
             if not contents or len(contents) == 0:
                 return
             if contents[0] == "=":
-                eval = FormulaEvaluator(
-                    self, self.spreadsheets[sheet_name.lower()])
-                parser = lark.Lark.open(
-                    'sheets/formulas.lark', start='formula')
-                tree = parser.parse(contents)
-                value = eval.visit(tree)
                 curr_cell = cell.Cell(
-                    sheet_name, location, contents, value, cell.CellType.FORMULA)
+                    sheet_name, location, contents, None, cell.CellType.FORMULA)
+                value = lark_module.evaluate_expr(
+                    self, curr_cell, sheet_name, contents)
+                # FIX THIS
+                curr_cell.value = value
                 sheet = self.spreadsheets[sheet_name.lower()]
                 sheet.cells[location] = curr_cell
-
             elif contents[0] == "'":
                 value = contents[1:]
                 curr_cell = cell.Cell(
                     sheet_name, location, contents, value, cell.CellType.STRING)
                 sheet = self.spreadsheets[sheet_name.lower()]
                 sheet.cells[location] = curr_cell
-            else:  # literal
-                if contents.isnumeric():
-                    # number stuff
-                    value = decimal.Decimal(contents)
-                    curr_cell = cell.Cell(
-                        sheet_name, location, contents, value, cell.CellType.LITERAL_NUM)
-                    sheet = self.spreadsheets[sheet_name.lower()]
-                    sheet.cells[location] = curr_cell
-                else:
-                    # undefined literal
-                    value = contents
-                    curr_cell = cell.Cell(
-                        sheet_name, location, contents, value, cell.CellType.LITERAL_STRING)
-                    sheet = self.spreadsheets[sheet_name.lower()]
-                    sheet.cells[location] = curr_cell
-            # UPDATE DEPENDENTS
+            elif contents.isnumeric():
+                value = decimal.Decimal(contents)
+                curr_cell = cell.Cell(
+                    sheet_name, location, contents, value, cell.CellType.LITERAL_NUM)
+                sheet = self.spreadsheets[sheet_name.lower()]
+                sheet.cells[location] = curr_cell
+            else:
+                value = contents
+                curr_cell = cell.Cell(
+                    sheet_name, location, contents, value, cell.CellType.LITERAL_STRING)
+                sheet = self.spreadsheets[sheet_name.lower()]
+                sheet.cells[location] = curr_cell
             # update extent
-            curr_col, curr_row = sheet.str_to_tuple(location)
-            sheet.extent_col = max(curr_col, sheet.extent_col)
-            sheet.extent_row = max(curr_row, sheet.extent_row)
+            self.update_extent(sheet, location, False)
 
     def get_cell_contents(self, sheet_name: str, location: str) -> Optional[str]:
         # Return the contents of the specified cell on the specified sheet.
