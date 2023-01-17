@@ -107,3 +107,12 @@ class FormulaEvaluator(lark.visitors.Interpreter):
 
     def error(self, tree):
         return self.error
+
+
+def evaluate_expr(workbook, curr_cell, sheetname, contents):
+    eval = FormulaEvaluator(
+        workbook, workbook.spreadsheets[sheetname.lower()], curr_cell)
+    parser = lark.Lark.open('sheets/formulas.lark', start='formula')
+    tree = parser.parse(contents)
+    value = eval.visit(tree)
+    return value

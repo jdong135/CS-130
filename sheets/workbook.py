@@ -5,6 +5,7 @@ from sheets import cell
 from sheets import topo_sort
 import lark
 import decimal
+from sheets import lark_module
 
 
 ALLOWED_PUNC = set([".", "?", "!", ",", ":", ";", "@", "#",
@@ -87,12 +88,7 @@ class Workbook:
 
     def update_values(self, cell):
         contents = cell.contents
-        eval = FormulaEvaluator(
-            self, self.spreadsheets[cell.sheet.lower()], cell)
-        parser = lark.Lark.open(
-            'sheets/formulas.lark', start='formula')
-        tree = parser.parse(contents)
-        value = eval.visit(tree)
+        value = lark_module.evaluate_expr(self, cell, cell.sheet, contents)
         cell.value = value
 
     def update_extent(self, sheet, location, deletingCell: bool):
@@ -186,12 +182,10 @@ class Workbook:
                 self.update_extent(sheet, location, True)
                 return
             curr_cell.contents = contents
+            # Update cell contents and value
             if contents[0] == "=":
-                eval = FormulaEvaluator(self, sheet, curr_cell)
-                parser = lark.Lark.open(
-                    'sheets/formulas.lark', start='formula')
-                tree = parser.parse(contents)
-                value = eval.visit(tree)
+                value = lark_module.evaluate_expr(
+                    self, curr_cell, sheet, contents)
                 curr_cell.set_fields(
                     value=value, type=cell.CellType.FORMULA, relies_on=eval.relies_on)
             elif contents[0] == "'":
@@ -218,12 +212,8 @@ class Workbook:
             if contents[0] == "=":
                 curr_cell = cell.Cell(
                     sheet_name, location, contents, None, cell.CellType.FORMULA)
-                eval = FormulaEvaluator(
-                    self, self.spreadsheets[sheet_name.lower()], curr_cell)
-                parser = lark.Lark.open(
-                    'sheets/formulas.lark', start='formula')
-                tree = parser.parse(contents)
-                value = eval.visit(tree)
+                value = lark_module.evaluate_expr(
+                    self, curr_cell, sheet_name, contents)
                 # FIX THIS
                 curr_cell.value = value
                 sheet = self.spreadsheets[sheet_name.lower()]
