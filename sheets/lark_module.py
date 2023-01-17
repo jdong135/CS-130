@@ -21,9 +21,11 @@ from sheets import workbook
 
 
 class FormulaEvaluator(lark.visitors.Interpreter):
-    def __init__(self):
+    def __init__(self, workbook, sheet=None):
         self.error = None
         self.sub_evaluator = None
+        self.wb = workbook
+        self.sheet = sheet
 
     @visit_children_decor
     def add_expr(self, values):
@@ -60,15 +62,18 @@ class FormulaEvaluator(lark.visitors.Interpreter):
     @visit_children_decor
     def cell(self, values):
         if len(values) > 1:
-            sheet_name = values[0]
-            sheet = workbook.spreadsheets[sheet_name]
+            sheet_name = values[0].value.lower()
+            sheet = self.wb.spreadsheets[sheet_name]
             location = values[1]
-            return sheet[location].value
+            return sheet.cells[location].value
         else:
-            return values[0]
+            return self.sheet.cells[values[0].value]
+
+    # def _sheetname(self, tree):
+    #     return str(tree.children[0])
 
     def parens(self, tree):
-        self.sub_evaluator = FormulaEvaluator()
+        self.sub_evaluator = FormulaEvaluator(self.wb)
         return self.sub_evaluator.visit(tree.children[0])
 
     def number(self, tree):
