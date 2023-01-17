@@ -87,7 +87,8 @@ class Workbook:
 
     def update_values(self, cell):
         contents = cell.contents
-        eval = FormulaEvaluator(self, cell.sheet, cell)
+        eval = FormulaEvaluator(
+            self, self.spreadsheets[cell.sheet.lower()], cell)
         parser = lark.Lark.open(
             'sheets/formulas.lark', start='formula')
         tree = parser.parse(contents)
@@ -149,19 +150,23 @@ class Workbook:
         if contents:
             contents = contents.strip()
         if location in sheet.cells:
+            curr_cell = sheet.cells[location]
+            past_relies_on = list(curr_cell.relies_on)
             # delete the cell
             if not contents or len(contents) == 0:
-                cell_to_delete = sheet.cells[location]
-                if len(cell_to_delete.location) == 0:
+                # If no one relies on this cell, delete it
+                if len(curr_cell.dependents) == 0:
                     del sheet.cells[location]
+                # Else change to empty cell type
                 else:
                     # UPDATE DEPENDENTS, FIX THE VALUE LATER CURRENTLY 0
-                    cell_to_delete.contents = ""
-                    cell_to_delete.value = ""
-                    cell_to_delete.type = cell.CellType.EMPTY
-                    sorted_components = topo_sort.topo_sort(cell_to_delete)
+                    curr_cell.contents = ""
+                    curr_cell.value = ""
+                    curr_cell.type = cell.CellType.EMPTY
+                    sorted_components = topo_sort(curr_cell)
                     for node in sorted_components:
                         self.update_values(node)
+                # extent stuff
                 sheet_col, sheet_row = sheet.extent_col, sheet.extent_row
                 col, row = sheet.str_to_tuple(location)
                 max_col, max_row = 0, 0
@@ -175,8 +180,7 @@ class Workbook:
                     sheet.extent_col = max_col
                     sheet.extent_row = max_row
                 return
-            curr_cell = sheet.cells[location]
-            cell.contents = contents
+            curr_cell.contents = contents
             if contents[0] == "=":
                 eval = FormulaEvaluator(self, sheet, curr_cell)
                 parser = lark.Lark.open(
@@ -185,9 +189,11 @@ class Workbook:
                 value = eval.visit(tree)
                 curr_cell.value = value
                 curr_cell.type = cell.CellType.FORMULA
+                curr_cell.relies_on = eval.relies_on
             elif contents[0] == "'":
                 curr_cell.value = contents[1:]
                 curr_cell.type = cell.CellType.STRING
+                curr_cell.relies_on = []
             else:  # literal
                 if contents.isnumeric():
                     # number stuff
@@ -197,7 +203,16 @@ class Workbook:
                     # undefined literal
                     curr_cell.value = contents
                     curr_cell.type = cell.CellType.LITERAL_STRING
-            sorted_components = topo_sort.topo_sort(curr_cell)
+                curr_cell.relies_on = []
+            # update relies on
+            list_diff = []
+            for c in past_relies_on:
+                if c not in curr_cell.relies_on:
+                    list_diff.append(c)
+            for c in list_diff:
+                c.dependents.remove(curr_cell)
+            # update dependents
+            sorted_components = topo_sort(curr_cell)[1:]
             for node in sorted_components:
                 self.update_values(node)
         else:  # cell does not exist

@@ -12,6 +12,7 @@ class FormulaEvaluator(lark.visitors.Interpreter):
         self.wb = workbook
         self.sheet = sheet
         self.calling_cell = calling_cell
+        self.relies_on = []
 
     @visit_children_decor
     def add_expr(self, values):
@@ -62,27 +63,38 @@ class FormulaEvaluator(lark.visitors.Interpreter):
                     new_empty_cell = cell.Cell(
                         sheet, location, "", "", cell.CellType.EMPTY)
                     sheet.cells[location] = new_empty_cell
-                    if self.calling_cell not in new_empty_cell.neighbors:
-                        new_empty_cell.neighbors.append(self.calling_cell)
+                    if self.calling_cell not in new_empty_cell.dependents:
+                        new_empty_cell.dependents.append(self.calling_cell)
+                    self.relies_on.append(new_empty_cell)
                     return ""  # FIX THIS
+                if self.calling_cell not in sheet.cells[location].dependents:
+                    sheet.cells[location].dependents.append(self.calling_cell)
+                self.relies_on.append(sheet.cells[location])
                 return sheet.cells[location].value
             # =[col][row]
             else:
+                location = values[0].value
                 if values[0].value not in self.sheet.cells:
                     # FIX THIS
-                    location = values[0].value
+
                     new_empty_cell = cell.Cell(
                         self.sheet, location, "", "", cell.CellType.EMPTY)
                     self.sheet.cells[location] = new_empty_cell
-                    if self.calling_cell not in new_empty_cell.neighbors:
-                        new_empty_cell.neighbors.append(self.calling_cell)
+                    if self.calling_cell not in new_empty_cell.dependents:
+                        new_empty_cell.dependents.append(self.calling_cell)
+                    self.relies_on.append(new_empty_cell)
                     return ""  # FIX THIS
+                if self.calling_cell not in self.sheet.cells[location].dependents:
+                    self.sheet.cells[location].dependents.append(
+                        self.calling_cell)
+                self.relies_on.append(self.sheet.cells[location])
                 return self.sheet.cells[values[0].value].value
 
     def parens(self, tree):
         if not self.error:
             self.sub_evaluator = FormulaEvaluator(
                 self.wb, self.sheet, self.calling_cell)
+            self.relies_on.append(self.sub_evaluator.relies_on)
             return self.sub_evaluator.visit(tree.children[0])
 
     def number(self, tree):

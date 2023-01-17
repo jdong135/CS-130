@@ -28,7 +28,8 @@ class Cell:
         self.contents = contents
         self.value = value
         self.type = type
-        self.neighbors = []
+        self.relies_on = []  # which cells self calls
+        self.dependents = []  # which cells call self
 
     def set_value(self, value):
         """_summary_
