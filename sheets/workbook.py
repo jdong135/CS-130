@@ -84,6 +84,9 @@ class Workbook:
             self.lower_names.add(sheet_name.lower())
             return (len(self.spreadsheets) - 1, sheet_name)
 
+    def update_values(self, cell):
+        contents = cell.contents
+
     def del_sheet(self, sheet_name: str) -> None:
         # Delete the spreadsheet with the specified name.
         #
