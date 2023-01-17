@@ -191,9 +191,6 @@ class Workbook:
                     'sheets/formulas.lark', start='formula')
                 tree = parser.parse(contents)
                 value = eval.visit(tree)
-                curr_cell.value = value
-                curr_cell.type = cell.CellType.FORMULA
-                curr_cell.relies_on = eval.relies_on
                 curr_cell.set_fields(
                     value=value, type=cell.CellType.FORMULA, relies_on=eval.relies_on)
             elif contents[0] == "'":
