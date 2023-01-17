@@ -184,8 +184,16 @@ class Workbook:
             curr_cell.contents = contents
             # Update cell contents and value
             if contents[0] == "=":
-                value = lark_module.evaluate_expr(
-                    self, curr_cell, sheet, contents)
+                # value = lark_module.evaluate_expr(
+                #     self, curr_cell, sheet, contents)
+                eval = FormulaEvaluator(self, sheet, curr_cell)
+                parser = lark.Lark.open(
+                    'sheets/formulas.lark', start='formula')
+                tree = parser.parse(contents)
+                value = eval.visit(tree)
+                curr_cell.value = value
+                curr_cell.type = cell.CellType.FORMULA
+                curr_cell.relies_on = eval.relies_on
                 curr_cell.set_fields(
                     value=value, type=cell.CellType.FORMULA, relies_on=eval.relies_on)
             elif contents[0] == "'":
