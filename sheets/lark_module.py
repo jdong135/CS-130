@@ -2,16 +2,17 @@ import lark
 import decimal
 from lark.visitors import visit_children_decor
 from sheets import cell_error
-from sheets import workbook
 
 
-# class CellRefFinder(lark.Visitor):
-#     def __init__(self, current_sheet):
-#         self.current_sheet = current_sheet
-#         self.refs = []
+class CellRefFinder(lark.Visitor):
+    def __init__(self, current_sheet):
+        self.current_sheet = current_sheet
+        self.refs = set()
 
-#     def cell(self, tree):
-#         self.refs.append(...)
+    def cell(self, tree):
+        for t in tree.children:
+            print(t)
+        self.refs.add(tree.children)
 
 
 # parser = lark.Lark.open('sheets/formulas.lark', start='formula')
@@ -61,13 +62,19 @@ class FormulaEvaluator(lark.visitors.Interpreter):
 
     @visit_children_decor
     def cell(self, values):
+        # =[sheet]![col][row]
         if len(values) > 1:
             sheet_name = values[0].value.lower()
             sheet = self.wb.spreadsheets[sheet_name]
-            location = values[1]
+            location = values[1].value
+            if location not in sheet.cells:
+                return None
             return sheet.cells[location].value
+        # =[col][row]
         else:
-            return self.sheet.cells[values[0].value]
+            if values[0].value not in self.sheet.cells:
+                return None
+            return self.sheet.cells[values[0].value].value
 
     # def _sheetname(self, tree):
     #     return str(tree.children[0])
