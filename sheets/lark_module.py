@@ -2,14 +2,16 @@ import lark
 import decimal
 from lark.visitors import visit_children_decor
 from sheets import cell_error
+from sheets import cell
 
 
 class FormulaEvaluator(lark.visitors.Interpreter):
-    def __init__(self, workbook, sheet):
+    def __init__(self, workbook, sheet, calling_cell):
         self.error = None
         self.sub_evaluator = None
         self.wb = workbook
         self.sheet = sheet
+        self.calling_cell = calling_cell
 
     @visit_children_decor
     def add_expr(self, values):
@@ -56,17 +58,25 @@ class FormulaEvaluator(lark.visitors.Interpreter):
                 sheet = self.wb.spreadsheets[sheet_name]
                 location = values[1].value
                 if location not in sheet.cells:
-                    return None
+                    # FIX THIS
+                    new_empty_cell = cell.Cell(sheet, location, "", 0, cell.CellType.EMPTY)
+                    sheet.cells[location] = new_empty_cell
+                    new_empty_cell.add(self.calling_cell)
+                    return 0 # FIX THIS
                 return sheet.cells[location].value
             # =[col][row]
             else:
                 if values[0].value not in self.sheet.cells:
-                    return None
+                    # FIX THIS
+                    new_empty_cell = cell.Cell(self.sheet, location, "", 0, cell.CellType.EMPTY)
+                    sheet.cells[location] = new_empty_cell
+                    new_empty_cell.add(self.calling_cell)
+                    return 0 # FIX THIS
                 return self.sheet.cells[values[0].value].value
 
     def parens(self, tree):
         if not self.error:
-            self.sub_evaluator = FormulaEvaluator(self.wb, self.sheet)
+            self.sub_evaluator = FormulaEvaluator(self.wb, self.sheet, self.calling_cell)
             return self.sub_evaluator.visit(tree.children[0])
 
     def number(self, tree):
