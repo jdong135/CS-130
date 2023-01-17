@@ -170,7 +170,7 @@ class Workbook:
             curr_cell = sheet.cells[location]
             cell.contents = contents
             if contents[0] == "=":
-                eval = FormulaEvaluator(self, sheet)
+                eval = FormulaEvaluator(self, sheet, curr_cell)
                 parser = lark.Lark.open(
                     'sheets/formulas.lark', start='formula')
                 tree = parser.parse(contents)
@@ -195,14 +195,16 @@ class Workbook:
                 return
             else:
                 if contents[0] == "=":
+                    curr_cell = cell.Cell(
+                        sheet_name, location, contents, None, cell.CellType.FORMULA)
                     eval = FormulaEvaluator(
-                        self, self.spreadsheets[sheet_name.lower()])
+                        self, self.spreadsheets[sheet_name.lower()], curr_cell)
                     parser = lark.Lark.open(
                         'sheets/formulas.lark', start='formula')
                     tree = parser.parse(contents)
                     value = eval.visit(tree)
-                    curr_cell = cell.Cell(
-                        sheet_name, location, contents, value, cell.CellType.FORMULA)
+                    # FIX THIS
+                    curr_cell.value = value
                     sheet = self.spreadsheets[sheet_name.lower()]
                     sheet.cells[location] = curr_cell
                 elif contents[0] == "'":
