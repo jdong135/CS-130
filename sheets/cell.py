@@ -28,7 +28,7 @@ class Cell:
         self.contents = contents
         self.value = value
         self.type = type
-        self.neighbors = set()
+        self.neighbors = []
 
     def set_value(self, value):
         """_summary_

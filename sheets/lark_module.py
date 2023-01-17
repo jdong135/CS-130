@@ -59,25 +59,30 @@ class FormulaEvaluator(lark.visitors.Interpreter):
                 location = values[1].value
                 if location not in sheet.cells:
                     # FIX THIS
-                    new_empty_cell = cell.Cell(sheet, location, "", 0, cell.CellType.EMPTY)
+                    new_empty_cell = cell.Cell(
+                        sheet, location, "", "", cell.CellType.EMPTY)
                     sheet.cells[location] = new_empty_cell
-                    new_empty_cell.neighbors.add(self.calling_cell)
-                    return 0 # FIX THIS
+                    if self.calling_cell not in new_empty_cell.neighbors:
+                        new_empty_cell.neighbors.append(self.calling_cell)
+                    return ""  # FIX THIS
                 return sheet.cells[location].value
             # =[col][row]
             else:
                 if values[0].value not in self.sheet.cells:
                     # FIX THIS
                     location = values[0].value
-                    new_empty_cell = cell.Cell(self.sheet, location, "", 0, cell.CellType.EMPTY)
+                    new_empty_cell = cell.Cell(
+                        self.sheet, location, "", "", cell.CellType.EMPTY)
                     self.sheet.cells[location] = new_empty_cell
-                    new_empty_cell.neighbors.add(self.calling_cell)
-                    return 0 # FIX THIS
+                    if self.calling_cell not in new_empty_cell.neighbors:
+                        new_empty_cell.neighbors.append(self.calling_cell)
+                    return ""  # FIX THIS
                 return self.sheet.cells[values[0].value].value
 
     def parens(self, tree):
         if not self.error:
-            self.sub_evaluator = FormulaEvaluator(self.wb, self.sheet, self.calling_cell)
+            self.sub_evaluator = FormulaEvaluator(
+                self.wb, self.sheet, self.calling_cell)
             return self.sub_evaluator.visit(tree.children[0])
 
     def number(self, tree):

@@ -86,7 +86,6 @@ class Workbook:
 
     def update_values(self, cell):
         contents = cell.contents
-        
 
     def del_sheet(self, sheet_name: str) -> None:
         # Delete the spreadsheet with the specified name.
@@ -151,7 +150,7 @@ class Workbook:
                 else:
                     # UPDATE DEPENDENTS, FIX THE VALUE LATER CURRENTLY 0
                     cell_to_delete.contents = ""
-                    cell_to_delete.value = 0
+                    cell_to_delete.value = ""
                     cell_to_delete.type = cell.CellType.EMPTY
                     # UPDATE DEPENDENTS
                 sheet_col, sheet_row = sheet.extent_col, sheet.extent_row
@@ -159,7 +158,7 @@ class Workbook:
                 max_col, max_row = 0, 0
                 if col == sheet_col or row == sheet_row:
                     for c in sheet.cells:
-                        if c.type != cell.CellType.EMPTY:
+                        if sheet.cells[c].type != cell.CellType.EMPTY:
                             c_col, c_row = sheet.str_to_tuple(
                                 sheet.cells[c].location)
                             max_col = max(max_col, c_col)
