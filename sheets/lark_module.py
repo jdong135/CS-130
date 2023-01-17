@@ -5,7 +5,7 @@ from sheets import cell_error
 
 
 class FormulaEvaluator(lark.visitors.Interpreter):
-    def __init__(self, workbook, calling_cell, sheet=None):
+    def __init__(self, workbook, calling_cell, sheet):
         self.error = None
         self.sub_evaluator = None
         self.wb = workbook
