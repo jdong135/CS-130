@@ -188,7 +188,6 @@ class Workbook:
                     sheet_name, location, contents, value, cell.CellType.FORMULA)
                 sheet = self.spreadsheets[sheet_name.lower()]
                 sheet.cells[location] = curr_cell
-                
             elif contents[0] == "'":
                 value = contents[1:]
                 curr_cell = cell.Cell(
