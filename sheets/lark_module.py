@@ -4,23 +4,6 @@ from lark.visitors import visit_children_decor
 from sheets import cell_error
 
 
-class CellRefFinder(lark.Visitor):
-    def __init__(self, current_sheet):
-        self.current_sheet = current_sheet
-        self.refs = set()
-
-    def cell(self, tree):
-        for t in tree.children:
-            print(t)
-        self.refs.add(tree.children)
-
-
-# parser = lark.Lark.open('sheets/formulas.lark', start='formula')
-# tree = parser.parse('=A1 + 3 * Sheet2!A2')
-# v = CellRefFinder()
-# v.visit(tree)
-
-
 class FormulaEvaluator(lark.visitors.Interpreter):
     def __init__(self, workbook, sheet=None):
         self.error = None
@@ -76,9 +59,6 @@ class FormulaEvaluator(lark.visitors.Interpreter):
                 return None
             return self.sheet.cells[values[0].value].value
 
-    # def _sheetname(self, tree):
-    #     return str(tree.children[0])
-
     def parens(self, tree):
         self.sub_evaluator = FormulaEvaluator(self.wb)
         return self.sub_evaluator.visit(tree.children[0])
@@ -91,10 +71,3 @@ class FormulaEvaluator(lark.visitors.Interpreter):
 
     def error(self, tree):
         return self.error
-
-
-# eval = FormulaEvaluator()
-# parser = lark.Lark.open('sheets/formulas.lark', start='formula')
-# tree = parser.parse("=Sheets1!A1")
-# value = eval.visit(tree)
-# print(f"value is {str(value)} with type {type(value)}")
