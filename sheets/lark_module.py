@@ -48,7 +48,7 @@ class FormulaEvaluator(lark.visitors.Interpreter):
     @visit_children_decor
     def concat_expr(self, values):
         if not self.error:
-            return values[0] + values[1]
+            return str(values[0]) + str(values[1])
 
     @visit_children_decor
     def cell(self, values):

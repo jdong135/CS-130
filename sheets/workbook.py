@@ -95,6 +95,25 @@ class Workbook:
         value = eval.visit(tree)
         cell.value = value
 
+    def update_extent(self, sheet, location, deletingCell: bool):
+        if deletingCell:
+            sheet_col, sheet_row = sheet.extent_col, sheet.extent_row
+            col, row = sheet.str_to_tuple(location)
+            max_col, max_row = 0, 0
+            if col == sheet_col or row == sheet_row:
+                for c in sheet.cells:
+                    if sheet.cells[c].type != cell.CellType.EMPTY:
+                        c_col, c_row = sheet.str_to_tuple(
+                            sheet.cells[c].location)
+                        max_col = max(max_col, c_col)
+                        max_row = max(max_row, c_row)
+                sheet.extent_col = max_col
+                sheet.extent_row = max_row
+        else:
+            curr_col, curr_row = sheet.str_to_tuple(location)
+            sheet.extent_col = max(curr_col, sheet.extent_col)
+            sheet.extent_row = max(curr_row, sheet.extent_row)
+
     def del_sheet(self, sheet_name: str) -> None:
         # Delete the spreadsheet with the specified name.
         #
@@ -163,22 +182,10 @@ class Workbook:
                     curr_cell.contents = ""
                     curr_cell.value = ""
                     curr_cell.type = cell.CellType.EMPTY
-                    sorted_components = topo_sort(curr_cell)
+                    sorted_components = topo_sort(curr_cell)[1:]
                     for node in sorted_components:
                         self.update_values(node)
-                # extent stuff
-                sheet_col, sheet_row = sheet.extent_col, sheet.extent_row
-                col, row = sheet.str_to_tuple(location)
-                max_col, max_row = 0, 0
-                if col == sheet_col or row == sheet_row:
-                    for c in sheet.cells:
-                        if sheet.cells[c].type != cell.CellType.EMPTY:
-                            c_col, c_row = sheet.str_to_tuple(
-                                sheet.cells[c].location)
-                            max_col = max(max_col, c_col)
-                            max_row = max(max_row, c_row)
-                    sheet.extent_col = max_col
-                    sheet.extent_row = max_row
+                self.update_extent(sheet, location, True)
                 return
             curr_cell.contents = contents
             if contents[0] == "=":
@@ -254,9 +261,7 @@ class Workbook:
                         sheet = self.spreadsheets[sheet_name.lower()]
                         sheet.cells[location] = curr_cell
                 # update extent
-                curr_col, curr_row = sheet.str_to_tuple(location)
-                sheet.extent_col = max(curr_col, sheet.extent_col)
-                sheet.extent_row = max(curr_row, sheet.extent_row)
+                self.update_extent(sheet, location, False)
 
     def get_cell_contents(self, sheet_name: str, location: str) -> Optional[str]:
         # Return the contents of the specified cell on the specified sheet.
