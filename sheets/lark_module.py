@@ -5,11 +5,12 @@ from sheets import cell_error
 
 
 class FormulaEvaluator(lark.visitors.Interpreter):
-    def __init__(self, workbook, sheet):
+    def __init__(self, workbook, calling_cell, sheet=None):
         self.error = None
         self.sub_evaluator = None
         self.wb = workbook
         self.sheet = sheet
+        self.calling_cell = calling_cell
 
     @visit_children_decor
     def add_expr(self, values):
