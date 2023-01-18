@@ -154,7 +154,7 @@ class Workbook_Set_Cell_Contents(unittest.TestCase):
         wb.set_cell_contents('sheet1', 'A2', "2.5")
         wb.set_cell_contents('sheet1', 'A3', "=A1 * A2")
         # # We want to make sure it's not stored as '5.0'
-        self.assertEqual(wb.r('sheet1', 'A3'), decimal.Decimal(5))
+        self.assertEqual(wb.get_cell_value('sheet1', 'A3'), decimal.Decimal(5))
 
     def test_decimal3(self):
         wb = Workbook()
