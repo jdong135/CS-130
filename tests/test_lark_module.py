@@ -5,7 +5,6 @@ Test for implementation of Lark Module formula Evaluator
 import unittest
 import os
 import sys
-import lark
 
 PROJECT_ROOT = os.path.abspath(os.path.join(
     os.path.dirname(__file__),
@@ -176,6 +175,12 @@ class Lark_Module_Basic(unittest.TestCase):
             wb, None, "sheet1", "=Sheet1!ZZZZZ9999")
         self.assertEqual(eval.error.get_detail(), "invalid location")
 
+    def test_parse_error1(self):
+        wb = Workbook()
+        wb.new_sheet()
+        eval, _ = lark_module.evaluate_expr(
+            wb, None, "sheet1", "=e71s18d")
+        self.assertEqual(eval.error.get_detail(), "parse error")
 
 if __name__ == "__main__":
     unittest.main()

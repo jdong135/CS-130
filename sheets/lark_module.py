@@ -116,7 +116,7 @@ class FormulaEvaluator(lark.visitors.Interpreter):
                 if location not in sheet.cells:
                     # FIX THIS
                     new_empty_cell = cell.Cell(
-                        sheet, location, None, None, cell.CellType.EMPTY)
+                        sheet.name, location, None, None, cell.CellType.EMPTY)
                     sheet.cells[location] = new_empty_cell
                     if self.calling_cell not in new_empty_cell.dependents:
                         new_empty_cell.dependents.add(self.calling_cell)
@@ -136,7 +136,7 @@ class FormulaEvaluator(lark.visitors.Interpreter):
                 if values[0].value not in self.sheet.cells:
                     # FIX THIS
                     new_empty_cell = cell.Cell(
-                        self.sheet, location, None, None, cell.CellType.EMPTY)
+                        self.sheet.name, location, None, None, cell.CellType.EMPTY)
                     self.sheet.cells[location] = new_empty_cell
                     if self.calling_cell not in new_empty_cell.dependents:
                         new_empty_cell.dependents.add(self.calling_cell)
@@ -171,6 +171,11 @@ def evaluate_expr(workbook, curr_cell, sheetname, contents):
     eval = FormulaEvaluator(
         workbook, workbook.spreadsheets[sheetname.lower()], curr_cell)
     parser = lark.Lark.open('sheets/formulas.lark', start='formula')
-    tree = parser.parse(contents)
-    value = eval.visit(tree)
-    return eval, value
+    try:
+        tree = parser.parse(contents)
+        value = eval.visit(tree)
+        return eval, value
+    except:
+        eval.error = cell_error.CellError(
+            cell_error.CellErrorType.PARSE_ERROR, "parse error")
+        return eval, eval.error
