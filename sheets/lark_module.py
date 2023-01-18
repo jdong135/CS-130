@@ -14,9 +14,26 @@ class FormulaEvaluator(lark.visitors.Interpreter):
         self.calling_cell = calling_cell
         self.relies_on = set()
 
+    def check_string_arithmetic(self, value):
+        if type(value) == str:
+            if self.wb.is_number(value):
+                value = decimal.Decimal(value)
+                return value
+            self.error = cell_error.CellError(
+                cell_error.CellErrorType.TYPE_ERROR,
+                "string arithmetic")
+
     @visit_children_decor
     def add_expr(self, values):
         if not self.error:
+            v0 = self.check_string_arithmetic(values[0])
+            v2 =  self.check_string_arithmetic(values[2])
+            if self.error:
+                return self.error
+            if v0:
+                values[0] = v0
+            if v2:
+                values[2] = v2
             if values[1] == '+':
                 return values[0] + values[2]
             elif values[1] == '-':
@@ -27,6 +44,14 @@ class FormulaEvaluator(lark.visitors.Interpreter):
     @visit_children_decor
     def mul_expr(self, values):
         if not self.error:
+            v0 = self.check_string_arithmetic(values[0])
+            v2 = self.check_string_arithmetic(values[2])
+            if self.error:
+                return self.error
+            if v0:
+                values[0] = v0
+            if v2:
+                values[2] = v2
             if values[1] == '*':
                 return values[0] * values[2]
             elif values[1] == '/':

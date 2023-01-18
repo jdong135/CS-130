@@ -105,6 +105,54 @@ class Lark_Module_Basic(unittest.TestCase):
         eval, _ = lark_module.evaluate_expr(wb, None, "sheet1", "=A1 / A2")
         self.assertEqual(eval.error.get_detail(), "divide by zero")
 
+    def test_string_arithmetic1(self):
+        wb = Workbook()
+        wb.new_sheet()
+        wb.set_cell_contents("sheet1", "A1", "'1")
+        wb.set_cell_contents("sheet1", "A2", "'hello world")
+        eval, _ = lark_module.evaluate_expr(wb, None, "sheet1", "=A1 + A2")
+        self.assertEqual(eval.error.get_detail(), "string arithmetic")
+
+    def test_string_arithmetic2(self):
+        wb = Workbook()
+        wb.new_sheet()
+        wb.set_cell_contents("sheet1", "A1", "'goodbye world")
+        wb.set_cell_contents("sheet1", "A2", "'hello world")
+        eval, _ = lark_module.evaluate_expr(wb, None, "sheet1", "=A1 + A2")
+        self.assertEqual(eval.error.get_detail(), "string arithmetic")
+
+    def test_string_arithmetic3(self):
+        wb = Workbook()
+        wb.new_sheet()
+        wb.set_cell_contents("sheet1", "A1", "'10")
+        wb.set_cell_contents("sheet1", "A2", "'2")
+        _, value = lark_module.evaluate_expr(wb, None, "sheet1", "=A1 + A2")
+        self.assertEqual(value, 12)
+       
+    def test_string_arithmetic4(self):
+        wb = Workbook()
+        wb.new_sheet()
+        wb.set_cell_contents("sheet1", "A1", "'1")
+        wb.set_cell_contents("sheet1", "A2", "'hello world")
+        eval, _ = lark_module.evaluate_expr(wb, None, "sheet1", "=A1 * A2")
+        self.assertEqual(eval.error.get_detail(), "string arithmetic")
+
+    def test_string_arithmetic5(self):
+        wb = Workbook()
+        wb.new_sheet()
+        wb.set_cell_contents("sheet1", "A1", "'goodbye world")
+        wb.set_cell_contents("sheet1", "A2", "'hello world")
+        eval, _ = lark_module.evaluate_expr(wb, None, "sheet1", "=A1 * A2")
+        self.assertEqual(eval.error.get_detail(), "string arithmetic")
+
+    def test_string_arithmetic6(self):
+        wb = Workbook()
+        wb.new_sheet()
+        wb.set_cell_contents("sheet1", "A1", "'10")
+        wb.set_cell_contents("sheet1", "A2", "'2")
+        _, value = lark_module.evaluate_expr(wb, None, "sheet1", "=A1 * A2")
+        self.assertEqual(value, 20)
+
 
 if __name__ == "__main__":
     unittest.main()
