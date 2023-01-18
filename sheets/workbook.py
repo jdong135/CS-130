@@ -192,16 +192,17 @@ class Workbook:
                 return
             # Some cell depends on this cell: delete with traversal
             elif not contents or len(contents) == 0:
-                curr_cell.set_fields(contents=None, value=None,
+                curr_cell.set_fields(contents=None, value=None, relies_on=set(),
                                      type=cell.CellType.EMPTY)
                 circular, sorted_components = topo_sort(curr_cell)
                 if not circular:
                     for node in sorted_components[1:]:
                         self.update_values(node)
                 else:
-                    for node in sorted_components:
-                        node.value = cell_error.CellError(
-                            cell_error.CellErrorType.CIRCULAR_REFERENCE, 'cycle detected')
+                    for node in curr_cell.dependents:
+                        node.relies_on.remove(curr_cell)
+                    for node in sorted_components[1:]:
+                        self.update_values(node)
                 self.update_extent(sheet, location, True)
                 return
             curr_cell.contents = contents

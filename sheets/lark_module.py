@@ -57,9 +57,9 @@ class FormulaEvaluator(lark.visitors.Interpreter):
             if v2:
                 values[2] = v2
             if not values[0]:
-                values[0] = 0
+                values[0] = decimal.Decimal(0)
             if not values[2]:
-                values[2] = 0
+                values[2] = decimal.Decimal(0)
             if values[1] == '*':
                 res = values[0] * values[2]
                 return abs(res) if res == 0 else res
@@ -88,9 +88,9 @@ class FormulaEvaluator(lark.visitors.Interpreter):
                 self.wb, self.sheet, self.calling_cell)
             self.relies_on.update(self.sub_evaluator.relies_on)
             if not values[1]:
-                return str(values[0])
+                return ""
             if not values[0]:
-                return str(values[1])
+                return ""
             return str(values[0]) + str(values[1])
 
     @visit_children_decor
@@ -121,7 +121,7 @@ class FormulaEvaluator(lark.visitors.Interpreter):
                     if self.calling_cell not in new_empty_cell.dependents:
                         new_empty_cell.dependents.add(self.calling_cell)
                     self.relies_on.add(new_empty_cell)
-                    return decimal.Decimal(0)  # FIX THIS
+                    return None  # FIX THIS
                 if self.calling_cell not in sheet.cells[location].dependents:
                     sheet.cells[location].dependents.add(self.calling_cell)
                 self.relies_on.add(sheet.cells[location])
@@ -141,7 +141,7 @@ class FormulaEvaluator(lark.visitors.Interpreter):
                     if self.calling_cell not in new_empty_cell.dependents:
                         new_empty_cell.dependents.add(self.calling_cell)
                     self.relies_on.add(new_empty_cell)
-                    return decimal.Decimal(0)  # FIX THIS
+                    return None  # FIX THIS
                 if self.calling_cell not in self.sheet.cells[location].dependents:
                     self.sheet.cells[location].dependents.add(
                         self.calling_cell)
