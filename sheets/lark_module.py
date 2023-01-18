@@ -19,9 +19,10 @@ class FormulaEvaluator(lark.visitors.Interpreter):
             if self.wb.is_number(value):
                 value = decimal.Decimal(value)
                 return value
-            self.error = cell_error.CellError(
-                cell_error.CellErrorType.TYPE_ERROR,
-                "string arithmetic")
+            if len(value) > 0 or value:
+                self.error = cell_error.CellError(
+                    cell_error.CellErrorType.TYPE_ERROR,
+                    "string arithmetic")
 
     @visit_children_decor
     def add_expr(self, values):
