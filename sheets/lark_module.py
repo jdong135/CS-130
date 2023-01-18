@@ -94,6 +94,10 @@ class FormulaEvaluator(lark.visitors.Interpreter):
                     self.error = cell_error.CellError(
                         cell_error.CellErrorType.BAD_REFERENCE, 'invalid location')
                     return self.error
+                if self.calling_cell.sheet.lower() == sheet_name and self.calling_cell.location == location:
+                    self.error = cell_error.CellError(
+                        cell_error.CellErrorType.CIRCULAR_REFERENCE, 'cycle detected')
+                    return self.error
                 if location not in sheet.cells:
                     # FIX THIS
                     new_empty_cell = cell.Cell(
@@ -110,6 +114,10 @@ class FormulaEvaluator(lark.visitors.Interpreter):
             # =[col][row]
             else:
                 location = values[0].value
+                if self.calling_cell.location == location:
+                    self.error = cell_error.CellError(
+                        cell_error.CellErrorType.CIRCULAR_REFERENCE, 'cycle detected')
+                    return self.error
                 if values[0].value not in self.sheet.cells:
                     # FIX THIS
 
