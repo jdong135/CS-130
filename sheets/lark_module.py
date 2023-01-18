@@ -12,7 +12,7 @@ class FormulaEvaluator(lark.visitors.Interpreter):
         self.wb = workbook
         self.sheet = sheet
         self.calling_cell = calling_cell
-        self.relies_on = set()
+        self.relies_on = []
 
     @visit_children_decor
     def add_expr(self, values):
@@ -48,7 +48,7 @@ class FormulaEvaluator(lark.visitors.Interpreter):
     @visit_children_decor
     def concat_expr(self, values):
         if not self.error:
-            return str(values[0]) + str(values[1])
+            return values[0] + values[1]
 
     @visit_children_decor
     def cell(self, values):
@@ -64,12 +64,12 @@ class FormulaEvaluator(lark.visitors.Interpreter):
                         sheet, location, "", "", cell.CellType.EMPTY)
                     sheet.cells[location] = new_empty_cell
                     if self.calling_cell not in new_empty_cell.dependents:
-                        new_empty_cell.dependents.add(self.calling_cell)
-                    self.relies_on.add(new_empty_cell)
+                        new_empty_cell.dependents.append(self.calling_cell)
+                    self.relies_on.append(new_empty_cell)
                     return ""  # FIX THIS
                 if self.calling_cell not in sheet.cells[location].dependents:
-                    sheet.cells[location].dependents.add(self.calling_cell)
-                self.relies_on.add(sheet.cells[location])
+                    sheet.cells[location].dependents.append(self.calling_cell)
+                self.relies_on.append(sheet.cells[location])
                 return sheet.cells[location].value
             # =[col][row]
             else:
@@ -81,20 +81,20 @@ class FormulaEvaluator(lark.visitors.Interpreter):
                         self.sheet, location, "", "", cell.CellType.EMPTY)
                     self.sheet.cells[location] = new_empty_cell
                     if self.calling_cell not in new_empty_cell.dependents:
-                        new_empty_cell.dependents.add(self.calling_cell)
-                    self.relies_on.add(new_empty_cell)
+                        new_empty_cell.dependents.append(self.calling_cell)
+                    self.relies_on.append(new_empty_cell)
                     return ""  # FIX THIS
                 if self.calling_cell not in self.sheet.cells[location].dependents:
-                    self.sheet.cells[location].dependents.add(
+                    self.sheet.cells[location].dependents.append(
                         self.calling_cell)
-                self.relies_on.add(self.sheet.cells[location])
+                self.relies_on.append(self.sheet.cells[location])
                 return self.sheet.cells[values[0].value].value
 
     def parens(self, tree):
         if not self.error:
             self.sub_evaluator = FormulaEvaluator(
                 self.wb, self.sheet, self.calling_cell)
-            self.relies_on.update(self.sub_evaluator.relies_on)
+            self.relies_on.append(self.sub_evaluator.relies_on)
             return self.sub_evaluator.visit(tree.children[0])
 
     def number(self, tree):
@@ -107,12 +107,3 @@ class FormulaEvaluator(lark.visitors.Interpreter):
 
     def error(self, tree):
         return self.error
-
-
-def evaluate_expr(workbook, curr_cell, sheetname, contents):
-    eval = FormulaEvaluator(
-        workbook, workbook.spreadsheets[sheetname.lower()], curr_cell)
-    parser = lark.Lark.open('sheets/formulas.lark', start='formula')
-    tree = parser.parse(contents)
-    value = eval.visit(tree)
-    return eval, value
