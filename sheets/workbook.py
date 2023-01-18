@@ -244,11 +244,11 @@ class Workbook:
             if contents[0] == "=":
                 curr_cell = cell.Cell(
                     sheet_name, location, contents, None, cell.CellType.FORMULA)
-                _, value = lark_module.evaluate_expr(
+                eval, value = lark_module.evaluate_expr(
                     self, curr_cell, sheet_name, contents)
                 # FIX THIS
                 value = self.strip_evaluation(value)
-                curr_cell.set_fields(value=value)
+                curr_cell.set_fields(value=value, relies_on=eval.relies_on)
                 sheet = self.spreadsheets[sheet_name.lower()]
                 sheet.cells[location] = curr_cell
             elif contents[0] == "'":
@@ -270,8 +270,6 @@ class Workbook:
                     sheet_name, location, contents, value, cell.CellType.LITERAL_STRING)
                 sheet = self.spreadsheets[sheet_name.lower()]
                 sheet.cells[location] = curr_cell
-            # update extent
-
             self.update_extent(sheet, location, False)
 
     def get_cell_contents(self, sheet_name: str, location: str) -> Optional[str]:

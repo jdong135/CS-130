@@ -23,6 +23,8 @@ class FormulaEvaluator(lark.visitors.Interpreter):
                 self.error = cell_error.CellError(
                     cell_error.CellErrorType.TYPE_ERROR,
                     "string arithmetic")
+        else:
+            return None
 
     @visit_children_decor
     def add_expr(self, values):
@@ -126,6 +128,8 @@ class FormulaEvaluator(lark.visitors.Interpreter):
                 if self.calling_cell not in sheet.cells[location].dependents:
                     sheet.cells[location].dependents.add(self.calling_cell)
                 self.relies_on.add(sheet.cells[location])
+                if not sheet.cells[location].value:
+                    return decimal.Decimal(0)
                 return sheet.cells[location].value
             # =[col][row]
             else:
@@ -147,6 +151,8 @@ class FormulaEvaluator(lark.visitors.Interpreter):
                     self.sheet.cells[location].dependents.add(
                         self.calling_cell)
                 self.relies_on.add(self.sheet.cells[location])
+                if not self.sheet.cells[location].value:
+                    return decimal.Decimal(0)
                 return self.sheet.cells[values[0].value].value
 
     def parens(self, tree):

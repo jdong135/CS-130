@@ -182,5 +182,16 @@ class Lark_Module_Basic(unittest.TestCase):
             wb, None, "sheet1", "=e71s18d")
         self.assertEqual(eval.error.get_detail(), "parse error")
 
+    def test_initialized_empty_cell_ref(self):
+        wb = Workbook()
+        wb.new_sheet()
+        wb.set_cell_contents("sheet1", 'A1', "=B1 + C1")
+
+        wb.set_cell_contents("sheet1", "B1", "=C1")
+        eval, value = lark_module.evaluate_expr(wb, wb.get_cell(
+            "sheet1", "A1"), "sheet1", wb.get_cell_contents("sheet1", "B1"))
+        self.assertEqual(value, 0)
+
+
 if __name__ == "__main__":
     unittest.main()
