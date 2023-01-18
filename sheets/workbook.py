@@ -134,7 +134,14 @@ class Workbook:
         # case does not have to.
         #
         # If the specified sheet name is not found, a KeyError is raised.
-        pass
+        if sheet_name.lower() not in self.lower_names:
+            raise KeyError("Specified sheet name not found")
+        sheet = self.spreadsheets[sheet_name.lower()]
+        for loc in sheet.cells:
+            c = sheet.cells[loc]
+            self.set_cell_contents(self, sheet_name, loc, None)
+        del Workbook.spreadsheets[sheet_name]
+
 
     def get_sheet_extent(self, sheet_name: str) -> Tuple[int, int]:
         # Return a tuple (num-cols, num-rows) indicating the current extent of
