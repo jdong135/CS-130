@@ -62,9 +62,7 @@ class FormulaEvaluator(lark.visitors.Interpreter):
                 values[2] = 0
             if values[1] == '*':
                 res = values[0] * values[2]
-                if res == 0:
-                    return abs(res)
-                return res
+                return abs(res) if res == 0 else res
             elif values[1] == '/':
                 if values[2] == 0:
                     self.error = cell_error.CellError(
