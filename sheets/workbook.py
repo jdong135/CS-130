@@ -3,6 +3,7 @@ from sheets.lark_module import FormulaEvaluator
 from . import Sheet
 from sheets import cell
 from sheets import topo_sort
+from sheets import cell_error
 import lark
 import decimal
 from sheets import lark_module
@@ -193,9 +194,14 @@ class Workbook:
             elif not contents or len(contents) == 0:
                 curr_cell.set_fields(contents="", value="",
                                      type=cell.CellType.EMPTY)
-                sorted_components = topo_sort(curr_cell)[1:]
-                for node in sorted_components:
-                    self.update_values(node)
+                circular, sorted_components = topo_sort(curr_cell)
+                if not circular:
+                    for node in sorted_components[1:]:
+                        self.update_values(node)
+                else:
+                    for node in sorted_components:
+                        node.value = cell_error.CellError(
+                            cell_error.CellErrorType.CIRCULAR_REFERENCE, 'cycle detected')
                 self.update_extent(sheet, location, True)
                 return
             curr_cell.contents = contents
@@ -221,9 +227,15 @@ class Workbook:
             for c in list_diff:
                 c.dependents.remove(curr_cell)
             # update dependents
-            sorted_components = topo_sort(curr_cell)[1:]
-            for node in sorted_components:
-                self.update_values(node)
+            circular, sorted_components = topo_sort(curr_cell)
+            if not circular:
+                for node in sorted_components[1:]:
+                    self.update_values(node)
+            else:
+                for node in sorted_components:
+                    node.value = cell_error.CellError(
+                        cell_error.CellErrorType.CIRCULAR_REFERENCE, 'cycle detected')
+
         # cell does not exist: add cell
         else:
             if not contents or len(contents) == 0:

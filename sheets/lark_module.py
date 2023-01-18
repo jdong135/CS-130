@@ -73,6 +73,9 @@ class FormulaEvaluator(lark.visitors.Interpreter):
     @visit_children_decor
     def concat_expr(self, values):
         if not self.error:
+            self.sub_evaluator = FormulaEvaluator(
+                self.wb, self.sheet, self.calling_cell)
+            self.relies_on.update(self.sub_evaluator.relies_on)
             return str(values[0]) + str(values[1])
 
     @visit_children_decor

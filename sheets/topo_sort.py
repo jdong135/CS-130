@@ -13,7 +13,7 @@ def topo_sort(v: Cell) -> list:
 
     result = []
     visited = set()
-
+    circular = False
     while call_stack:
         v, type = call_stack.pop()
         if type == DFSState.ENTER:
@@ -25,8 +25,11 @@ def topo_sort(v: Cell) -> list:
                     call_stack.append((w, DFSState.ENTER))
                 # cycle detection
                 if (w.sheet, w.location) in visited:
-                    return cell_error.CellError(cell_error.CellErrorType.CIRCULAR_REFERENCE, "Cycle Detected In Topo Sort")
+                    circular = True
                     # update implementation when design decision is made
         else:
             result.append(v)
-    return result[::-1]
+    if not circular:
+        return False, result[::-1]
+    else:
+        return True, result[::-1]
