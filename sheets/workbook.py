@@ -110,6 +110,23 @@ class Workbook:
             sheet.extent_col = max(curr_col, sheet.extent_col)
             sheet.extent_row = max(curr_row, sheet.extent_row)
 
+    def is_number(self, string):
+        return string.isnumeric() or (string.replace('.', '', 1).isdigit() and string.count('.') < 2)
+
+    def strip_zeros(self, string):
+        return string.rstrip('0').rstrip('.') if '.' in string else string
+
+    def strip_evaluation(self, eval):
+        # given evaluation from lark, return (contents, value)
+        if type(eval) == str and self.is_number(eval):
+            contents = self.strip_zeros(eval)
+            return (contents, decimal.Decimal(contents))
+        elif type(eval) == decimal.Decimal:
+            contents = self.strip_zeros(str(eval))
+            return (contents, decimal.Decimal(contents))
+        else:
+            return (eval, eval)
+
     def del_sheet(self, sheet_name: str) -> None:
         # Delete the spreadsheet with the specified name.
         #
@@ -186,12 +203,14 @@ class Workbook:
             if contents[0] == "=":
                 eval, value = lark_module.evaluate_expr(
                     self, curr_cell, sheet, contents)
-                curr_cell.set_fields(
-                    value=value, type=cell.CellType.FORMULA, relies_on=eval.relies_on)
+                contents, value = self.strip_evaluation(value)
+                curr_cell.set_fields(contents=contents,
+                                     value=value, type=cell.CellType.FORMULA, relies_on=eval.relies_on)
             elif contents[0] == "'":
                 curr_cell.set_fields(
-                    value=contents[1:], type=cell.CellType.STRING, relies_on=set())
-            elif contents.isnumeric():
+                    value=contents[1:].strip(), type=cell.CellType.STRING, relies_on=set())
+            elif self.is_number(contents):
+                contents = self.strip_zeros(contents)
                 curr_cell.set_fields(value=decimal.Decimal(
                     contents), type=cell.CellType.LITERAL_NUM, relies_on=set())
             else:
@@ -215,16 +234,18 @@ class Workbook:
                 _, value = lark_module.evaluate_expr(
                     self, curr_cell, sheet_name, contents)
                 # FIX THIS
-                curr_cell.value = value
+                contents, value = self.strip_evaluation(value)
+                curr_cell.set_fields(value=value, contents=contents)
                 sheet = self.spreadsheets[sheet_name.lower()]
                 sheet.cells[location] = curr_cell
             elif contents[0] == "'":
-                value = contents[1:]
+                value = contents[1:].strip()
                 curr_cell = cell.Cell(
                     sheet_name, location, contents, value, cell.CellType.STRING)
                 sheet = self.spreadsheets[sheet_name.lower()]
                 sheet.cells[location] = curr_cell
-            elif contents.isnumeric():
+            elif self.is_number(contents):
+                contents = self.strip_zeros(contents)
                 value = decimal.Decimal(contents)
                 curr_cell = cell.Cell(
                     sheet_name, location, contents, value, cell.CellType.LITERAL_NUM)
