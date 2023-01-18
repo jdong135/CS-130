@@ -56,6 +56,10 @@ class FormulaEvaluator(lark.visitors.Interpreter):
             # =[sheet]![col][row]
             if len(values) > 1:
                 sheet_name = values[0].value.lower()
+                if sheet_name not in self.wb.spreadsheets:
+                    self.error = cell_error.CellError(
+                        cell_error.CellErrorType.BAD_REFERENCE, 'divide by zero')
+                    return self.error
                 sheet = self.wb.spreadsheets[sheet_name]
                 location = values[1].value
                 if location not in sheet.cells:

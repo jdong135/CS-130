@@ -137,10 +137,17 @@ class Workbook:
         if sheet_name.lower() not in self.lower_names:
             raise KeyError("Specified sheet name not found")
         sheet = self.spreadsheets[sheet_name.lower()]
+        del self.spreadsheets[sheet_name.lower()]
         for loc in sheet.cells:
             c = sheet.cells[loc]
-            self.set_cell_contents(sheet_name, loc, None)
-        del self.spreadsheets[sheet_name.lower()]
+            past_relies_on = c.relies_on
+            list_diff = past_relies_on - c.relies_on
+            for c in list_diff:
+                c.dependents.remove(c)
+            # update dependents
+            sorted_components = topo_sort(c)[1:]
+            for node in sorted_components:
+                self.update_values(node)
 
     def get_sheet_extent(self, sheet_name: str) -> Tuple[int, int]:
         # Return a tuple (num-cols, num-rows) indicating the current extent of
