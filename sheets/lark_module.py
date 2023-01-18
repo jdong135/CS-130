@@ -19,9 +19,10 @@ class FormulaEvaluator(lark.visitors.Interpreter):
             if self.wb.is_number(value):
                 value = decimal.Decimal(value)
                 return value
-            self.error = cell_error.CellError(
-                cell_error.CellErrorType.TYPE_ERROR,
-                "string arithmetic")
+            if len(value) > 0 or value:
+                self.error = cell_error.CellError(
+                    cell_error.CellErrorType.TYPE_ERROR,
+                    "string arithmetic")
 
     @visit_children_decor
     def add_expr(self, values):
@@ -35,9 +36,9 @@ class FormulaEvaluator(lark.visitors.Interpreter):
             if v2:
                 values[2] = v2
             if not values[0]:
-                values[0] = 0
+                values[0] = decimal.Decimal(0)
             if not values[2]:
-                values[2] = 0
+                values[2] = decimal.Decimal(0)
             if values[1] == '+':
                 return values[0] + values[2]
             elif values[1] == '-':
@@ -88,9 +89,9 @@ class FormulaEvaluator(lark.visitors.Interpreter):
                 self.wb, self.sheet, self.calling_cell)
             self.relies_on.update(self.sub_evaluator.relies_on)
             if not values[1]:
-                return ""
+                values[1] = ""
             if not values[0]:
-                return ""
+                values[0] = ""
             return str(values[0]) + str(values[1])
 
     @visit_children_decor
@@ -121,7 +122,7 @@ class FormulaEvaluator(lark.visitors.Interpreter):
                     if self.calling_cell not in new_empty_cell.dependents:
                         new_empty_cell.dependents.add(self.calling_cell)
                     self.relies_on.add(new_empty_cell)
-                    return None  # FIX THIS
+                    return decimal.Decimal(0)  # FIX THIS
                 if self.calling_cell not in sheet.cells[location].dependents:
                     sheet.cells[location].dependents.add(self.calling_cell)
                 self.relies_on.add(sheet.cells[location])
@@ -141,7 +142,7 @@ class FormulaEvaluator(lark.visitors.Interpreter):
                     if self.calling_cell not in new_empty_cell.dependents:
                         new_empty_cell.dependents.add(self.calling_cell)
                     self.relies_on.add(new_empty_cell)
-                    return None  # FIX THIS
+                    return decimal.Decimal(0)  # FIX THIS
                 if self.calling_cell not in self.sheet.cells[location].dependents:
                     self.sheet.cells[location].dependents.add(
                         self.calling_cell)
