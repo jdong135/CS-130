@@ -27,7 +27,7 @@ class FormulaEvaluator(lark.visitors.Interpreter):
     def add_expr(self, values):
         if not self.error:
             v0 = self.check_string_arithmetic(values[0])
-            v2 =  self.check_string_arithmetic(values[2])
+            v2 = self.check_string_arithmetic(values[2])
             if self.error:
                 return self.error
             if v0:
@@ -81,8 +81,16 @@ class FormulaEvaluator(lark.visitors.Interpreter):
             # =[sheet]![col][row]
             if len(values) > 1:
                 sheet_name = values[0].value.lower()
+                if sheet_name not in self.wb.spreadsheets:
+                    self.error = cell_error.CellError(
+                        cell_error.CellErrorType.BAD_REFERENCE, 'sheet name not found')
+                    return self.error
                 sheet = self.wb.spreadsheets[sheet_name]
                 location = values[1].value
+                if not sheet.check_valid_location(location):
+                    self.error = cell_error.CellError(
+                        cell_error.CellErrorType.BAD_REFERENCE, 'invalid location')
+                    return self.error
                 if location not in sheet.cells:
                     # FIX THIS
                     new_empty_cell = cell.Cell(

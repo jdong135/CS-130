@@ -128,7 +128,7 @@ class Lark_Module_Basic(unittest.TestCase):
         wb.set_cell_contents("sheet1", "A2", "'2")
         _, value = lark_module.evaluate_expr(wb, None, "sheet1", "=A1 + A2")
         self.assertEqual(value, 12)
-       
+
     def test_string_arithmetic4(self):
         wb = Workbook()
         wb.new_sheet()
@@ -152,6 +152,29 @@ class Lark_Module_Basic(unittest.TestCase):
         wb.set_cell_contents("sheet1", "A2", "'2")
         _, value = lark_module.evaluate_expr(wb, None, "sheet1", "=A1 * A2")
         self.assertEqual(value, 20)
+
+    def test_bad_reference1(self):
+        wb = Workbook()
+        wb.new_sheet()
+        wb.set_cell_contents("sheet1", "A1", "'10")
+        eval, _ = lark_module.evaluate_expr(wb, None, "sheet1", "=Sheet2!A1")
+        self.assertEqual(eval.error.get_detail(), "sheet name not found")
+
+    def test_bad_reference2(self):
+        wb = Workbook()
+        wb.new_sheet()
+        wb.set_cell_contents("sheet1", "A1", "'10")
+        eval, _ = lark_module.evaluate_expr(
+            wb, None, "sheet1", "=Sheet1!A10000")
+        self.assertEqual(eval.error.get_detail(), "invalid location")
+
+    def test_bad_reference3(self):
+        wb = Workbook()
+        wb.new_sheet()
+        wb.set_cell_contents("sheet1", "A1", "'10")
+        eval, _ = lark_module.evaluate_expr(
+            wb, None, "sheet1", "=Sheet1!ZZZZZ9999")
+        self.assertEqual(eval.error.get_detail(), "invalid location")
 
 
 if __name__ == "__main__":
