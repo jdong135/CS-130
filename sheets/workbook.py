@@ -202,7 +202,7 @@ class Workbook:
             # Update cell contents and value
             if contents[0] == "=":
                 eval, value = lark_module.evaluate_expr(
-                    self, curr_cell, sheet, contents)
+                    self, curr_cell, sheet.name, contents)
                 value = self.strip_evaluation(value)
                 curr_cell.set_fields(
                     value=value, type=cell.CellType.FORMULA, relies_on=eval.relies_on)
