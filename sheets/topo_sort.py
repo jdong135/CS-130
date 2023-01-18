@@ -9,6 +9,16 @@ class DFSState(enum.Enum):
 
 
 def topo_sort(v: Cell) -> Tuple[bool, list[Cell]]:
+    """
+    Perform a topological sort on all neighbors of the specified starting cell.
+
+    Args:
+        v (Cell): Cell to start the topological sort on.
+
+    Returns:
+        Tuple[bool, list[Cell]]: Boolean indicating if the cell is part of a 
+        cycle and the corresponding ordered list of topologically sorted cells.
+    """
     call_stack = [(v, DFSState.ENTER)]
 
     result = []
