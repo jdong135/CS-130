@@ -115,4 +115,4 @@ def evaluate_expr(workbook, curr_cell, sheetname, contents):
     parser = lark.Lark.open('sheets/formulas.lark', start='formula')
     tree = parser.parse(contents)
     value = eval.visit(tree)
-    return value
+    return eval, value

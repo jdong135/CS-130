@@ -88,7 +88,7 @@ class Workbook:
 
     def update_values(self, cell):
         contents = cell.contents
-        value = lark_module.evaluate_expr(self, cell, cell.sheet, contents)
+        _, value = lark_module.evaluate_expr(self, cell, cell.sheet, contents)
         cell.value = value
 
     def update_extent(self, sheet, location, deletingCell: bool):
@@ -184,13 +184,8 @@ class Workbook:
             curr_cell.contents = contents
             # Update cell contents and value
             if contents[0] == "=":
-                # value = lark_module.evaluate_expr(
-                #     self, curr_cell, sheet, contents)
-                eval = FormulaEvaluator(self, sheet, curr_cell)
-                parser = lark.Lark.open(
-                    'sheets/formulas.lark', start='formula')
-                tree = parser.parse(contents)
-                value = eval.visit(tree)
+                eval, value = lark_module.evaluate_expr(
+                    self, curr_cell, sheet, contents)
                 curr_cell.set_fields(
                     value=value, type=cell.CellType.FORMULA, relies_on=eval.relies_on)
             elif contents[0] == "'":
@@ -217,7 +212,7 @@ class Workbook:
             if contents[0] == "=":
                 curr_cell = cell.Cell(
                     sheet_name, location, contents, None, cell.CellType.FORMULA)
-                value = lark_module.evaluate_expr(
+                _, value = lark_module.evaluate_expr(
                     self, curr_cell, sheet_name, contents)
                 # FIX THIS
                 curr_cell.value = value
