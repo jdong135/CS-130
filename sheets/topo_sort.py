@@ -1,4 +1,5 @@
 import enum
+from typing import *
 from sheets.cell import Cell
 from sheets import cell_error
 
@@ -8,7 +9,7 @@ class DFSState(enum.Enum):
     LEAVE = 2
 
 
-def topo_sort(v: Cell) -> list:
+def topo_sort(v: Cell) -> list[Cell]:
     call_stack = [(v, DFSState.ENTER)]
 
     result = []
