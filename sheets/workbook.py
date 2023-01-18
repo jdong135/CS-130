@@ -192,7 +192,7 @@ class Workbook:
                 return
             # Some cell depends on this cell: delete with traversal
             elif not contents or len(contents) == 0:
-                curr_cell.set_fields(contents="", value="",
+                curr_cell.set_fields(contents=None, value=None,
                                      type=cell.CellType.EMPTY)
                 circular, sorted_components = topo_sort(curr_cell)
                 if not circular:

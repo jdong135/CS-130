@@ -34,6 +34,10 @@ class FormulaEvaluator(lark.visitors.Interpreter):
                 values[0] = v0
             if v2:
                 values[2] = v2
+            if not values[0]:
+                values[0] = 0
+            if not values[2]:
+                values[2] = 0
             if values[1] == '+':
                 return values[0] + values[2]
             elif values[1] == '-':
@@ -52,6 +56,10 @@ class FormulaEvaluator(lark.visitors.Interpreter):
                 values[0] = v0
             if v2:
                 values[2] = v2
+            if not values[0]:
+                values[0] = 0
+            if not values[2]:
+                values[2] = 0
             if values[1] == '*':
                 return values[0] * values[2]
             elif values[1] == '/':
@@ -67,7 +75,9 @@ class FormulaEvaluator(lark.visitors.Interpreter):
     @visit_children_decor
     def unary_op(self, values):
         if not self.error:
-            if values[0] == "-":
+            if values[0] == "-" and not values[1]:
+                return decimal.Decimal(0)
+            elif values[0] == "-":
                 return -1 * values[1]
 
     @visit_children_decor
@@ -76,6 +86,10 @@ class FormulaEvaluator(lark.visitors.Interpreter):
             self.sub_evaluator = FormulaEvaluator(
                 self.wb, self.sheet, self.calling_cell)
             self.relies_on.update(self.sub_evaluator.relies_on)
+            if not values[1]:
+                return str(values[0])
+            if not values[0]:
+                return str(values[1])
             return str(values[0]) + str(values[1])
 
     @visit_children_decor
@@ -101,12 +115,12 @@ class FormulaEvaluator(lark.visitors.Interpreter):
                 if location not in sheet.cells:
                     # FIX THIS
                     new_empty_cell = cell.Cell(
-                        sheet, location, "", "", cell.CellType.EMPTY)
+                        sheet, location, None, None, cell.CellType.EMPTY)
                     sheet.cells[location] = new_empty_cell
                     if self.calling_cell not in new_empty_cell.dependents:
                         new_empty_cell.dependents.add(self.calling_cell)
                     self.relies_on.add(new_empty_cell)
-                    return ""  # FIX THIS
+                    return decimal.Decimal(0)  # FIX THIS
                 if self.calling_cell not in sheet.cells[location].dependents:
                     sheet.cells[location].dependents.add(self.calling_cell)
                 self.relies_on.add(sheet.cells[location])
@@ -120,14 +134,13 @@ class FormulaEvaluator(lark.visitors.Interpreter):
                     return self.error
                 if values[0].value not in self.sheet.cells:
                     # FIX THIS
-
                     new_empty_cell = cell.Cell(
-                        self.sheet, location, "", "", cell.CellType.EMPTY)
+                        self.sheet, location, None, None, cell.CellType.EMPTY)
                     self.sheet.cells[location] = new_empty_cell
                     if self.calling_cell not in new_empty_cell.dependents:
                         new_empty_cell.dependents.add(self.calling_cell)
                     self.relies_on.add(new_empty_cell)
-                    return ""  # FIX THIS
+                    return decimal.Decimal(0)  # FIX THIS
                 if self.calling_cell not in self.sheet.cells[location].dependents:
                     self.sheet.cells[location].dependents.add(
                         self.calling_cell)
