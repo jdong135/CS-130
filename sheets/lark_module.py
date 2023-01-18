@@ -171,6 +171,11 @@ def evaluate_expr(workbook, curr_cell, sheetname, contents):
     eval = FormulaEvaluator(
         workbook, workbook.spreadsheets[sheetname.lower()], curr_cell)
     parser = lark.Lark.open('sheets/formulas.lark', start='formula')
-    tree = parser.parse(contents)
-    value = eval.visit(tree)
-    return eval, value
+    try:
+        tree = parser.parse(contents)
+        value = eval.visit(tree)
+        return eval, value
+    except:
+        eval.error = cell_error.CellError(
+            cell_error.CellErrorType.PARSE_ERROR, "parse error")
+        return eval, eval.error
