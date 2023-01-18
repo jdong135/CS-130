@@ -139,9 +139,8 @@ class Workbook:
         sheet = self.spreadsheets[sheet_name.lower()]
         for loc in sheet.cells:
             c = sheet.cells[loc]
-            self.set_cell_contents(self, sheet_name, loc, None)
-        del Workbook.spreadsheets[sheet_name]
-
+            self.set_cell_contents(sheet_name, loc, None)
+        del self.spreadsheets[sheet_name.lower()]
 
     def get_sheet_extent(self, sheet_name: str) -> Tuple[int, int]:
         # Return a tuple (num-cols, num-rows) indicating the current extent of
