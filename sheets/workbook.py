@@ -117,15 +117,15 @@ class Workbook:
         return string.rstrip('0').rstrip('.') if '.' in string else string
 
     def strip_evaluation(self, eval):
-        # given evaluation from lark, return (contents, value)
+        # given evaluation from lark, return value
         if type(eval) == str and self.is_number(eval):
             contents = self.strip_zeros(eval)
-            return (contents, decimal.Decimal(contents))
+            return decimal.Decimal(contents)
         elif type(eval) == decimal.Decimal:
-            contents = self.strip_zeros(str(eval))
-            return (contents, decimal.Decimal(contents))
+            stripped = self.strip_zeros(str(eval))
+            return decimal.Decimal(stripped)
         else:
-            return (eval, eval)
+            return eval
 
     def del_sheet(self, sheet_name: str) -> None:
         # Delete the spreadsheet with the specified name.
@@ -203,9 +203,9 @@ class Workbook:
             if contents[0] == "=":
                 eval, value = lark_module.evaluate_expr(
                     self, curr_cell, sheet, contents)
-                contents, value = self.strip_evaluation(value)
-                curr_cell.set_fields(contents=contents,
-                                     value=value, type=cell.CellType.FORMULA, relies_on=eval.relies_on)
+                value = self.strip_evaluation(value)
+                curr_cell.set_fields(
+                    value=value, type=cell.CellType.FORMULA, relies_on=eval.relies_on)
             elif contents[0] == "'":
                 curr_cell.set_fields(
                     value=contents[1:].strip(), type=cell.CellType.STRING, relies_on=set())
@@ -234,8 +234,8 @@ class Workbook:
                 _, value = lark_module.evaluate_expr(
                     self, curr_cell, sheet_name, contents)
                 # FIX THIS
-                contents, value = self.strip_evaluation(value)
-                curr_cell.set_fields(value=value, contents=contents)
+                value = self.strip_evaluation(value)
+                curr_cell.set_fields(value=value)
                 sheet = self.spreadsheets[sheet_name.lower()]
                 sheet.cells[location] = curr_cell
             elif contents[0] == "'":
