@@ -6,25 +6,6 @@ from sheets import cell
 from sheets import strip_module
 from typing import Optional
 
-# # importing module
-# import logging
-
-# # Create and configure logger
-# logging.basicConfig(filename="logs/lark_module.log",
-#                     format='%(asctime)s %(message)s',
-#                     filemode='w')
-
-# # Creating an object
-# logger = logging.getLogger()
-
-# # Setting the threshold of logger to DEBUG
-# logger.setLevel(logging.DEBUG)
-
-
-ERROR_MAP = {
-    '#div/0!': cell_error.CellError(cell_error.CellErrorType.DIVIDE_BY_ZERO, "divide by zero"),
-    '#ref!': cell_error.CellError(
-        cell_error.CellErrorType.BAD_REFERENCE, "bad reference")}
 
 
 class FormulaEvaluator(lark.visitors.Interpreter):
@@ -36,12 +17,6 @@ class FormulaEvaluator(lark.visitors.Interpreter):
         self.calling_cell = calling_cell
         self.relies_on = set()
 
-    # def __check_mapping(self, values):
-    #     for i in [0, 2]:
-    #         v = values[i]
-    #         if v.lower() in ERROR_MAP:
-    #             values[i] = ERROR_MAP[v.lower()]
-    #     return values
 
     def __check_string_arithmetic(self, value) -> Optional[decimal.Decimal]:
         """
@@ -108,8 +83,6 @@ class FormulaEvaluator(lark.visitors.Interpreter):
 
     @visit_children_decor
     def add_expr(self, values):
-        # logger.info(f"values are {values}")
-        # values = self.__check_mapping(values)
         if self.__check_for_error(values):
             return self.cell_error
         v0 = self.__check_string_arithmetic(values[0])
@@ -133,7 +106,6 @@ class FormulaEvaluator(lark.visitors.Interpreter):
 
     @visit_children_decor
     def mul_expr(self, values):
-        # values = self.__check_mapping(values)
         if self.__check_for_error(values):
             return self.cell_error
         v0 = self.__check_string_arithmetic(values[0])
@@ -183,6 +155,7 @@ class FormulaEvaluator(lark.visitors.Interpreter):
     @visit_children_decor
     def cell(self, values):
         if not self.cell_error:
+
             # =[sheet]![col][row]
             if len(values) > 1:
                 # Make sure name has '' quotes if special characters
@@ -226,6 +199,7 @@ class FormulaEvaluator(lark.visitors.Interpreter):
                 if not sheet.cells[location].value:
                     return decimal.Decimal(0)
                 return sheet.cells[location].value
+
             # =[col][row]
             else:
                 location = values[0].value
@@ -312,8 +286,12 @@ def evaluate_expr(workbook, curr_cell, sheetname, contents):
     Returns:
         FormulaEvaluator, Any: Evaluator object and provided value 
     """
-    eval = FormulaEvaluator(
-        workbook, workbook.spreadsheets[sheetname.lower()], curr_cell)
+    try:
+        eval = FormulaEvaluator(
+            workbook, workbook.spreadsheets[sheetname.lower()], curr_cell)
+    except KeyError:
+        return None, cell_error.CellError(
+            cell_error.CellErrorType.BAD_REFERENCE, "bad reference")
     parser = lark.Lark.open('sheets/formulas.lark', start='formula')
     try:
         tree = parser.parse(contents)
@@ -323,8 +301,3 @@ def evaluate_expr(workbook, curr_cell, sheetname, contents):
         return eval, eval.cell_error
     value = eval.visit(tree)
     return eval, value
-    # except:
-    #     curr_cell.value =
-    #     eval.error = cell_error.CellError(
-    #         cell_error.CellErrorType.BAD_REFERENCE, "bad reference")
-    #     return eval, eval.error

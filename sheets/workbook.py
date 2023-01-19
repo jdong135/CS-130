@@ -155,8 +155,11 @@ class Workbook:
         for loc in sheet.cells:
             c = sheet.cells[loc]
             list_diff = c.relies_on
-            for c in list_diff:
-                c.dependents.remove(c)
+            try:
+                for c in list_diff:
+                    c.dependents.remove(c)
+            except KeyError:
+                continue
             # update dependents
             _, sorted_components = topo_sort(c)
             for node in sorted_components[1:]:

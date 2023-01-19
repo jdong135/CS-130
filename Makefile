@@ -9,6 +9,7 @@ test:
 	python3 tests/test_lark_module.py
 	python3 tests/test_spec1.py
 	python3 tests/smoketest.py
+	python3 tests/test_sysmte.py
 
 .PHONY: clean
 clean:
