@@ -140,7 +140,7 @@ class Spec1_Tests(unittest.TestCase):
         wb.new_sheet()
         eval, _ = lark_module.evaluate_expr(
             wb, None, "sheet1", "=2 * \"abc\"")
-        self.assertEqual(eval.error.get_detail(), "string arithmetic")
+        self.assertEqual(eval.cell_error.get_detail(), "string arithmetic")
 
     def test_sheetname_access1(self):
         wb = Workbook()
@@ -180,7 +180,7 @@ class Spec1_Tests(unittest.TestCase):
         wb.new_sheet('*(sheet2')
         eval, _ = lark_module.evaluate_expr(
             wb, None, "sheet1", "=*(sheEt2!A1")
-        self.assertEqual(eval.error.get_type(), CellErrorType.PARSE_ERROR)
+        self.assertEqual(eval.cell_error.get_type(), CellErrorType.PARSE_ERROR)
 
     def test_parse_str_as_num(self):
         wb = Workbook()
@@ -229,7 +229,7 @@ class Spec1_Tests(unittest.TestCase):
         wb.new_sheet()
         eval, _ = lark_module.evaluate_expr(
             wb, None, "sheet1", "=2fva3")
-        self.assertEqual(eval.error.get_type(), CellErrorType.PARSE_ERROR)
+        self.assertEqual(eval.cell_error.get_type(), CellErrorType.PARSE_ERROR)
 
     def test_circular_reference_L(self):
         wb = Workbook()
@@ -281,6 +281,24 @@ class Spec1_Tests(unittest.TestCase):
         wb.set_cell_contents('sheet1', 'A1', '=1/0')
         self.assertEqual(wb.get_cell_value("sheet1", "A1").get_type(),
                          CellErrorType.DIVIDE_BY_ZERO)
+
+    def test_error_contents(self):
+        wb = Workbook()
+        wb.new_sheet()
+        wb.set_cell_contents('sheet1', 'e1', '#div/0!')
+        wb.set_cell_contents('sheet1', 'e2', '=e1+5')
+        value = wb.get_cell_value('sheet1', 'e2')
+        assert isinstance(value, CellError)
+        assert value.get_type() == CellErrorType.DIVIDE_BY_ZERO
+
+    def test_error_contents_awr(self):
+        wb = Workbook()
+        wb.new_sheet()
+        wb.set_cell_contents('sheet1', 'e1', '=#div/0!')
+        wb.set_cell_contents('sheet1', 'e2', '=e1+5')
+        value = wb.get_cell_value('sheet1', 'e2')
+        assert isinstance(value, CellError)
+        assert value.get_type() == CellErrorType.DIVIDE_BY_ZERO
 
 
 if __name__ == "__main__":

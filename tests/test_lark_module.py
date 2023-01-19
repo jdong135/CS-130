@@ -94,7 +94,7 @@ class Lark_Module_Basic(unittest.TestCase):
         wb.new_sheet()
         eval, _ = lark_module.evaluate_expr(
             wb, None, "sheet1", "= 2 * 8 / 0 + 1")
-        self.assertEqual(eval.error.get_detail(), "divide by zero")
+        self.assertEqual(eval.cell_error.get_detail(), "divide by zero")
 
     def test_div_zero2(self):
         wb = Workbook()
@@ -102,7 +102,7 @@ class Lark_Module_Basic(unittest.TestCase):
         wb.set_cell_contents("sheet1", "A1", "=1")
         wb.set_cell_contents("sheet1", "A2", "=0")
         eval, _ = lark_module.evaluate_expr(wb, None, "sheet1", "=A1 / A2")
-        self.assertEqual(eval.error.get_detail(), "divide by zero")
+        self.assertEqual(eval.cell_error.get_detail(), "divide by zero")
 
     def test_string_arithmetic1(self):
         wb = Workbook()
@@ -110,7 +110,7 @@ class Lark_Module_Basic(unittest.TestCase):
         wb.set_cell_contents("sheet1", "A1", "'1")
         wb.set_cell_contents("sheet1", "A2", "'hello world")
         eval, _ = lark_module.evaluate_expr(wb, None, "sheet1", "=A1 + A2")
-        self.assertEqual(eval.error.get_detail(), "string arithmetic")
+        self.assertEqual(eval.cell_error.get_detail(), "string arithmetic")
 
     def test_string_arithmetic2(self):
         wb = Workbook()
@@ -118,7 +118,7 @@ class Lark_Module_Basic(unittest.TestCase):
         wb.set_cell_contents("sheet1", "A1", "'goodbye world")
         wb.set_cell_contents("sheet1", "A2", "'hello world")
         eval, _ = lark_module.evaluate_expr(wb, None, "sheet1", "=A1 + A2")
-        self.assertEqual(eval.error.get_detail(), "string arithmetic")
+        self.assertEqual(eval.cell_error.get_detail(), "string arithmetic")
 
     def test_string_arithmetic3(self):
         wb = Workbook()
@@ -134,7 +134,7 @@ class Lark_Module_Basic(unittest.TestCase):
         wb.set_cell_contents("sheet1", "A1", "'1")
         wb.set_cell_contents("sheet1", "A2", "'hello world")
         eval, _ = lark_module.evaluate_expr(wb, None, "sheet1", "=A1 * A2")
-        self.assertEqual(eval.error.get_detail(), "string arithmetic")
+        self.assertEqual(eval.cell_error.get_detail(), "string arithmetic")
 
     def test_string_arithmetic5(self):
         wb = Workbook()
@@ -142,7 +142,7 @@ class Lark_Module_Basic(unittest.TestCase):
         wb.set_cell_contents("sheet1", "A1", "'goodbye world")
         wb.set_cell_contents("sheet1", "A2", "'hello world")
         eval, _ = lark_module.evaluate_expr(wb, None, "sheet1", "=A1 * A2")
-        self.assertEqual(eval.error.get_detail(), "string arithmetic")
+        self.assertEqual(eval.cell_error.get_detail(), "string arithmetic")
 
     def test_string_arithmetic6(self):
         wb = Workbook()
@@ -173,7 +173,7 @@ class Lark_Module_Basic(unittest.TestCase):
         wb.new_sheet()
         wb.set_cell_contents("sheet1", "A1", "'10")
         eval, _ = lark_module.evaluate_expr(wb, None, "sheet1", "=Sheet2!A1")
-        self.assertEqual(eval.error.get_detail(), "sheet name not found")
+        self.assertEqual(eval.cell_error.get_detail(), "sheet name not found")
 
     def test_bad_reference2(self):
         wb = Workbook()
@@ -181,7 +181,7 @@ class Lark_Module_Basic(unittest.TestCase):
         wb.set_cell_contents("sheet1", "A1", "'10")
         eval, _ = lark_module.evaluate_expr(
             wb, None, "sheet1", "=Sheet1!A10000")
-        self.assertEqual(eval.error.get_detail(), "invalid location")
+        self.assertEqual(eval.cell_error.get_detail(), "invalid location")
 
     def test_bad_reference3(self):
         wb = Workbook()
@@ -189,14 +189,14 @@ class Lark_Module_Basic(unittest.TestCase):
         wb.set_cell_contents("sheet1", "A1", "'10")
         eval, _ = lark_module.evaluate_expr(
             wb, None, "sheet1", "=Sheet1!ZZZZZ9999")
-        self.assertEqual(eval.error.get_detail(), "invalid location")
+        self.assertEqual(eval.cell_error.get_detail(), "invalid location")
 
     def test_parse_error1(self):
         wb = Workbook()
         wb.new_sheet()
         eval, _ = lark_module.evaluate_expr(
             wb, None, "sheet1", "=e71s18d")
-        self.assertEqual(eval.error.get_detail(), "parse error")
+        self.assertEqual(eval.cell_error.get_detail(), "parse error")
 
     def test_initialized_empty_cell_ref(self):
         wb = Workbook()
