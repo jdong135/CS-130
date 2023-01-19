@@ -152,6 +152,22 @@ class Lark_Module_Basic(unittest.TestCase):
         _, value = lark_module.evaluate_expr(wb, None, "sheet1", "=A1 * A2")
         self.assertEqual(value, 20)
 
+    def test_string_arithmetic7(self):
+        wb = Workbook()
+        wb.new_sheet()
+        wb.set_cell_contents("sheet1", "A1", "'123")
+        wb.set_cell_contents("sheet1", "A2", "5.3")
+        _, value = lark_module.evaluate_expr(wb, None, "sheet1", "=A1 * A2")
+        self.assertEqual(value, decimal.Decimal('651.9'))
+
+    def test_string_arithmetic7(self):
+        wb = Workbook()
+        wb.new_sheet()
+        wb.set_cell_contents("sheet1", "A1", "'  123")
+        wb.set_cell_contents("sheet1", "A2", "5.3")
+        _, value = lark_module.evaluate_expr(wb, None, "sheet1", "=A1 * A2")
+        self.assertEqual(value, decimal.Decimal('651.9'))
+
     def test_bad_reference1(self):
         wb = Workbook()
         wb.new_sheet()
@@ -191,6 +207,24 @@ class Lark_Module_Basic(unittest.TestCase):
         eval, value = lark_module.evaluate_expr(wb, wb.get_cell(
             "sheet1", "A1"), "sheet1", wb.get_cell_contents("sheet1", "B1"))
         self.assertEqual(value, 0)
+
+    def test_error_propagation1(self):
+        wb = Workbook()
+        wb.new_sheet()
+        wb.set_cell_contents("sheet1", "A1", "abc")
+        wb.set_cell_contents("sheet1", "B1", "=A1 + 1")  # Value!
+        wb.set_cell_contents("sheet1", "C1", "=B1 + 1")
+        eval, value = lark_module.evaluate_expr(wb, None, "sheet1", "=C1")
+        self.assertEqual(value.get_detail(), "invalid operation")
+
+    def test_error_propagation2(self):
+        wb = Workbook()
+        wb.new_sheet()
+        wb.set_cell_contents("sheet1", "A1", "0")
+        wb.set_cell_contents("sheet1", "B1", "=1 / A1")  # Div/0!
+        wb.set_cell_contents("sheet1", "C1", "=B1 + 1")
+        eval, value = lark_module.evaluate_expr(wb, None, "sheet1", "=C1")
+        self.assertEqual(value.get_detail(), "divide by zero")
 
 
 if __name__ == "__main__":

@@ -16,6 +16,7 @@ class FormulaEvaluator(lark.visitors.Interpreter):
 
     def __check_string_arithmetic(self, value):
         if type(value) == str:
+            value = value.strip()
             if self.wb.is_number(value):
                 value = decimal.Decimal(value)
                 return value
@@ -131,7 +132,17 @@ class FormulaEvaluator(lark.visitors.Interpreter):
         if not self.error:
             # =[sheet]![col][row]
             if len(values) > 1:
-                sheet_name = values[0].value.lower()
+                # Make sure name has '' quotes if special characters
+                sheet_name = values[0].value
+                if sheet_name[0] == "'" and sheet_name[-1] == "'":  # check special
+                    sheet_name = sheet_name.lower()[1:-1]
+                else:
+                    for ch in sheet_name:
+                        if ch == " " or not (ch.isalnum() or ch == "_"):
+                            self.error = cell_error.CellError(
+                                cell_error.CellErrorType.PARSE_ERROR, 'special char requires single quotes')
+                            return self.error
+                    sheet_name = sheet_name.lower()
                 if sheet_name not in self.wb.spreadsheets:
                     self.error = cell_error.CellError(
                         cell_error.CellErrorType.BAD_REFERENCE, 'sheet name not found')
@@ -158,6 +169,7 @@ class FormulaEvaluator(lark.visitors.Interpreter):
                 if self.calling_cell not in sheet.cells[location].dependents:
                     sheet.cells[location].dependents.add(self.calling_cell)
                 self.relies_on.add(sheet.cells[location])
+                # If you reference an empty cell, it's default value is none
                 if not sheet.cells[location].value:
                     return decimal.Decimal(0)
                 return sheet.cells[location].value
@@ -185,6 +197,7 @@ class FormulaEvaluator(lark.visitors.Interpreter):
                     self.sheet.cells[location].dependents.add(
                         self.calling_cell)
                 self.relies_on.add(self.sheet.cells[location])
+                # If you reference an empty cell, it's default value is none
                 if not self.sheet.cells[location].value:
                     return decimal.Decimal(0)
                 return self.sheet.cells[values[0].value].value
