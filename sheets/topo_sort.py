@@ -1,4 +1,5 @@
 import enum
+from typing import *
 from sheets.cell import Cell
 from typing import Tuple
 
@@ -6,6 +7,7 @@ from typing import Tuple
 class DFSState(enum.Enum):
     ENTER = 1
     LEAVE = 2
+
 
 
 def topo_sort(v: Cell) -> Tuple[bool, list[Cell]]:
