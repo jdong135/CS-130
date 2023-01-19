@@ -7,6 +7,7 @@ class CellType(enum.Enum):
     STRING = 3
     LITERAL_NUM = 4
     LITERAL_STRING = 5
+    ERROR = 6
 
 
 class Cell:

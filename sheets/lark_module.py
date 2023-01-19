@@ -276,7 +276,7 @@ class FormulaEvaluator(lark.visitors.Interpreter):
             return tree.children[0].value[1:-1]
 
     def error(self, tree):
-        return ERROR_MAP[tree.children[0].value.lower()]
+        return tree.children[0].value
         # return self.error
 
 

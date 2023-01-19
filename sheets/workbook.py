@@ -174,7 +174,23 @@ class Workbook:
         else:
             sheet = self.spreadsheets[sheet_name.lower()]
             return ((sheet.extent_col, sheet.extent_row))
-
+        
+    def __str_to_error(self, str_error:str):
+        if str_error == "#ERROR!":
+            return cell_error.CellError(cell_error.CellErrorType.PARSE_ERROR, "input error")
+        elif str_error == "#CIRCREF!":
+            return cell_error.CellError(cell_error.CellErrorType.CIRCULAR_REFERENCE, "input error")
+        elif str_error == "#REF!":
+            return cell_error.CellError(cell_error.CellErrorType.BAD_REFERENCE, "input error")
+        elif str_error == "#NAME?":
+            return cell_error.CellError(cell_error.CellErrorType.BAD_NAME, "input error")
+        elif str_error == "#VALUE!":
+            return cell_error.CellError(cell_error.CellErrorType.TYPE_ERROR, "input error")
+        elif str_error == "#DIV/0!":
+            return cell_error.CellError(cell_error.CellErrorType.DIVIDE_BY_ZERO, "input error")
+        else:
+            return None
+        
     def set_cell_contents(self, sheet_name: str, location: str,
                           contents: Optional[str]) -> None:
         # Set the contents of the specified cell on the specified sheet.
@@ -241,7 +257,9 @@ class Workbook:
                 return
             curr_cell.contents = contents
             # Update cell contents and value
-            if contents[0] == "=":
+            if self.__str_to_error(contents):
+                curr_cell.set_fields(value=self.__str_to_error(contents), type=cell.CellType.ERROR, relies_on=set())
+            elif contents[0] == "=":
                 eval, value = lark_module.evaluate_expr(
                     self, curr_cell, sheet.name, contents)
                 value = self.__strip_evaluation(value)
@@ -274,7 +292,13 @@ class Workbook:
         else:
             if not contents or len(contents) == 0:
                 return
-            if contents[0] == "=":
+            if self.__str_to_error(contents):
+                value = self.__str_to_error(contents)
+                curr_cell = cell.Cell(
+                    sheet_name, location, contents, value, cell.CellType.ERROR)
+                sheet = self.spreadsheets[sheet_name.lower()]
+                sheet.cells[location] = curr_cell
+            elif contents[0] == "=":
                 curr_cell = cell.Cell(
                     sheet_name, location, contents, None, cell.CellType.FORMULA)
                 eval, value = lark_module.evaluate_expr(
