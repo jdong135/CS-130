@@ -5,13 +5,14 @@ Test for implementation of Lark Module formula Evaluator
 import unittest
 import os
 import sys
+import decimal
 
 PROJECT_ROOT = os.path.abspath(os.path.join(
     os.path.dirname(__file__),
     os.pardir)
 )
 sys.path.append(PROJECT_ROOT)
-from sheets import *  # noqa
+from sheets import Workbook, lark_module, CellErrorType, CellError
 
 
 MAX_SHEETS_TEST = 10000

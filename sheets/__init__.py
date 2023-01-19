@@ -2,6 +2,7 @@
 Spreadsheets Package developed for Caltech's CS 130 by Jake Goldman, Jay Dong,
 and Andy Sun. 
 """
+__all__ = ["Workbook", "CellError", "CellErrorType"]
 from sheets.cell import *
 from sheets.cell_error import *
 from sheets.sheet import *

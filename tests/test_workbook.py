@@ -7,13 +7,14 @@ import os
 import sys
 import string
 import random
+import decimal
 
 PROJECT_ROOT = os.path.abspath(os.path.join(
     os.path.dirname(__file__),
     os.pardir)
 )
 sys.path.append(PROJECT_ROOT)
-from sheets import *  # noqa
+from sheets import Workbook, cell  # noqa
 
 MAX_SHEETS_TEST = 100000
 MAX_STR_LEN_TEST = 500
@@ -137,8 +138,8 @@ class Workbook_Set_Cell_Contents(unittest.TestCase):
         wb = Workbook()
         wb.new_sheet("sheet1")
         wb.set_cell_contents("sheet1", "A1", "'test")
-        c = Cell("sheet1", "A1", "'test", "test",
-                 cell.CellType.STRING)
+        c = cell.Cell("sheet1", "A1", "'test", "test",
+                      cell.CellType.STRING)
         self.assertEqual(wb.spreadsheets["sheet1"].cells["A1"], c)
 
     def test_decimal1(self):
