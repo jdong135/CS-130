@@ -210,7 +210,7 @@ class Workbook:
                 circular, sorted_components = topo_sort(curr_cell)
                 if not circular:
                     for node in sorted_components[1:]:
-                        self.update_values(node)
+                        self.__update_values(node)
                 else:
                     for node in curr_cell.dependents:
                         node.relies_on.remove(curr_cell)
@@ -283,7 +283,6 @@ class Workbook:
                     sheet_name, location, contents, value, cell.CellType.LITERAL_STRING)
                 sheet = self.spreadsheets[sheet_name.lower()]
                 sheet.cells[location] = curr_cell
-            # update extent
             self.__update_extent(sheet, location, False)
 
     def get_cell_contents(self, sheet_name: str, location: str) -> Optional[str]:
