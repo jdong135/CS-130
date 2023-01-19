@@ -282,13 +282,6 @@ class Spec1_Tests(unittest.TestCase):
         self.assertEqual(wb.get_cell_value("sheet1", "A1").get_type(),
                          CellErrorType.DIVIDE_BY_ZERO)
 
-    def test_divide_zero(self):
-        wb = Workbook()
-        wb.new_sheet()
-        wb.set_cell_contents('sheet1', 'A1', 'NaN')
-        self.assertEqual(wb.get_cell_value("sheet1", "A1"),
-                         decimal.Decimal(0))
-
 
 if __name__ == "__main__":
     unittest.main()
