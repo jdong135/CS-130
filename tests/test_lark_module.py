@@ -152,6 +152,22 @@ class Lark_Module_Basic(unittest.TestCase):
         _, value = lark_module.evaluate_expr(wb, None, "sheet1", "=A1 * A2")
         self.assertEqual(value, 20)
 
+    def test_string_arithmetic7(self):
+        wb = Workbook()
+        wb.new_sheet()
+        wb.set_cell_contents("sheet1", "A1", "'123")
+        wb.set_cell_contents("sheet1", "A2", "5.3")
+        _, value = lark_module.evaluate_expr(wb, None, "sheet1", "=A1 * A2")
+        self.assertEqual(value, decimal.Decimal('651.9'))
+
+    def test_string_arithmetic7(self):
+        wb = Workbook()
+        wb.new_sheet()
+        wb.set_cell_contents("sheet1", "A1", "'  123")
+        wb.set_cell_contents("sheet1", "A2", "5.3")
+        _, value = lark_module.evaluate_expr(wb, None, "sheet1", "=A1 * A2")
+        self.assertEqual(value, decimal.Decimal('651.9'))
+
     def test_bad_reference1(self):
         wb = Workbook()
         wb.new_sheet()

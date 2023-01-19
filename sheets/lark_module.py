@@ -15,8 +15,8 @@ class FormulaEvaluator(lark.visitors.Interpreter):
         self.relies_on = set()
 
     def check_string_arithmetic(self, value):
-        value = value.strip()
         if type(value) == str:
+            value = value.strip()
             if self.wb.is_number(value):
                 value = decimal.Decimal(value)
                 return value
@@ -104,7 +104,7 @@ class FormulaEvaluator(lark.visitors.Interpreter):
             if len(values) > 1:
                 # Make sure name has '' quotes if special characters
                 sheet_name = values[0].value
-                if sheet_name[0] == "'" and sheet_name[-1] == "'": # check special 
+                if sheet_name[0] == "'" and sheet_name[-1] == "'":  # check special
                     sheet_name = sheet_name.lower()[1:-1]
                 else:
                     for ch in sheet_name:
