@@ -30,7 +30,7 @@ class Workbook:
         """
         return len(self.spreadsheets)
 
-    def get_cell(self, sheet_name: str, location: str) -> cell.Cell:
+    def __get_cell(self, sheet_name: str, location: str) -> cell.Cell:
         """
         Return a cell object
         """
@@ -151,6 +151,7 @@ class Workbook:
             raise KeyError("Specified sheet name not found")
         sheet = self.spreadsheets[sheet_name.lower()]
         del self.spreadsheets[sheet_name.lower()]
+        self.lower_names.remove(sheet_name.lower())
         for loc in sheet.cells:
             c = sheet.cells[loc]
             list_diff = c.relies_on

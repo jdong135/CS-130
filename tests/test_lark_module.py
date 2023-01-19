@@ -205,8 +205,8 @@ class Lark_Module_Basic(unittest.TestCase):
         wb.set_cell_contents("sheet1", 'A1', "=B1 + C1")
 
         wb.set_cell_contents("sheet1", "B1", "=C1")
-        eval, value = lark_module.evaluate_expr(wb, wb.get_cell(
-            "sheet1", "A1"), "sheet1", wb.get_cell_contents("sheet1", "B1"))
+        eval, value = lark_module.evaluate_expr(
+            wb, wb.spreadsheets['sheet1'].cells['A1'], "sheet1", wb.get_cell_contents("sheet1", "B1"))
         self.assertEqual(value, 0)
 
     def test_error_propagation1(self):
