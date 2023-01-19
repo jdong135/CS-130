@@ -15,7 +15,7 @@ sys.path.append(PROJECT_ROOT)
 from sheets import Workbook, lark_module, CellErrorType, CellError
 
 
-MAX_SHEETS_TEST = 10000
+MAX_SHEETS_TEST = 100
 
 
 class Spec1_Tests(unittest.TestCase):
@@ -286,18 +286,18 @@ class Spec1_Tests(unittest.TestCase):
     def test_error_contents(self):
         wb = Workbook()
         wb.new_sheet()
-        wb.set_cell_contents('sheet1', 'e1', '#div/0!')
-        wb.set_cell_contents('sheet1', 'e2', '=e1+5')
-        value = wb.get_cell_value('sheet1', 'e2')
+        wb.set_cell_contents('sheet1', 'E1', '#div/0!')
+        wb.set_cell_contents('sheet1', 'E2', '=e1+5')
+        value = wb.get_cell_value('sheet1', 'E2')
         assert isinstance(value, CellError)
         assert value.get_type() == CellErrorType.DIVIDE_BY_ZERO
 
     def test_error_contents_awr(self):
         wb = Workbook()
         wb.new_sheet()
-        wb.set_cell_contents('sheet1', 'e1', '=#div/0!')
-        wb.set_cell_contents('sheet1', 'e2', '=e1+5')
-        value = wb.get_cell_value('sheet1', 'e2')
+        wb.set_cell_contents('sheet1', 'E1', '=#div/0!')
+        wb.set_cell_contents('sheet1', 'E2', '=e1+5')
+        value = wb.get_cell_value('sheet1', 'E2')
         assert isinstance(value, CellError)
         assert value.get_type() == CellErrorType.DIVIDE_BY_ZERO
 

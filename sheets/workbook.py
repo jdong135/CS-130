@@ -69,13 +69,12 @@ class Workbook:
             raise ValueError("Sheet name is empty string")
         elif not sheet_name:
             # handle null name
-            i = self.curr_lowest
+            i = 0
             while True:
-                sheet_name = "Sheet" + str(i)
+                sheet_name = "Sheet" + str(i + 1)
                 if sheet_name.lower() not in self.lower_names:
                     self.spreadsheets[sheet_name.lower()] = Sheet(sheet_name)
                     self.lower_names.add(sheet_name.lower())
-                    self.curr_lowest = i + 1
                     return (len(self.spreadsheets) - 1, sheet_name)
                 i += 1
         for ch in sheet_name:
@@ -216,6 +215,7 @@ class Workbook:
         # naure of the issue.
 
         # Set cell contents and then evaluate with lark
+        location = location.upper()
         if sheet_name.lower() not in self.lower_names:
             raise KeyError("Specified sheet name not found")
         sheet = self.spreadsheets[sheet_name.lower()]
@@ -347,6 +347,7 @@ class Workbook:
         #
         # This method will never return a zero-length string; instead, empty
         # cells are indicated by a value of None.
+        location = location.upper()
         if sheet_name.lower() not in self.lower_names:
             raise KeyError("Specified sheet name not found")
         sheet = self.spreadsheets[sheet_name.lower()]
@@ -377,6 +378,7 @@ class Workbook:
         # Decimal('1.000'); rather it would return Decimal('1').
 
         # Return evaluation field of cell
+        location = location.upper()
         if sheet_name.lower() not in self.lower_names:
             raise KeyError("Specified sheet name not found")
         sheet = self.spreadsheets[sheet_name.lower()]

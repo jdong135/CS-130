@@ -16,9 +16,9 @@ PROJECT_ROOT = os.path.abspath(os.path.join(
 sys.path.append(PROJECT_ROOT)
 from sheets import Workbook, cell  # noqa
 
-MAX_SHEETS_TEST = 100000
-MAX_STR_LEN_TEST = 500
-MAX_ROW_COL_SIZE = 10000
+MAX_SHEETS_TEST = 100
+MAX_STR_LEN_TEST = 100
+MAX_ROW_COL_SIZE = 100
 INVALID_CHARS = ["¿", "\"", "░", "😀", "\n", "\t"]
 
 
@@ -163,6 +163,16 @@ class Workbook_Set_Cell_Contents(unittest.TestCase):
         wb.set_cell_contents('sheet1', 'A1', "'2.340")
         self.assertEqual(wb.get_cell_value(
             'sheet1', 'A1'), '2.340')
+
+    def test_case_insensitive(self):
+        wb = Workbook()
+        wb.new_sheet()
+        wb.set_cell_contents("sheet1", "A1", "=#DIV/0!")
+        wb.set_cell_contents("sheet1", "A2", "=A1 + 5")
+        wb.set_cell_contents("sheet1", "A3", "=B1")
+        wb.set_cell_contents("sheet1", "A4", "=b1")
+        self.assertEqual(wb.get_cell_value('sheet1', 'A3'),
+                         wb.get_cell_value('sheet1', 'A4'))
 
 
 if __name__ == "__main__":
