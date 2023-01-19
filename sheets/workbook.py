@@ -27,7 +27,7 @@ class Workbook:
     def num_sheets(self) -> int:
         return len(self.spreadsheets)
 
-    def get_cell(self, sheet_name: str, location: str) -> cell.Cell:
+    def __get_cell(self, sheet_name: str, location: str) -> cell.Cell:
         return self.spreadsheets[sheet_name].cells[location]
 
     def list_sheets(self) -> List[str]:
@@ -135,7 +135,20 @@ class Workbook:
         # case does not have to.
         #
         # If the specified sheet name is not found, a KeyError is raised.
-        pass
+        if sheet_name.lower() not in self.lower_names:
+            raise KeyError("Specified sheet name not found")
+        sheet = self.spreadsheets[sheet_name.lower()]
+        del self.spreadsheets[sheet_name.lower()]
+        for loc in sheet.cells:
+            c = sheet.cells[loc]
+            past_relies_on = c.relies_on
+            list_diff = past_relies_on - c.relies_on
+            for c in list_diff:
+                c.dependents.remove(c)
+            # update dependents
+            sorted_components = topo_sort(c)[1:]
+            for node in sorted_components:
+                self.__update_values(node)
 
     def get_sheet_extent(self, sheet_name: str) -> Tuple[int, int]:
         # Return a tuple (num-cols, num-rows) indicating the current extent of
