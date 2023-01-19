@@ -174,7 +174,7 @@ class FormulaEvaluator(lark.visitors.Interpreter):
                         cell_error.CellErrorType.BAD_REFERENCE, 'sheet name not found')
                     return self.cell_error
                 sheet = self.wb.spreadsheets[sheet_name]
-                location = values[1].value
+                location = values[1].value.upper()
                 if not sheet.check_valid_location(location):
                     self.cell_error = cell_error.CellError(
                         cell_error.CellErrorType.BAD_REFERENCE, 'invalid location')
@@ -202,7 +202,7 @@ class FormulaEvaluator(lark.visitors.Interpreter):
 
             # =[col][row]
             else:
-                location = values[0].value
+                location = values[0].value.upper()
                 if not self.sheet.check_valid_location(location):
                     self.cell_error = cell_error.CellError(
                         cell_error.CellErrorType.BAD_REFERENCE, 'invalid location')
@@ -211,7 +211,7 @@ class FormulaEvaluator(lark.visitors.Interpreter):
                     self.cell_error = cell_error.CellError(
                         cell_error.CellErrorType.CIRCULAR_REFERENCE, 'cycle detected')
                     return self.cell_error
-                if values[0].value not in self.sheet.cells:
+                if location not in self.sheet.cells:
                     # FIX THIS
                     new_empty_cell = cell.Cell(
                         self.sheet.name, location, None, None, cell.CellType.EMPTY)
@@ -227,7 +227,7 @@ class FormulaEvaluator(lark.visitors.Interpreter):
                 # If you reference an empty cell, it's default value is none
                 if not self.sheet.cells[location].value:
                     return decimal.Decimal(0)
-                return self.sheet.cells[values[0].value].value
+                return self.sheet.cells[location].value
 
     def parens(self, tree):
         if not self.cell_error:

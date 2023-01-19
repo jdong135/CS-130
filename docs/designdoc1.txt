@@ -21,9 +21,15 @@ Jake Goldman, Jay Dong, Andy Sun
 
 L2.  [2pts] What did each teammate focus on during this project?
 
+Jake Goldman focused on implementing Lark into our project and implementing tests.
+Andy Sun focused on implementing the API functions and the DFS algorithm.
+Jay Dong focused on implementing the API functions and Lark.
+There was significant overlap in what we focused on over the course of the project.
+
 
 L3.  [3pts] Approximately how many hours did each teammate spend on the project?
 
+We each spent around 30 hours on this project.
 
 Spreadsheet Engine Design (20 pts)
 ----------------------------------
@@ -32,29 +38,77 @@ D1.  [3pts] Describe the high-level design abstractions (e.g. classes and/or
      submodules) in your spreadsheet engine, and what purposes these various
      abstractions fulfill.
 
+Our spreadsheet is divided into the workbook class, spreadsheet class, and cell class. The design abstraction works like so: The workbook object contains all the sheets and also the methods for the API. In addition, the class includes some hidden methods for code modularity and design. Then, a level below that are sheets which group the cells. Our implementation is analogous to a directed graph with two types of edges where the cells are the nodes of the graph represented where each cell contains a list of its neighbors to represent the edges. The sheets group these “nodes” and the workbook level would be akin to the graph class enabling modification and access of these nodes. Although sheets group the cells in the graph, the cells are free to have “edges” or depend on cells that are not in their spreadsheet to fulfill the specification. 
+
+The workbook class contains the API and hidden methods. Each workbook is made up of two fields: a “spreadsheets” hashtable and a “lower_names” set. The “spreadsheets” hashtable maps from the lowercase name of a spreadsheet to the spreadsheet object. The “lower_names” set contains the lower case name of all spreadsheets in the workbook. 
+
+The sheet class contains four fields: the name is stored as a string, the row extent is stored as an int, the column extent is stored as an integer, and the cells hashtable maps from the cell's string location to the cell object. The class includes two methods str_to_tuple which takes in a string location as an argument and returns a tuple containing the column and row and check_valid_location which takes in a location and tests whether the location is valid (< ZZZZ9999). 
+
+The cell class contains seven fields: sheet which is the object of which the cell is a part of, location which is the string location of the cell in the sheet, contents which is the string contents of the cell, value which is whatever contents was evaluated to based on the specifications presented, type which is a cellType object that indicates the type of the value which the contents was evaluated to, relies_on which is a set of cells that the cell references, and dependents which is the set of cells that reference this cell. The dependent field is the set of cells which depend on the cell. This is necessary for the dfs algorithm and is the “edge” that connects nodes that rely on one another. The relies_on set is the set of cells which the cell references. This was necessary in our implementation in the scenario that when updating the current cell, it no longer relies on a cell it previously relied on. This field allows us to identify those cells and update their respective dependents fields in a time efficient manner. 
+
+In addition, we have the lark module which contains the FormulaEvaluator class. This class is utilized within the workbook to parse formula inputs and is mostly based on the code provided in lecture and the provided grammar.
+
+
 
 D2.  [4pts] Why did you choose the design you chose?  Describe other designs
      (or perhaps earlier versions of the above design) that you considered,
      and why you ended up not using them.
+
+We wanted to model our design around the API that was provided for us. We chose this “graph” design as it allows us to maintain the spreadsheets as sparse data structures and enables inter spreadsheet cell dependencies. The necessity of a sparse data structure rules out ideas such as a large array to hold the spreadsheet data. It also facilitates topological sorting of dependencies and detecting cycles in cell dependencies using the DFS algorithm provided in lecture. 
+
+We considered at one point just having a workbook class and not implementing a spreadsheet class below it between the workbook and cells, where every cell could be stored in a field and the spreadsheet that each cell in was stored as a field of the cell. This enabled spreadsheet dependencies, but was inefficient for accessing a certain cell location or all cells of a spreadsheet.  We decided to add the spreadsheet class to enable quicker access of the cell at a location of a spreadsheet, modularity, and ease of accessing all the cells in a spreadsheet. 
 
 
 D3.  [4pts] At a high level (e.g. pseudocode or higher), enumerate the steps
      that your spreadsheet engine goes through when a caller sets a cell's
      contents.
 
+Validate sheet name and location according to the specifications provided
+Check if there is already a cell for the specified location and spreadsheet.
+If a cell already exists at the location:
+     If we are deleting this cell’s contents (setting to None or empty string)
+          If no cells rely on this cell:
+               Delete the cell and remove from spreadsheet
+          Else:
+               Set the cells contents to None
+               Using our dfs algorithm get the connected components and update their values accordingly
+               Set the cells relies_on field to an empty set
+               Change the cell type to Empty Cell type (We defined a cell type class using enum as mentioned above)
+     If this cell relied on any cells, remove the cell from their dependents
+     Update the extent of the sheet
+     Else If the contents are not empty evaluate and parse the contents according to the specification and update the cell’s value  (formula, literal, string, etc)
+          If the new contents are a formula, the contents are parsed by our lark module
+               If the contents reference another existing cell then it also updates that cell’s dependents field with the current cell and adds that cell to the current cell’s relies_on field
+               If the contents reference another nonexisting cell then it creates a new empty cell at the specified location, it updates that cell’s dependents field with the current cell and adds that cell to the current cell’s relies_on field
+     Update relies_on the field of the cell according to the new contents and update the dependent fields of the cells that the cell previously relied on, but may no longer rely on
+     Using our dfs algorithm get the connected components and update their values accordingly, the dfs also detects cycles and would update their value to a circular reference error if necessary
+If a cell does not exist at the location:
+     If the contents are empty:
+          Do Nothing
+Else:
+     If the contents are not empty evaluate and parse the contents according to the specification and update the cell’s value  (formula, literal, string, etc)
+          The implementation for referencing other formulas in formulas is the same as above (3bi)
+     Update the spreadsheet’s extent
+
 
 D4.  [3pts] How does your spreadsheet engine identify what other cells need
      updating when a cell's contents are changed, and what order to update them?
+
+As mentioned above, our cell implementation is analogous to nodes in a graph. Thus, we used the simple DFS algorithm presented in class that returns a list of cells that need updating when a cell’s contents are changed, topologically sorted. Our cell implementation contains a dependent field which is a set of neighboring cells which are used as edges in the DFS algorithm. After returning this list from our toposort list, for each cell in the list, we update the cell’s values according to the change, in topologically sorted order.
 
 
 D5.  [3pts] How does your spreadsheet engine identify cycles between cells when
      a cell update is performed?  Are cells in a cycle processed any differently
      from other cells outside of the cycle?
 
+When a cell is updated, we run a DFS algorithm on the cell to determine which other cells need to be updated and in what order. Our spreadsheet engine identifies cycles during the aforementioned topological sort DFS algorithm. We utilize the standard visited set utilized during most DFS implementations. If we visit a cell that has already been visited (is in the visited set), then there is a cycle. Our DFS implementation also returns a boolean. This boolean is true if there is a cycle and our workbook implementation then sets every cell in the output list from the algorithm to be a circular reference error as specified.
+
 
 D6.  [3pts] What steps does your spreadsheet engine go through when a sheet is
      deleted from a workbook?  How does it identify cells that may need to be
      recomputed after a sheet-deletion operation?
+
+First, verify that the spreadsheet exists. Delete the spreadsheet from the workbook spreadsheets field. Then, delete the cell as follows. For every cell in the spreadsheet, we ensure that the cell is deleted from the dependent field of the cells that it used to rely on by iterating through the relies_on field. Then generate the topologically sorted list of dependent cells and update their values of each dependent cell now that the cell is deleted. 
 
 
 Implementation Process (23 pts)
@@ -64,29 +118,46 @@ P1.  [4pts] How did your team break down and keep track of the various tasks to
      complete for this project?  Did you use the GitHub issue tracker, or some
      other system like Trello, or some other tool?
 
+We created a to-do list on Discord that we regularly updated as we figured out what new tasks were. We were able to use this list to assign tasks to each other and figure out what was left to do. We also used this server to facilitate general discussion and posting various bugs in the project. 
+
 
 P2.  [4pts] How did you assign tasks to teammates?  Did you stick with your
      task-assignments through the project, or did you shift around tasks as the
      project progressed?  Why?
+
+Our task assignment was very fluid, as we performed most of our coding together and would frequently divide up very small tasks within the larger task we were all currently working on. We naturally found our own niches within the project that we each developed a particular understanding and comfort with, which allowed us to simply work on our respective tasks whenever we were apart. 
 
 
 P3.  [4pts] How would you characterize the quality of your project testing?
      Make sure to touch on these items:  Is it automated?  Is it easy for
      teammates to run?  Is it fast?  Is it reasonably complete?
 
+We run a significant number of tests. Our testing consists mostly of unit tests. The test suite gets run every time code is pushed to the main branch. It’s very easy to run, as we just have to run `make test` locally to run all tests. Testing is fast (under a few seconds). Every major feature and edge case has at least one test, but we have not run code coverage tests.
+
 
 P4.  [3pts] What mechanisms did your team use for communication during the
      project?  Did you find them to be effective?  What issues did you
      encounter, if any?
+
+We used Discord as a hub for communication among our team. This was effective since we could easily organize our conversation topics among different channels, to make it easier to view different tasks and topics we had brought up. 
 
 
 P5.  [3pts] Did you use any kind of collaborative construction techniques, e.g.
      code reviews or pair-programming, during the project?  If so, what are your
      observations about its usefulness?  Did you find it to have any downsides?
 
+We did most of the project together in the same room and pair programmed. The downside is that you can only work on one or two features at a time, and debugging is hard when you don’t want to push code to the repo because it’s not ready. However, it’s really good for making sure that everyone is on the same page. Overall, we all understood what needed to be implemented and what our blockers were.
+
 
 P6.  [5pts] What would you like to improve about your team's development
      process, going forward?
+
+
+We could do a better job of separating the tasks and working separately. For the majority of this project, we worked together in a pair programming fashion with all three of us present. This was largely due to fear of knowledge silos building up. However, going forward, it would be more productive to have recap meetings explaining the changes made on our own time. This way, we can get a wider breadth of features implemented and get to testing. 
+
+We also should have spent a little more time planning out the design of our spreadsheet. We dove in too quickly and paid the price, having to modify our overall design.
+
+Another thing we’d like to improve on is how we use Github. We didn’t utilize branches as much as we should’ve, and there were some headaches involved with changing tests to match changing versions. We could also use tools such as Github issue tracker.
 
 
 Section F:  CS130 Project 1 Feedback [OPTIONAL]
