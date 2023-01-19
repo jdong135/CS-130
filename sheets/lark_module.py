@@ -15,6 +15,7 @@ class FormulaEvaluator(lark.visitors.Interpreter):
         self.relies_on = set()
 
     def check_string_arithmetic(self, value):
+        value = value.strip()
         if type(value) == str:
             if self.wb.is_number(value):
                 value = decimal.Decimal(value)

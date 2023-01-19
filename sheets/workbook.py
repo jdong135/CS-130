@@ -222,7 +222,7 @@ class Workbook:
                     contents), type=cell.CellType.LITERAL_NUM, relies_on=set())
             else:
                 curr_cell.set_fields(
-                    value=contents.rstrip(), type=cell.CellType.LITERAL_STRING, relies_on=set())
+                    value=contents, type=cell.CellType.LITERAL_STRING, relies_on=set())
             # update relies on
             list_diff = past_relies_on - curr_cell.relies_on
             for c in list_diff:
@@ -267,7 +267,7 @@ class Workbook:
             else:
                 value = contents
                 curr_cell = cell.Cell(
-                    sheet_name, location, contents, value.rstrip(), cell.CellType.LITERAL_STRING)
+                    sheet_name, location, contents, value, cell.CellType.LITERAL_STRING)
                 sheet = self.spreadsheets[sheet_name.lower()]
                 sheet.cells[location] = curr_cell
             self.update_extent(sheet, location, False)
