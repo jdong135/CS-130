@@ -184,6 +184,10 @@ def evaluate_expr(workbook, curr_cell, sheetname, contents):
         tree = parser.parse(contents)
         value = eval.visit(tree)
         return eval, value
+    except TypeError:
+        eval.error = cell_error.CellError(
+            cell_error.CellErrorType.TYPE_ERROR, "invalid operation")
+        return eval, eval.error
     except:
         eval.error = cell_error.CellError(
             cell_error.CellErrorType.PARSE_ERROR, "parse error")
