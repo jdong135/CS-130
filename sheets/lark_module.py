@@ -277,20 +277,33 @@ class FormulaEvaluator(lark.visitors.Interpreter):
 
     def error(self, tree):
         val = tree.values[0].value.upper()
+
         if val == "#ERROR!":
+            self.error = cell_error.CellError(
+                cell_error.CellErrorType.PARSE_ERROR, "input error")
             return cell_error.CellError(cell_error.CellErrorType.PARSE_ERROR, "input error")
         elif val == "#CIRCREF!":
+            self.error = cell_error.CellError(
+                cell_error.CellErrorType.CIRCULAR_REFERENCE, "input error")
             return cell_error.CellError(cell_error.CellErrorType.CIRCULAR_REFERENCE, "input error")
         elif val == "#REF!":
+            self.error = cell_error.CellError(
+                cell_error.CellErrorType.BAD_REFERENCE, "input error")
             return cell_error.CellError(cell_error.CellErrorType.BAD_REFERENCE, "input error")
         elif val == "#NAME?":
+            self.error = cell_error.CellError(
+                cell_error.CellErrorType.BAD_NAME, "input error")
             return cell_error.CellError(cell_error.CellErrorType.BAD_NAME, "input error")
         elif val == "#VALUE!":
+            self.error = cell_error.CellError(
+                cell_error.CellErrorType.TYPE_ERROR, "input error")
             return cell_error.CellError(cell_error.CellErrorType.TYPE_ERROR, "input error")
         elif val == "#DIV/0!":
+            self.error = cell_error.CellError(
+                cell_error.CellErrorType.DIVIDE_BY_ZERO, "input error")
             return cell_error.CellError(cell_error.CellErrorType.DIVIDE_BY_ZERO, "input error")
-    
-        # return self.error
+
+        return self.error
 
 
 def evaluate_expr(workbook, curr_cell, sheetname, contents):

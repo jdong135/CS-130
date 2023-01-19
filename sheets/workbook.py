@@ -174,8 +174,8 @@ class Workbook:
         else:
             sheet = self.spreadsheets[sheet_name.lower()]
             return ((sheet.extent_col, sheet.extent_row))
-        
-    def __str_to_error(self, str_error:str):
+
+    def __str_to_error(self, str_error: str):
         if str_error == "#ERROR!":
             return cell_error.CellError(cell_error.CellErrorType.PARSE_ERROR, "input error")
         elif str_error == "#CIRCREF!":
@@ -190,7 +190,7 @@ class Workbook:
             return cell_error.CellError(cell_error.CellErrorType.DIVIDE_BY_ZERO, "input error")
         else:
             return None
-        
+
     def set_cell_contents(self, sheet_name: str, location: str,
                           contents: Optional[str]) -> None:
         # Set the contents of the specified cell on the specified sheet.
@@ -258,7 +258,8 @@ class Workbook:
             curr_cell.contents = contents
             # Update cell contents and value
             if self.__str_to_error(contents.upper()):
-                curr_cell.set_fields(value=self.__str_to_error(contents), type=cell.CellType.ERROR, relies_on=set())
+                curr_cell.set_fields(value=self.__str_to_error(
+                    contents.upper()), type=cell.CellType.ERROR, relies_on=set())
             elif contents[0] == "=":
                 eval, value = lark_module.evaluate_expr(
                     self, curr_cell, sheet.name, contents)
@@ -292,8 +293,8 @@ class Workbook:
         else:
             if not contents or len(contents) == 0:
                 return
-            if self.__str_to_error(contents):
-                value = self.__str_to_error(contents)
+            if self.__str_to_error(contents.upper()):
+                value = self.__str_to_error(contents.upper())
                 curr_cell = cell.Cell(
                     sheet_name, location, contents, value, cell.CellType.ERROR)
                 sheet = self.spreadsheets[sheet_name.lower()]
