@@ -101,15 +101,15 @@ class FormulaEvaluator(lark.visitors.Interpreter):
         if not self.error:
             # =[sheet]![col][row]
             if len(values) > 1:
-                  
+                # Make sure name has '' quotes if special characters
                 sheet_name = values[0].value
                 if sheet_name[0] == "'" and sheet_name[-1] == "'": # check special 
                     sheet_name = sheet_name.lower()[1:-1]
                 else:
                     for ch in sheet_name:
-                        if not (ch.isalnum() or ch == "_"):
+                        if ch == " " or not (ch.isalnum() or ch == "_"):
                             self.error = cell_error.CellError(
-                                cell_error.CellErrorType.PARSE_ERROR, 'cycle detected')
+                                cell_error.CellErrorType.PARSE_ERROR, 'special char requires single quotes')
                             return self.error
                     sheet_name = sheet_name.lower()
                 if sheet_name not in self.wb.spreadsheets:
