@@ -46,7 +46,7 @@ class FormulaEvaluator(lark.visitors.Interpreter):
                             cell_error.CellErrorType.BAD_NAME, "bad name")
                     case cell_error.CellErrorType.TYPE_ERROR:
                         errs[cell_error.CellErrorType.TYPE_ERROR.value] = cell_error.CellError(
-                            cell_error.CellErrorType.TYPE_ERROR, "type error")
+                            cell_error.CellErrorType.TYPE_ERROR, "invalid operation")
                     case cell_error.CellErrorType.DIVIDE_BY_ZERO:
                         errs[cell_error.CellErrorType.DIVIDE_BY_ZERO.value] = cell_error.CellError(
                             cell_error.CellErrorType.DIVIDE_BY_ZERO, "divide by zero")
