@@ -21,7 +21,11 @@ from typing import Optional
 # logger.setLevel(logging.DEBUG)
 
 
-# ERROR_MAP = {'#div/0!': cell_error.CellError(cell_error.CellErrorType.DIVIDE_BY_ZERO, "divide by zero")}
+ERROR_MAP = {
+    '#div/0!': cell_error.CellError(cell_error.CellErrorType.DIVIDE_BY_ZERO, "divide by zero"),
+    '#ref!': cell_error.CellError(
+        cell_error.CellErrorType.BAD_REFERENCE, "bad reference")}
+
 
 class FormulaEvaluator(lark.visitors.Interpreter):
     def __init__(self, workbook, sheet, calling_cell):
@@ -272,9 +276,8 @@ class FormulaEvaluator(lark.visitors.Interpreter):
             return tree.children[0].value[1:-1]
 
     def error(self, tree):
-        if not self.error:
-            return tree.children[0].value
-        return self.error
+        return ERROR_MAP[tree.children[0].value.lower()]
+        # return self.error
 
 
 def evaluate_expr(workbook, curr_cell, sheetname, contents):
