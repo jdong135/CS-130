@@ -3,6 +3,7 @@ import decimal
 from lark.visitors import visit_children_decor
 from sheets import cell_error
 from sheets import cell
+from sheets import strip_module
 
 
 class FormulaEvaluator(lark.visitors.Interpreter):
@@ -17,7 +18,7 @@ class FormulaEvaluator(lark.visitors.Interpreter):
     def __check_string_arithmetic(self, value):
         if type(value) == str:
             value = value.strip()
-            if self.wb.is_number(value):
+            if strip_module.is_number(value):
                 value = decimal.Decimal(value)
                 return value
             if len(value) > 0 or value:

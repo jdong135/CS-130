@@ -87,12 +87,12 @@ class Workbook:
             self.lower_names.add(sheet_name.lower())
             return (len(self.spreadsheets) - 1, sheet_name)
 
-    def update_values(self, cell):
+    def __update_values(self, cell):
         contents = cell.contents
         _, value = lark_module.evaluate_expr(self, cell, cell.sheet, contents)
         cell.value = value
 
-    def update_extent(self, sheet, location, deletingCell: bool):
+    def __update_extent(self, sheet, location, deletingCell: bool):
         if deletingCell:
             sheet_col, sheet_row = sheet.extent_col, sheet.extent_row
             col, row = sheet.str_to_tuple(location)
@@ -111,19 +111,19 @@ class Workbook:
             sheet.extent_col = max(curr_col, sheet.extent_col)
             sheet.extent_row = max(curr_row, sheet.extent_row)
 
-    def is_number(self, string):
+    def __is_number(self, string):
         return string.isnumeric() or (string.replace('.', '', 1).isdigit() and string.count('.') < 2)
 
-    def strip_zeros(self, string):
+    def __strip_zeros(self, string):
         return string.rstrip('0').rstrip('.') if '.' in string else string
 
-    def strip_evaluation(self, eval):
+    def __strip_evaluation(self, eval):
         # given evaluation from lark, return value
-        if type(eval) == str and self.is_number(eval):
-            contents = self.strip_zeros(eval)
+        if type(eval) == str and self.__is_number(eval):
+            contents = self.__strip_zeros(eval)
             return decimal.Decimal(contents)
         elif type(eval) == decimal.Decimal:
-            stripped = self.strip_zeros(str(eval))
+            stripped = self.__strip_zeros(str(eval))
             return decimal.Decimal(stripped)
         else:
             return eval
@@ -188,7 +188,7 @@ class Workbook:
             # No one depends on this cell: delete without traversal
             if (not contents or len(contents) == 0) and len(curr_cell.dependents) == 0:
                 del sheet.cells[location]
-                self.update_extent(sheet, location, True)
+                self.__update_extent(sheet, location, True)
                 return
             # Some cell depends on this cell: delete with traversal
             elif not contents or len(contents) == 0:
@@ -197,27 +197,27 @@ class Workbook:
                 circular, sorted_components = topo_sort(curr_cell)
                 if not circular:
                     for node in sorted_components[1:]:
-                        self.update_values(node)
+                        self.__update_values(node)
                 else:
                     for node in curr_cell.dependents:
                         node.relies_on.remove(curr_cell)
                     for node in sorted_components[1:]:
-                        self.update_values(node)
-                self.update_extent(sheet, location, True)
+                        self.__update_values(node)
+                self.__update_extent(sheet, location, True)
                 return
             curr_cell.contents = contents
             # Update cell contents and value
             if contents[0] == "=":
                 eval, value = lark_module.evaluate_expr(
                     self, curr_cell, sheet.name, contents)
-                value = self.strip_evaluation(value)
+                value = self.__strip_evaluation(value)
                 curr_cell.set_fields(
                     value=value, type=cell.CellType.FORMULA, relies_on=eval.relies_on)
             elif contents[0] == "'":
                 curr_cell.set_fields(
                     value=contents[1:].rstrip(), type=cell.CellType.STRING, relies_on=set())
-            elif self.is_number(contents):
-                contents = self.strip_zeros(contents)
+            elif self.__is_number(contents):
+                contents = self.__strip_zeros(contents)
                 curr_cell.set_fields(value=decimal.Decimal(
                     contents), type=cell.CellType.LITERAL_NUM, relies_on=set())
             else:
@@ -231,7 +231,7 @@ class Workbook:
             circular, sorted_components = topo_sort(curr_cell)
             if not circular:
                 for node in sorted_components[1:]:
-                    self.update_values(node)
+                    self.__update_values(node)
             else:
                 for node in sorted_components:
                     node.value = cell_error.CellError(
@@ -247,7 +247,7 @@ class Workbook:
                 eval, value = lark_module.evaluate_expr(
                     self, curr_cell, sheet_name, contents)
                 # FIX THIS
-                value = self.strip_evaluation(value)
+                value = self.__strip_evaluation(value)
                 curr_cell.set_fields(value=value, relies_on=eval.relies_on)
                 sheet = self.spreadsheets[sheet_name.lower()]
                 sheet.cells[location] = curr_cell
@@ -257,8 +257,8 @@ class Workbook:
                     sheet_name, location, contents, value, cell.CellType.STRING)
                 sheet = self.spreadsheets[sheet_name.lower()]
                 sheet.cells[location] = curr_cell
-            elif self.is_number(contents):
-                contents = self.strip_zeros(contents)
+            elif self.__is_number(contents):
+                contents = self.__strip_zeros(contents)
                 value = decimal.Decimal(contents)
                 curr_cell = cell.Cell(
                     sheet_name, location, contents, value, cell.CellType.LITERAL_NUM)
@@ -270,7 +270,7 @@ class Workbook:
                     sheet_name, location, contents, value, cell.CellType.LITERAL_STRING)
                 sheet = self.spreadsheets[sheet_name.lower()]
                 sheet.cells[location] = curr_cell
-            self.update_extent(sheet, location, False)
+            self.__update_extent(sheet, location, False)
 
     def get_cell_contents(self, sheet_name: str, location: str) -> Optional[str]:
         # Return the contents of the specified cell on the specified sheet.
