@@ -257,7 +257,7 @@ class Workbook:
                 return
             curr_cell.contents = contents
             # Update cell contents and value
-            if self.__str_to_error(contents):
+            if self.__str_to_error(contents.upper()):
                 curr_cell.set_fields(value=self.__str_to_error(contents), type=cell.CellType.ERROR, relies_on=set())
             elif contents[0] == "=":
                 eval, value = lark_module.evaluate_expr(

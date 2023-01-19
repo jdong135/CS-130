@@ -276,7 +276,20 @@ class FormulaEvaluator(lark.visitors.Interpreter):
             return tree.children[0].value[1:-1]
 
     def error(self, tree):
-        return tree.children[0].value
+        val = tree.values[0].value.upper()
+        if val == "#ERROR!":
+            return cell_error.CellError(cell_error.CellErrorType.PARSE_ERROR, "input error")
+        elif val == "#CIRCREF!":
+            return cell_error.CellError(cell_error.CellErrorType.CIRCULAR_REFERENCE, "input error")
+        elif val == "#REF!":
+            return cell_error.CellError(cell_error.CellErrorType.BAD_REFERENCE, "input error")
+        elif val == "#NAME?":
+            return cell_error.CellError(cell_error.CellErrorType.BAD_NAME, "input error")
+        elif val == "#VALUE!":
+            return cell_error.CellError(cell_error.CellErrorType.TYPE_ERROR, "input error")
+        elif val == "#DIV/0!":
+            return cell_error.CellError(cell_error.CellErrorType.DIVIDE_BY_ZERO, "input error")
+    
         # return self.error
 
 
