@@ -25,9 +25,15 @@ class Workbook:
         self.curr_lowest = 1  # current open
 
     def num_sheets(self) -> int:
+        """
+        Return current number of spreadsheets
+        """
         return len(self.spreadsheets)
 
     def get_cell(self, sheet_name: str, location: str) -> cell.Cell:
+        """
+        Return a cell object
+        """
         return self.spreadsheets[sheet_name].cells[location]
 
     def list_sheets(self) -> List[str]:
@@ -88,11 +94,17 @@ class Workbook:
             return (len(self.spreadsheets) - 1, sheet_name)
 
     def __update_values(self, cell):
+        """
+        Update values of a cell
+        """
         contents = cell.contents
         _, value = lark_module.evaluate_expr(self, cell, cell.sheet, contents)
         cell.value = value
 
     def __update_extent(self, sheet, location, deletingCell: bool):
+        """
+        Update the extent of a sheet if we are deleting a cell
+        """
         if deletingCell:
             sheet_col, sheet_row = sheet.extent_col, sheet.extent_row
             col, row = sheet.str_to_tuple(location)
