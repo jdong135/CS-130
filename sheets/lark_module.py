@@ -14,7 +14,7 @@ class FormulaEvaluator(lark.visitors.Interpreter):
         self.calling_cell = calling_cell
         self.relies_on = set()
 
-    def check_string_arithmetic(self, value):
+    def __check_string_arithmetic(self, value):
         if type(value) == str:
             if self.wb.is_number(value):
                 value = decimal.Decimal(value)
@@ -26,63 +26,93 @@ class FormulaEvaluator(lark.visitors.Interpreter):
         else:
             return None
 
+    def __check_for_error(self, values):
+        errs = {}  # {int error enum : CellError object}
+        for i in [0, 2]:
+            if isinstance(values[i], cell_error.CellError):
+                match values[i].get_type():
+                    case cell_error.CellErrorType.PARSE_ERROR:
+                        errs[cell_error.CellErrorType.PARSE_ERROR.value] = cell_error.CellError(
+                            cell_error.CellErrorType.PARSE_ERROR, "parsing error")
+                    case cell_error.CellErrorType.CIRCULAR_REFERENCE:
+                        errs[cell_error.CellErrorType.CIRCULAR_REFERENCE.value] = cell_error.CellError(
+                            cell_error.CellErrorType.CIRCULAR_REFERENCE, "circular reference")
+                    case cell_error.CellErrorType.BAD_REFERENCE:
+                        errs[cell_error.CellErrorType.BAD_REFERENCE.value] = cell_error.CellError(
+                            cell_error.CellErrorType.BAD_REFERENCE, "bad reference")
+                    case cell_error.CellErrorType.BAD_NAME:
+                        errs[cell_error.CellErrorType.BAD_NAME.value] = cell_error.CellError(
+                            cell_error.CellErrorType.BAD_NAME, "bad name")
+                    case cell_error.CellErrorType.TYPE_ERROR:
+                        errs[cell_error.CellErrorType.TYPE_ERROR.value] = cell_error.CellError(
+                            cell_error.CellErrorType.TYPE_ERROR, "type error")
+                    case cell_error.CellErrorType.DIVIDE_BY_ZERO:
+                        errs[cell_error.CellErrorType.DIVIDE_BY_ZERO.value] = cell_error.CellError(
+                            cell_error.CellErrorType.DIVIDE_BY_ZERO, "divide by zero")
+        if len(errs) > 0:
+            self.error = errs[min(list(errs.keys()))]
+            return self.error
+        else:
+            return False
+
     @visit_children_decor
     def add_expr(self, values):
-        if not self.error:
-            v0 = self.check_string_arithmetic(values[0])
-            v2 = self.check_string_arithmetic(values[2])
-            if self.error:
-                return self.error
-            if v0:
-                values[0] = v0
-            if v2:
-                values[2] = v2
-            if not values[0]:
-                values[0] = decimal.Decimal(0)
-            if not values[2]:
-                values[2] = decimal.Decimal(0)
-            if values[1] == '+':
-                return values[0] + values[2]
-            elif values[1] == '-':
-                return values[0] - values[2]
-            else:
-                assert False, 'Unexpected operator: ' + values[1]
+        if self.__check_for_error(values):
+            return self.error
+        v0 = self.__check_string_arithmetic(values[0])
+        v2 = self.__check_string_arithmetic(values[2])
+        if self.error:
+            return self.error
+        if v0:
+            values[0] = v0
+        if v2:
+            values[2] = v2
+        if not values[0]:
+            values[0] = decimal.Decimal(0)
+        if not values[2]:
+            values[2] = decimal.Decimal(0)
+        if values[1] == '+':
+            return values[0] + values[2]
+        elif values[1] == '-':
+            return values[0] - values[2]
+        else:
+            assert False, 'Unexpected operator: ' + values[1]
 
     @visit_children_decor
     def mul_expr(self, values):
-        if not self.error:
-            v0 = self.check_string_arithmetic(values[0])
-            v2 = self.check_string_arithmetic(values[2])
-            if self.error:
+        if self.__check_for_error(values):
+            return self.error
+        v0 = self.__check_string_arithmetic(values[0])
+        v2 = self.__check_string_arithmetic(values[2])
+        if self.error:
+            return self.error
+        if v0:
+            values[0] = v0
+        if v2:
+            values[2] = v2
+        if not values[0]:
+            values[0] = decimal.Decimal(0)
+        if not values[2]:
+            values[2] = decimal.Decimal(0)
+        if values[1] == '*':
+            res = values[0] * values[2]
+            return abs(res) if res == 0 else res
+        elif values[1] == '/':
+            if values[2] == 0:
+                self.error = cell_error.CellError(
+                    cell_error.CellErrorType.DIVIDE_BY_ZERO, 'divide by zero')
                 return self.error
-            if v0:
-                values[0] = v0
-            if v2:
-                values[2] = v2
-            if not values[0]:
-                values[0] = decimal.Decimal(0)
-            if not values[2]:
-                values[2] = decimal.Decimal(0)
-            if values[1] == '*':
-                res = values[0] * values[2]
-                return abs(res) if res == 0 else res
-            elif values[1] == '/':
-                if values[2] == 0:
-                    self.error = cell_error.CellError(
-                        cell_error.CellErrorType.DIVIDE_BY_ZERO, 'divide by zero')
-                    return self.error
-                else:
-                    return values[0] / values[2]
             else:
-                assert False, 'Unexpected operator: ' + values[1]
+                return values[0] / values[2]
+        else:
+            assert False, 'Unexpected operator: ' + values[1]
 
     @visit_children_decor
     def unary_op(self, values):
-        if not self.error:
-            if values[0] == "-" and not values[1]:
-                return decimal.Decimal(0)
-            elif values[0] == "-":
-                return -1 * values[1]
+        if values[0] == "-" and not values[1]:
+            return decimal.Decimal(0)
+        elif values[0] == "-":
+            return -1 * values[1]
 
     @visit_children_decor
     def concat_expr(self, values):
@@ -134,6 +164,10 @@ class FormulaEvaluator(lark.visitors.Interpreter):
             # =[col][row]
             else:
                 location = values[0].value
+                if not self.sheet.check_valid_location(location):
+                    self.error = cell_error.CellError(
+                        cell_error.CellErrorType.BAD_REFERENCE, 'invalid location')
+                    return self.error
                 if self.calling_cell and self.calling_cell.location == location:
                     self.error = cell_error.CellError(
                         cell_error.CellErrorType.CIRCULAR_REFERENCE, 'cycle detected')
@@ -180,13 +214,9 @@ def evaluate_expr(workbook, curr_cell, sheetname, contents):
     parser = lark.Lark.open('sheets/formulas.lark', start='formula')
     try:
         tree = parser.parse(contents)
-        value = eval.visit(tree)
-        return eval, value
-    except TypeError:
-        eval.error = cell_error.CellError(
-            cell_error.CellErrorType.TYPE_ERROR, "invalid operation")
-        return eval, eval.error
     except:
         eval.error = cell_error.CellError(
             cell_error.CellErrorType.PARSE_ERROR, "parse error")
         return eval, eval.error
+    value = eval.visit(tree)
+    return eval, value
