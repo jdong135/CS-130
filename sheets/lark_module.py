@@ -128,6 +128,7 @@ class FormulaEvaluator(lark.visitors.Interpreter):
                 if self.calling_cell not in sheet.cells[location].dependents:
                     sheet.cells[location].dependents.add(self.calling_cell)
                 self.relies_on.add(sheet.cells[location])
+                # If you reference an empty cell, it's default value is none
                 if not sheet.cells[location].value:
                     return decimal.Decimal(0)
                 return sheet.cells[location].value
@@ -151,6 +152,7 @@ class FormulaEvaluator(lark.visitors.Interpreter):
                     self.sheet.cells[location].dependents.add(
                         self.calling_cell)
                 self.relies_on.add(self.sheet.cells[location])
+                # If you reference an empty cell, it's default value is none
                 if not self.sheet.cells[location].value:
                     return decimal.Decimal(0)
                 return self.sheet.cells[values[0].value].value
