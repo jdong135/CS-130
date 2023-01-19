@@ -215,7 +215,7 @@ class Workbook:
                     value=value, type=cell.CellType.FORMULA, relies_on=eval.relies_on)
             elif contents[0] == "'":
                 curr_cell.set_fields(
-                    value=contents[1:].strip(), type=cell.CellType.STRING, relies_on=set())
+                    value=contents[1:].rstrip(), type=cell.CellType.STRING, relies_on=set())
             elif self.is_number(contents):
                 contents = self.strip_zeros(contents)
                 curr_cell.set_fields(value=decimal.Decimal(
@@ -252,7 +252,7 @@ class Workbook:
                 sheet = self.spreadsheets[sheet_name.lower()]
                 sheet.cells[location] = curr_cell
             elif contents[0] == "'":
-                value = contents[1:].strip()
+                value = contents[1:].rstrip()
                 curr_cell = cell.Cell(
                     sheet_name, location, contents, value, cell.CellType.STRING)
                 sheet = self.spreadsheets[sheet_name.lower()]
