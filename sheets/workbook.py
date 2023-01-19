@@ -3,6 +3,7 @@ from sheets.lark_module import FormulaEvaluator
 from . import Sheet
 from sheets import cell
 from sheets import topo_sort
+from sheets import cell_error
 import lark
 import decimal
 from sheets import lark_module
@@ -191,11 +192,17 @@ class Workbook:
                 return
             # Some cell depends on this cell: delete with traversal
             elif not contents or len(contents) == 0:
-                curr_cell.set_fields(contents="", value="",
+                curr_cell.set_fields(contents=None, value=None, relies_on=set(),
                                      type=cell.CellType.EMPTY)
-                sorted_components = topo_sort(curr_cell)[1:]
-                for node in sorted_components:
-                    self.update_values(node)
+                circular, sorted_components = topo_sort(curr_cell)
+                if not circular:
+                    for node in sorted_components[1:]:
+                        self.update_values(node)
+                else:
+                    for node in curr_cell.dependents:
+                        node.relies_on.remove(curr_cell)
+                    for node in sorted_components[1:]:
+                        self.update_values(node)
                 self.update_extent(sheet, location, True)
                 return
             curr_cell.contents = contents
@@ -208,7 +215,7 @@ class Workbook:
                     value=value, type=cell.CellType.FORMULA, relies_on=eval.relies_on)
             elif contents[0] == "'":
                 curr_cell.set_fields(
-                    value=contents[1:].strip(), type=cell.CellType.STRING, relies_on=set())
+                    value=contents[1:].rstrip(), type=cell.CellType.STRING, relies_on=set())
             elif self.is_number(contents):
                 contents = self.strip_zeros(contents)
                 curr_cell.set_fields(value=decimal.Decimal(
@@ -221,9 +228,15 @@ class Workbook:
             for c in list_diff:
                 c.dependents.remove(curr_cell)
             # update dependents
-            sorted_components = topo_sort(curr_cell)[1:]
-            for node in sorted_components:
-                self.update_values(node)
+            circular, sorted_components = topo_sort(curr_cell)
+            if not circular:
+                for node in sorted_components[1:]:
+                    self.update_values(node)
+            else:
+                for node in sorted_components:
+                    node.value = cell_error.CellError(
+                        cell_error.CellErrorType.CIRCULAR_REFERENCE, 'cycle detected')
+
         # cell does not exist: add cell
         else:
             if not contents or len(contents) == 0:
@@ -231,15 +244,15 @@ class Workbook:
             if contents[0] == "=":
                 curr_cell = cell.Cell(
                     sheet_name, location, contents, None, cell.CellType.FORMULA)
-                _, value = lark_module.evaluate_expr(
+                eval, value = lark_module.evaluate_expr(
                     self, curr_cell, sheet_name, contents)
                 # FIX THIS
                 value = self.strip_evaluation(value)
-                curr_cell.set_fields(value=value)
+                curr_cell.set_fields(value=value, relies_on=eval.relies_on)
                 sheet = self.spreadsheets[sheet_name.lower()]
                 sheet.cells[location] = curr_cell
             elif contents[0] == "'":
-                value = contents[1:].strip()
+                value = contents[1:].rstrip()
                 curr_cell = cell.Cell(
                     sheet_name, location, contents, value, cell.CellType.STRING)
                 sheet = self.spreadsheets[sheet_name.lower()]
@@ -257,7 +270,6 @@ class Workbook:
                     sheet_name, location, contents, value, cell.CellType.LITERAL_STRING)
                 sheet = self.spreadsheets[sheet_name.lower()]
                 sheet.cells[location] = curr_cell
-            # update extent
             self.update_extent(sheet, location, False)
 
     def get_cell_contents(self, sheet_name: str, location: str) -> Optional[str]:
