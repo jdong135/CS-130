@@ -4,7 +4,24 @@ from lark.visitors import visit_children_decor
 from sheets import cell_error
 from sheets import cell
 from sheets import strip_module
+from typing import Optional
 
+# # importing module
+# import logging
+
+# # Create and configure logger
+# logging.basicConfig(filename="logs/lark_module.log",
+#                     format='%(asctime)s %(message)s',
+#                     filemode='w')
+
+# # Creating an object
+# logger = logging.getLogger()
+
+# # Setting the threshold of logger to DEBUG
+# logger.setLevel(logging.DEBUG)
+
+
+# ERROR_MAP = {'#div/0!': cell_error.CellError(cell_error.CellErrorType.DIVIDE_BY_ZERO, "divide by zero")}
 
 class FormulaEvaluator(lark.visitors.Interpreter):
     def __init__(self, workbook, sheet, calling_cell):
@@ -15,7 +32,25 @@ class FormulaEvaluator(lark.visitors.Interpreter):
         self.calling_cell = calling_cell
         self.relies_on = set()
 
-    def __check_string_arithmetic(self, value):
+    # def __check_mapping(self, values):
+    #     for i in [0, 2]:
+    #         v = values[i]
+    #         if v.lower() in ERROR_MAP:
+    #             values[i] = ERROR_MAP[v.lower()]
+    #     return values
+
+    def __check_string_arithmetic(self, value) -> Optional[decimal.Decimal]:
+        """
+        Check if arithmetic is using values that are parsable to decimal values.
+        If so, return their decimal form. Otherwise, set the FormulaEvaluator
+        error to Type Error. 
+
+        Args:
+            value (any): value to check if parsable to a decimal
+
+        Returns:
+            Optional[decimal.Decimal]: decimal representation of input value
+        """
         if type(value) == str:
             value = value.strip()
             if strip_module.is_number(value):
@@ -29,6 +64,16 @@ class FormulaEvaluator(lark.visitors.Interpreter):
             return None
 
     def __check_for_error(self, values):
+        """
+        Check if input values is are instance of a cell error. If so, return the error with
+        the highest priority. Otherwise, return False. 
+
+        Args:
+            values (List): array of input values for artithmetic evaluation
+
+        Returns:
+            bool or CellError: return self.error if an error is found. Otherwise, return false
+        """
         errs = {}  # {int error enum : CellError object}
         for i in [0, 2]:
             if isinstance(values[i], cell_error.CellError):
@@ -59,6 +104,8 @@ class FormulaEvaluator(lark.visitors.Interpreter):
 
     @visit_children_decor
     def add_expr(self, values):
+        # logger.info(f"values are {values}")
+        # values = self.__check_mapping(values)
         if self.__check_for_error(values):
             return self.error
         v0 = self.__check_string_arithmetic(values[0])
@@ -82,6 +129,7 @@ class FormulaEvaluator(lark.visitors.Interpreter):
 
     @visit_children_decor
     def mul_expr(self, values):
+        # values = self.__check_mapping(values)
         if self.__check_for_error(values):
             return self.error
         v0 = self.__check_string_arithmetic(values[0])
@@ -225,14 +273,23 @@ class FormulaEvaluator(lark.visitors.Interpreter):
 
     def error(self, tree):
         if not self.error:
-            print('error!!!!!')
             return tree.children[0].value
-        else:
-            print('bad!!!')
         return self.error
 
 
 def evaluate_expr(workbook, curr_cell, sheetname, contents):
+    """
+    Evaluate a provided expression using the lark formula parser and evaluator.
+
+    Args:
+        workbook (Workbook): a workbook object
+        curr_cell (Cell): cell to evaluate within
+        sheetname (str): name of the sheet we are working in
+        contents (str): contents of the cell to parse
+
+    Returns:
+        FormulaEvaluator, Any: Evaluator object and provided value 
+    """
     eval = FormulaEvaluator(
         workbook, workbook.spreadsheets[sheetname.lower()], curr_cell)
     parser = lark.Lark.open('sheets/formulas.lark', start='formula')
@@ -242,6 +299,10 @@ def evaluate_expr(workbook, curr_cell, sheetname, contents):
         eval.error = cell_error.CellError(
             cell_error.CellErrorType.PARSE_ERROR, "parse error")
         return eval, eval.error
-    # print(type(tree.children[0].value))
     value = eval.visit(tree)
     return eval, value
+    # except:
+    #     curr_cell.value =
+    #     eval.error = cell_error.CellError(
+    #         cell_error.CellErrorType.BAD_REFERENCE, "bad reference")
+    #     return eval, eval.error

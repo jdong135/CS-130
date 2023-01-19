@@ -16,7 +16,7 @@ class Cell:
     def __hash__(self):
         return hash((self.sheet, self.location))
 
-    def __init__(self, sheet: str, location: str, contents: str, value, type) -> None:
+    def __init__(self, sheet: str, location: str, contents: str, value: str, type: CellType):
         """
         Initialize a cell object
 
@@ -25,6 +25,8 @@ class Cell:
             col (str): column of the cell - ranges from A-ZZZZ
             row (int): row of the cell - ranges from 1-9999
             contents (str): user input into the cell before evaluation
+            value (str): evaluation of contents into an actual value
+            type (CellType): what classification the cell is
         """
         self.sheet = sheet
         self.location = location
@@ -34,13 +36,17 @@ class Cell:
         self.relies_on = set()  # which cells self calls
         self.dependents = set()  # which cells call self
 
-    def set_fields(self, **kwargs):
+    def set_fields(self, **kwargs) -> None:
+        """
+        Update specified fields of a cell object.
+        """
         self.__dict__.update(kwargs)
 
-    def set_value(self, value):
-        """_summary_
+    def set_value(self, value: str) -> None:
+        """
+        Set the value of a cell object.
 
         Args:
-            value (_type_): _description_
+            value (str): value to set for the cell. 
         """
         self.value = value
