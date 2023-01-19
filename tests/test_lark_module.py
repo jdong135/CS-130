@@ -5,7 +5,6 @@ Test for implementation of Lark Module formula Evaluator
 import unittest
 import os
 import sys
-import lark
 
 PROJECT_ROOT = os.path.abspath(os.path.join(
     os.path.dirname(__file__),
@@ -104,6 +103,128 @@ class Lark_Module_Basic(unittest.TestCase):
         wb.set_cell_contents("sheet1", "A2", "=0")
         eval, _ = lark_module.evaluate_expr(wb, None, "sheet1", "=A1 / A2")
         self.assertEqual(eval.error.get_detail(), "divide by zero")
+
+    def test_string_arithmetic1(self):
+        wb = Workbook()
+        wb.new_sheet()
+        wb.set_cell_contents("sheet1", "A1", "'1")
+        wb.set_cell_contents("sheet1", "A2", "'hello world")
+        eval, _ = lark_module.evaluate_expr(wb, None, "sheet1", "=A1 + A2")
+        self.assertEqual(eval.error.get_detail(), "string arithmetic")
+
+    def test_string_arithmetic2(self):
+        wb = Workbook()
+        wb.new_sheet()
+        wb.set_cell_contents("sheet1", "A1", "'goodbye world")
+        wb.set_cell_contents("sheet1", "A2", "'hello world")
+        eval, _ = lark_module.evaluate_expr(wb, None, "sheet1", "=A1 + A2")
+        self.assertEqual(eval.error.get_detail(), "string arithmetic")
+
+    def test_string_arithmetic3(self):
+        wb = Workbook()
+        wb.new_sheet()
+        wb.set_cell_contents("sheet1", "A1", "'10")
+        wb.set_cell_contents("sheet1", "A2", "'2")
+        _, value = lark_module.evaluate_expr(wb, None, "sheet1", "=A1 + A2")
+        self.assertEqual(value, 12)
+
+    def test_string_arithmetic4(self):
+        wb = Workbook()
+        wb.new_sheet()
+        wb.set_cell_contents("sheet1", "A1", "'1")
+        wb.set_cell_contents("sheet1", "A2", "'hello world")
+        eval, _ = lark_module.evaluate_expr(wb, None, "sheet1", "=A1 * A2")
+        self.assertEqual(eval.error.get_detail(), "string arithmetic")
+
+    def test_string_arithmetic5(self):
+        wb = Workbook()
+        wb.new_sheet()
+        wb.set_cell_contents("sheet1", "A1", "'goodbye world")
+        wb.set_cell_contents("sheet1", "A2", "'hello world")
+        eval, _ = lark_module.evaluate_expr(wb, None, "sheet1", "=A1 * A2")
+        self.assertEqual(eval.error.get_detail(), "string arithmetic")
+
+    def test_string_arithmetic6(self):
+        wb = Workbook()
+        wb.new_sheet()
+        wb.set_cell_contents("sheet1", "A1", "'10")
+        wb.set_cell_contents("sheet1", "A2", "'2")
+        _, value = lark_module.evaluate_expr(wb, None, "sheet1", "=A1 * A2")
+        self.assertEqual(value, 20)
+
+    def test_string_arithmetic7(self):
+        wb = Workbook()
+        wb.new_sheet()
+        wb.set_cell_contents("sheet1", "A1", "'123")
+        wb.set_cell_contents("sheet1", "A2", "5.3")
+        _, value = lark_module.evaluate_expr(wb, None, "sheet1", "=A1 * A2")
+        self.assertEqual(value, decimal.Decimal('651.9'))
+
+    def test_string_arithmetic7(self):
+        wb = Workbook()
+        wb.new_sheet()
+        wb.set_cell_contents("sheet1", "A1", "'  123")
+        wb.set_cell_contents("sheet1", "A2", "5.3")
+        _, value = lark_module.evaluate_expr(wb, None, "sheet1", "=A1 * A2")
+        self.assertEqual(value, decimal.Decimal('651.9'))
+
+    def test_bad_reference1(self):
+        wb = Workbook()
+        wb.new_sheet()
+        wb.set_cell_contents("sheet1", "A1", "'10")
+        eval, _ = lark_module.evaluate_expr(wb, None, "sheet1", "=Sheet2!A1")
+        self.assertEqual(eval.error.get_detail(), "sheet name not found")
+
+    def test_bad_reference2(self):
+        wb = Workbook()
+        wb.new_sheet()
+        wb.set_cell_contents("sheet1", "A1", "'10")
+        eval, _ = lark_module.evaluate_expr(
+            wb, None, "sheet1", "=Sheet1!A10000")
+        self.assertEqual(eval.error.get_detail(), "invalid location")
+
+    def test_bad_reference3(self):
+        wb = Workbook()
+        wb.new_sheet()
+        wb.set_cell_contents("sheet1", "A1", "'10")
+        eval, _ = lark_module.evaluate_expr(
+            wb, None, "sheet1", "=Sheet1!ZZZZZ9999")
+        self.assertEqual(eval.error.get_detail(), "invalid location")
+
+    def test_parse_error1(self):
+        wb = Workbook()
+        wb.new_sheet()
+        eval, _ = lark_module.evaluate_expr(
+            wb, None, "sheet1", "=e71s18d")
+        self.assertEqual(eval.error.get_detail(), "parse error")
+
+    def test_initialized_empty_cell_ref(self):
+        wb = Workbook()
+        wb.new_sheet()
+        wb.set_cell_contents("sheet1", 'A1', "=B1 + C1")
+
+        wb.set_cell_contents("sheet1", "B1", "=C1")
+        eval, value = lark_module.evaluate_expr(wb, wb.get_cell(
+            "sheet1", "A1"), "sheet1", wb.get_cell_contents("sheet1", "B1"))
+        self.assertEqual(value, 0)
+
+    def test_error_propagation1(self):
+        wb = Workbook()
+        wb.new_sheet()
+        wb.set_cell_contents("sheet1", "A1", "abc")
+        wb.set_cell_contents("sheet1", "B1", "=A1 + 1")  # Value!
+        wb.set_cell_contents("sheet1", "C1", "=B1 + 1")
+        eval, value = lark_module.evaluate_expr(wb, None, "sheet1", "=C1")
+        self.assertEqual(value.get_detail(), "invalid operation")
+
+    def test_error_propagation2(self):
+        wb = Workbook()
+        wb.new_sheet()
+        wb.set_cell_contents("sheet1", "A1", "0")
+        wb.set_cell_contents("sheet1", "B1", "=1 / A1")  # Div/0!
+        wb.set_cell_contents("sheet1", "C1", "=B1 + 1")
+        eval, value = lark_module.evaluate_expr(wb, None, "sheet1", "=C1")
+        self.assertEqual(value.get_detail(), "divide by zero")
 
 
 if __name__ == "__main__":
