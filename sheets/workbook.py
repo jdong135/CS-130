@@ -146,8 +146,8 @@ class Workbook:
             for c in list_diff:
                 c.dependents.remove(c)
             # update dependents
-            sorted_components = topo_sort(c)[1:]
-            for node in sorted_components:
+            _, sorted_components = topo_sort(c)
+            for node in sorted_components[1:]:
                 self.__update_values(node)
 
     def get_sheet_extent(self, sheet_name: str) -> Tuple[int, int]:
