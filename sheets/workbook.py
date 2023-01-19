@@ -141,8 +141,7 @@ class Workbook:
         del self.spreadsheets[sheet_name.lower()]
         for loc in sheet.cells:
             c = sheet.cells[loc]
-            past_relies_on = c.relies_on
-            list_diff = past_relies_on - c.relies_on
+            list_diff = c.relies_on
             for c in list_diff:
                 c.dependents.remove(c)
             # update dependents
@@ -202,6 +201,9 @@ class Workbook:
             if (not contents or len(contents) == 0) and len(curr_cell.dependents) == 0:
                 del sheet.cells[location]
                 self.__update_extent(sheet, location, True)
+                list_diff = past_relies_on
+                for c in list_diff:
+                    c.dependents.remove(curr_cell)
                 return
             # Some cell depends on this cell: delete with traversal
             elif not contents or len(contents) == 0:
@@ -209,14 +211,21 @@ class Workbook:
                                      type=cell.CellType.EMPTY)
                 circular, sorted_components = topo_sort(curr_cell)
                 if not circular:
+                    # WHY DO WE NEED THIS
+                    # for node in curr_cell.dependents:
+                    #     node.relies_on.remove(curr_cell)
                     for node in sorted_components[1:]:
                         self.__update_values(node)
+
                 else:
-                    for node in curr_cell.dependents:
-                        node.relies_on.remove(curr_cell)
+                    # for node in curr_cell.dependents:
+                    #     node.relies_on.remove(curr_cell)
                     for node in sorted_components[1:]:
                         self.__update_values(node)
                 self.__update_extent(sheet, location, True)
+                list_diff = past_relies_on
+                for c in list_diff:
+                    c.dependents.remove(curr_cell)
                 return
             curr_cell.contents = contents
             # Update cell contents and value
@@ -249,7 +258,6 @@ class Workbook:
                 for node in sorted_components:
                     node.value = cell_error.CellError(
                         cell_error.CellErrorType.CIRCULAR_REFERENCE, 'cycle detected')
-
         # cell does not exist: add cell
         else:
             if not contents or len(contents) == 0:

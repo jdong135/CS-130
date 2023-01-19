@@ -154,6 +154,7 @@ class FormulaEvaluator(lark.visitors.Interpreter):
                     self.error = cell_error.CellError(
                         cell_error.CellErrorType.BAD_REFERENCE, 'invalid location')
                     return self.error
+                # REFERENCE SELF CIRCULAR REFERENCE ERROR
                 if self.calling_cell and self.calling_cell.sheet.lower() == sheet_name and self.calling_cell.location == location:
                     self.error = cell_error.CellError(
                         cell_error.CellErrorType.CIRCULAR_REFERENCE, 'cycle detected')
@@ -167,8 +168,7 @@ class FormulaEvaluator(lark.visitors.Interpreter):
                         new_empty_cell.dependents.add(self.calling_cell)
                     self.relies_on.add(new_empty_cell)
                     return decimal.Decimal(0)  # FIX THIS
-                if self.calling_cell not in sheet.cells[location].dependents:
-                    sheet.cells[location].dependents.add(self.calling_cell)
+                sheet.cells[location].dependents.add(self.calling_cell)
                 self.relies_on.add(sheet.cells[location])
                 # If you reference an empty cell, it's default value is none
                 if not sheet.cells[location].value:
@@ -212,6 +212,11 @@ class FormulaEvaluator(lark.visitors.Interpreter):
 
     def number(self, tree):
         if not self.error:
+            number = decimal.Decimal(tree.children[0])
+            if number == decimal.Decimal('NaN'):
+                return "NaN"
+            if number == decimal.Decimal('Infinity'):
+                return "Infinity"
             return decimal.Decimal(tree.children[0])
 
     def string(self, tree):
@@ -219,6 +224,11 @@ class FormulaEvaluator(lark.visitors.Interpreter):
             return tree.children[0].value[1:-1]
 
     def error(self, tree):
+        if not self.error:
+            print('error!!!!!')
+            return tree.children[0].value
+        else:
+            print('bad!!!')
         return self.error
 
 
@@ -232,5 +242,6 @@ def evaluate_expr(workbook, curr_cell, sheetname, contents):
         eval.error = cell_error.CellError(
             cell_error.CellErrorType.PARSE_ERROR, "parse error")
         return eval, eval.error
+    # print(type(tree.children[0].value))
     value = eval.visit(tree)
     return eval, value

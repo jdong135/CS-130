@@ -55,4 +55,6 @@ class Sheet:
         col, row = self.str_to_tuple(location)
         if col > 475254 or row > 9999:
             return False
+        if len(location.strip()) != len(location):
+            return False
         return True
