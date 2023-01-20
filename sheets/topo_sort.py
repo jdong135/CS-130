@@ -9,7 +9,6 @@ class DFSState(enum.Enum):
     LEAVE = 2
 
 
-
 def topo_sort(v: Cell) -> Tuple[bool, list[Cell]]:
     """
     Perform a topological sort on all neighbors of the specified starting cell.

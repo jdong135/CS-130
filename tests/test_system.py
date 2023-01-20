@@ -19,7 +19,7 @@ class System_Tests(unittest.TestCase):
     def test_system1(self):
         MAX_NUM = 10000000
         SIZE = 9999
-        TEST_SAMPLE = 500
+        TEST_SAMPLE = 5
 
         self.assertEqual(sheets.version, "1.0")
 

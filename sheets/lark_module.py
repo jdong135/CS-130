@@ -4,8 +4,7 @@ from lark.visitors import visit_children_decor
 from sheets import cell_error
 from sheets import cell
 from sheets import strip_module
-from typing import Optional
-
+from typing import Optional, Any, Union
 
 
 class FormulaEvaluator(lark.visitors.Interpreter):
@@ -17,8 +16,7 @@ class FormulaEvaluator(lark.visitors.Interpreter):
         self.calling_cell = calling_cell
         self.relies_on = set()
 
-
-    def __check_string_arithmetic(self, value) -> Optional[decimal.Decimal]:
+    def __check_string_arithmetic(self, value: Any) -> Optional[decimal.Decimal]:
         """
         Check if arithmetic is using values that are parsable to decimal values.
         If so, return their decimal form. Otherwise, set the FormulaEvaluator
@@ -42,19 +40,22 @@ class FormulaEvaluator(lark.visitors.Interpreter):
         else:
             return None
 
-    def __check_for_error(self, values):
+    def __check_for_error(self, values, *args) -> Union[cell_error.CellError, bool]:
         """
         Check if input values is are instance of a cell error. If so, return the error with
         the highest priority. Otherwise, return False. 
 
         Args:
             values (List): array of input values for artithmetic evaluation
+            args: indices of values array to check for cell error instances
 
         Returns:
             bool or CellError: return self.error if an error is found. Otherwise, return false
         """
         errs = {}  # {int error enum : CellError object}
-        for i in [0, 2]:
+        for arg in args:
+            assert type(arg) == int
+        for i in args:
             if isinstance(values[i], cell_error.CellError):
                 match values[i].get_type():
                     case cell_error.CellErrorType.PARSE_ERROR:
@@ -83,7 +84,7 @@ class FormulaEvaluator(lark.visitors.Interpreter):
 
     @visit_children_decor
     def add_expr(self, values):
-        if self.__check_for_error(values):
+        if self.__check_for_error(values, 0, 2):
             return self.cell_error
         v0 = self.__check_string_arithmetic(values[0])
         v2 = self.__check_string_arithmetic(values[2])
@@ -106,7 +107,7 @@ class FormulaEvaluator(lark.visitors.Interpreter):
 
     @visit_children_decor
     def mul_expr(self, values):
-        if self.__check_for_error(values):
+        if self.__check_for_error(values, 0, 2):
             return self.cell_error
         v0 = self.__check_string_arithmetic(values[0])
         v2 = self.__check_string_arithmetic(values[2])
@@ -135,6 +136,8 @@ class FormulaEvaluator(lark.visitors.Interpreter):
 
     @visit_children_decor
     def unary_op(self, values):
+        if self.__check_for_error(values, 1):
+            return self.cell_error
         if values[0] == "-" and not values[1]:
             return decimal.Decimal(0)
         elif values[0] == "-":

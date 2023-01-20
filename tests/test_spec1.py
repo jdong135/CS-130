@@ -12,8 +12,7 @@ PROJECT_ROOT = os.path.abspath(os.path.join(
     os.pardir)
 )
 sys.path.append(PROJECT_ROOT)
-from sheets import Workbook, lark_module, CellErrorType, CellError
-
+from sheets import Workbook, lark_module, CellErrorType, CellError  # noqa
 
 MAX_SHEETS_TEST = 100
 
