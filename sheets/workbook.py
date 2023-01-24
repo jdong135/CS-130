@@ -234,7 +234,7 @@ class Workbook:
             for dependent in cell_dependents:
                 self.__set_cell_value_and_type(dependent)
         else:  # if cell does not exist (create contents)
-            new_cell = cell.Cell(sheet, location, contents, None, None)
+            new_cell = cell.Cell(sheet_name, location, contents, None, None)
             self.__set_cell_value_and_type(new_cell)
             if new_cell.type != cell.CellType.EMPTY:
                 self.adjacency_list[new_cell] = []
