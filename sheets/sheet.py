@@ -14,7 +14,7 @@ class Sheet:
         self.name = name
         self.extent_row = 0
         self.extent_col = 0
-        self.cells = {}  # {string: Cell}
+        self.cells = {}  # {'A1': Cell} UPPERCASE location to cell
 
     def str_to_tuple(self, location: str) -> Tuple[int, int]:
         """

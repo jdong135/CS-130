@@ -1,7 +1,7 @@
 from typing import *
 from sheets.lark_module import FormulaEvaluator
 from . import Sheet
-from sheets import cell
+from sheets import cell, strip_module
 from sheets import topo_sort
 from sheets import cell_error
 import lark
@@ -21,20 +21,13 @@ class Workbook:
 
     def __init__(self):
         self.spreadsheets = {}  # lower case name -> sheet object
-        self.lower_names = set()  # set of lower case name
-        self.curr_lowest = 1  # current open
+        self.adjacency_list = {}  # Cell: [neighbor Cells]
 
     def num_sheets(self) -> int:
         """
         Return current number of spreadsheets
         """
         return len(self.spreadsheets)
-
-    def __get_cell(self, sheet_name: str, location: str) -> cell.Cell:
-        """
-        Return a cell object
-        """
-        return self.spreadsheets[sheet_name].cells[location]
 
     def list_sheets(self) -> List[str]:
         # Return a list of the spreadsheet names in the workbook, with the
@@ -72,9 +65,8 @@ class Workbook:
             i = 0
             while True:
                 sheet_name = "Sheet" + str(i + 1)
-                if sheet_name.lower() not in self.lower_names:
+                if sheet_name.lower() not in self.spreadsheets:
                     self.spreadsheets[sheet_name.lower()] = Sheet(sheet_name)
-                    self.lower_names.add(sheet_name.lower())
                     return (len(self.spreadsheets) - 1, sheet_name)
                 i += 1
         for ch in sheet_name:
@@ -85,20 +77,11 @@ class Workbook:
             raise ValueError("Sheet name starts with white space")
         elif sheet_name[-1] == " ":
             raise ValueError("Sheet name ends with white space")
-        elif sheet_name.lower() in self.lower_names:
+        elif sheet_name.lower() in self.spreadsheets:
             raise ValueError("Duplicate spreadsheet name")
-        elif sheet_name.lower() not in self.lower_names:
+        elif sheet_name.lower() not in self.spreadsheets:
             self.spreadsheets[sheet_name.lower()] = Sheet(sheet_name)
-            self.lower_names.add(sheet_name.lower())
             return (len(self.spreadsheets) - 1, sheet_name)
-
-    def __update_values(self, cell):
-        """
-        Update values of a cell
-        """
-        contents = cell.contents
-        _, value = lark_module.evaluate_expr(self, cell, cell.sheet, contents)
-        cell.value = value
 
     def __update_extent(self, sheet, location, deletingCell: bool):
         """
@@ -122,23 +105,6 @@ class Workbook:
             sheet.extent_col = max(curr_col, sheet.extent_col)
             sheet.extent_row = max(curr_row, sheet.extent_row)
 
-    def __is_number(self, string):
-        return string.isnumeric() or (string.replace('.', '', 1).isdigit() and string.count('.') < 2)
-
-    def __strip_zeros(self, string):
-        return string.rstrip('0').rstrip('.') if '.' in string else string
-
-    def __strip_evaluation(self, eval):
-        # given evaluation from lark, return value
-        if type(eval) == str and self.__is_number(eval):
-            contents = self.__strip_zeros(eval)
-            return decimal.Decimal(contents)
-        elif type(eval) == decimal.Decimal:
-            stripped = self.__strip_zeros(str(eval))
-            return decimal.Decimal(stripped)
-        else:
-            return eval
-
     def del_sheet(self, sheet_name: str) -> None:
         # Delete the spreadsheet with the specified name.
         #
@@ -146,23 +112,18 @@ class Workbook:
         # case does not have to.
         #
         # If the specified sheet name is not found, a KeyError is raised.
-        if sheet_name.lower() not in self.lower_names:
+        if sheet_name.lower() not in self.spreadsheets:
             raise KeyError("Specified sheet name not found")
         sheet = self.spreadsheets[sheet_name.lower()]
+        for c in sheet.cells:
+            for _, neighbors in self.adjacency_list.items():
+                if c in neighbors:
+                    neighbors.remove(c)
+            cell_dependents = topo_sort(c, self.adjacency_list)[1:]
+            for dependent in cell_dependents:
+                self.__set_cell_value_and_type(dependent)
+            del self.adjacency_list[c]
         del self.spreadsheets[sheet_name.lower()]
-        self.lower_names.remove(sheet_name.lower())
-        for loc in sheet.cells:
-            c = sheet.cells[loc]
-            list_diff = c.relies_on
-            try:
-                for c in list_diff:
-                    c.dependents.remove(c)
-            except KeyError:
-                continue
-            # update dependents
-            _, sorted_components = topo_sort(c)
-            for node in sorted_components[1:]:
-                self.__update_values(node)
 
     def get_sheet_extent(self, sheet_name: str) -> Tuple[int, int]:
         # Return a tuple (num-cols, num-rows) indicating the current extent of
@@ -172,7 +133,7 @@ class Workbook:
         # case does not have to.
         #
         # If the specified sheet name is not found, a KeyError is raised.
-        if sheet_name.lower() not in self.lower_names:
+        if sheet_name.lower() not in self.spreadsheets:
             raise KeyError("Specified sheet name not found")
         else:
             sheet = self.spreadsheets[sheet_name.lower()]
@@ -193,6 +154,34 @@ class Workbook:
             return cell_error.CellError(cell_error.CellErrorType.DIVIDE_BY_ZERO, "input error")
         else:
             return None
+
+    def __set_cell_value_and_type(self, calling_cell):
+        """
+        Sets cells value and type based on cell's contents field
+        Args:
+            cell (_type_): Assume cell has contents set correctly
+        """
+        cell_contents = calling_cell.contents
+        if not cell_contents or len(cell_contents) == 0:
+            val = None
+            type = cell.CellType.EMPTY
+        elif self.__str_to_error(cell_contents):  # type error
+            val = self.__str_to_error(cell_contents)
+            type = cell.CellType.ERROR
+        elif cell_contents[0] == "'":
+            val = cell_contents[1:]
+            type = cell.CellType.STRING
+        elif cell_contents[0] == "=":
+            val = lark_module.evaluate_expr(
+                self, calling_cell, calling_cell.sheet, cell_contents)
+            type = cell.CellType.FORMULA
+        elif strip_module.is_number(cell_contents):
+            val = decimal.Decimal(cell_contents)
+            type = cell.CellType.LITERAL_NUM
+        else:
+            val = cell_contents
+            type = cell.CellType.LITERAL_STRING
+        calling_cell.set_fields(value=val, type=type)
 
     def set_cell_contents(self, sheet_name: str, location: str,
                           contents: Optional[str]) -> None:
@@ -219,119 +208,37 @@ class Workbook:
 
         # Set cell contents and then evaluate with lark
         location = location.upper()
-        if sheet_name.lower() not in self.lower_names:
+        if sheet_name.lower() not in self.spreadsheets:
             raise KeyError("Specified sheet name not found")
         sheet = self.spreadsheets[sheet_name.lower()]
         if not sheet.check_valid_location(location):
             raise ValueError(f"Cell location {location} is invalid")
         if contents:
             contents = contents.strip()
-        if location in sheet.cells:
-            curr_cell = sheet.cells[location]
-            past_relies_on = curr_cell.relies_on
-            # No one depends on this cell: delete without traversal
-            if (not contents or len(contents) == 0) and len(curr_cell.dependents) == 0:
-                del sheet.cells[location]
-                self.__update_extent(sheet, location, True)
-                list_diff = past_relies_on
-                for c in list_diff:
-                    c.dependents.remove(curr_cell)
-                return
-            # Some cell depends on this cell: delete with traversal
-            elif not contents or len(contents) == 0:
-                curr_cell.set_fields(contents=None, value=None, relies_on=set(),
-                                     type=cell.CellType.EMPTY)
-                circular, sorted_components = topo_sort(curr_cell)
-                if not circular:
-                    # WHY DO WE NEED THIS
-                    # for node in curr_cell.dependents:
-                    #     node.relies_on.remove(curr_cell)
-                    for node in sorted_components[1:]:
-                        self.__update_values(node)
-
-                else:
-                    # for node in curr_cell.dependents:
-                    #     node.relies_on.remove(curr_cell)
-                    for node in sorted_components[1:]:
-                        self.__update_values(node)
-                self.__update_extent(sheet, location, True)
-                list_diff = past_relies_on
-                for c in list_diff:
-                    c.dependents.remove(curr_cell)
-                return
-            curr_cell.contents = contents
-            # Update cell contents and value
-            if self.__str_to_error(contents.upper()):
-                curr_cell.set_fields(value=self.__str_to_error(
-                    contents.upper()), type=cell.CellType.ERROR, relies_on=set())
-            elif contents[0] == "=":
-                eval, value = lark_module.evaluate_expr(
-                    self, curr_cell, sheet.name, contents)
-                value = self.__strip_evaluation(value)
-                curr_cell.set_fields(
-                    value=value, type=cell.CellType.FORMULA, relies_on=eval.relies_on)
-            elif contents[0] == "'":
-                curr_cell.set_fields(
-                    value=contents[1:].rstrip(), type=cell.CellType.STRING, relies_on=set())
-            elif self.__is_number(contents):
-                contents = self.__strip_zeros(contents)
-                curr_cell.set_fields(value=decimal.Decimal(
-                    contents), type=cell.CellType.LITERAL_NUM, relies_on=set())
-            else:
-                curr_cell.set_fields(
-                    value=contents, type=cell.CellType.LITERAL_STRING, relies_on=set())
-            # update relies on
-            list_diff = past_relies_on - curr_cell.relies_on
-            for c in list_diff:
-                c.dependents.remove(curr_cell)
-            # update dependents
-            circular, sorted_components = topo_sort(curr_cell)
-            if not circular:
-                for node in sorted_components[1:]:
-                    self.__update_values(node)
-            else:
-                for node in sorted_components:
-                    node.value = cell_error.CellError(
-                        cell_error.CellErrorType.CIRCULAR_REFERENCE, 'cycle detected')
-        # cell does not exist: add cell
-        else:
-            if not contents or len(contents) == 0:
-                return
-            if self.__str_to_error(contents.upper()):
-                value = self.__str_to_error(contents.upper())
-                curr_cell = cell.Cell(
-                    sheet_name, location, contents, value, cell.CellType.ERROR)
-                sheet = self.spreadsheets[sheet_name.lower()]
-                sheet.cells[location] = curr_cell
-            elif contents[0] == "=":
-                curr_cell = cell.Cell(
-                    sheet_name, location, contents, None, cell.CellType.FORMULA)
-                eval, value = lark_module.evaluate_expr(
-                    self, curr_cell, sheet_name, contents)
-                # FIX THIS
-                value = self.__strip_evaluation(value)
-                curr_cell.set_fields(value=value, relies_on=eval.relies_on)
-                sheet = self.spreadsheets[sheet_name.lower()]
-                sheet.cells[location] = curr_cell
-            elif contents[0] == "'":
-                value = contents[1:].rstrip()
-                curr_cell = cell.Cell(
-                    sheet_name, location, contents, value, cell.CellType.STRING)
-                sheet = self.spreadsheets[sheet_name.lower()]
-                sheet.cells[location] = curr_cell
-            elif self.__is_number(contents):
-                contents = self.__strip_zeros(contents)
-                value = decimal.Decimal(contents)
-                curr_cell = cell.Cell(
-                    sheet_name, location, contents, value, cell.CellType.LITERAL_NUM)
-                sheet = self.spreadsheets[sheet_name.lower()]
-                sheet.cells[location] = curr_cell
-            else:
-                value = contents
-                curr_cell = cell.Cell(
-                    sheet_name, location, contents, value, cell.CellType.LITERAL_STRING)
-                sheet = self.spreadsheets[sheet_name.lower()]
-                sheet.cells[location] = curr_cell
+        if location in sheet.cells:  # if cell already exists (modify contents)
+            existing_cell = sheet.cells[location]
+            existing_cell.contents = contents
+            self.__set_cell_value_and_type(existing_cell)
+            # if no cells depend on existing cell and contents are empty, delete cell
+            if existing_cell.type == cell.CellType.EMPTY:
+                if not self.adjacency_list[existing_cell]:
+                    del sheet.cells[location]
+                    del self.adjacency_list[existing_cell]
+                    self.__update_extent(sheet, location, True)
+                    for _, neighbors in self.adjacency_list.items():
+                        if existing_cell in neighbors:
+                            neighbors.remove(existing_cell)
+                    return
+            # updating cells that depend on existing cell
+            cell_dependents = topo_sort(existing_cell, self.adjacency_list)[1:]
+            for dependent in cell_dependents:
+                self.__set_cell_value_and_type(dependent)
+        else:  # if cell does not exist (create contents)
+            new_cell = cell.Cell(sheet, location, contents, None, None)
+            self.__set_cell_value_and_type(new_cell)
+            if new_cell.type != cell.CellType.EMPTY:
+                self.adjacency_list[new_cell] = []
+                sheet.cells[location] = new_cell
             self.__update_extent(sheet, location, False)
 
     def get_cell_contents(self, sheet_name: str, location: str) -> Optional[str]:
@@ -351,7 +258,7 @@ class Workbook:
         # This method will never return a zero-length string; instead, empty
         # cells are indicated by a value of None.
         location = location.upper()
-        if sheet_name.lower() not in self.lower_names:
+        if sheet_name.lower() not in self.spreadsheets:
             raise KeyError("Specified sheet name not found")
         sheet = self.spreadsheets[sheet_name.lower()]
         if not sheet.check_valid_location(location):
@@ -382,7 +289,7 @@ class Workbook:
 
         # Return evaluation field of cell
         location = location.upper()
-        if sheet_name.lower() not in self.lower_names:
+        if sheet_name.lower() not in self.spreadsheets:
             raise KeyError("Specified sheet name not found")
         sheet = self.spreadsheets[sheet_name.lower()]
         if not sheet.check_valid_location(location):

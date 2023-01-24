@@ -9,7 +9,7 @@ class DFSState(enum.Enum):
     LEAVE = 2
 
 
-def topo_sort(v: Cell) -> Tuple[bool, list[Cell]]:
+def topo_sort(cell: Cell, graph) -> Tuple[bool, list[Cell]]:
     """
     Perform a topological sort on all neighbors of the specified starting cell.
 
@@ -20,7 +20,7 @@ def topo_sort(v: Cell) -> Tuple[bool, list[Cell]]:
         Tuple[bool, list[Cell]]: Boolean indicating if the cell is part of a 
         cycle and the corresponding ordered list of topologically sorted cells.
     """
-    call_stack = [(v, DFSState.ENTER)]
+    call_stack = [(cell, DFSState.ENTER)]
 
     result = []
     visited = set()
@@ -31,7 +31,7 @@ def topo_sort(v: Cell) -> Tuple[bool, list[Cell]]:
             visited.add((v.sheet, v.location))
             v.onStack = True
             call_stack.append((v, DFSState.LEAVE))
-            for w in v.dependents:
+            for w in graph[v]:
                 if (w.sheet, w.location) not in visited:
                     call_stack.append((w, DFSState.ENTER))
                 # cycle detection

@@ -34,20 +34,9 @@ class Cell:
         self.contents = contents
         self.value = value
         self.type = type
-        self.relies_on = set()  # which cells self calls
-        self.dependents = set()  # which cells call self
 
     def set_fields(self, **kwargs) -> None:
         """
         Update specified fields of a cell object.
         """
         self.__dict__.update(kwargs)
-
-    def set_value(self, value: str) -> None:
-        """
-        Set the value of a cell object.
-
-        Args:
-            value (str): value to set for the cell. 
-        """
-        self.value = value
