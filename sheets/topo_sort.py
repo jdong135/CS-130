@@ -37,8 +37,10 @@ def topo_sort(cell: Cell, graph) -> Tuple[bool, list[Cell]]:
                 # if (w.sheet, w.location) in visited:
                 #     circular = True
                 #     # update implementation when design decision is made
-                if (w.location, DFSState.ENTER) in call_stack or (w.location, DFSState.LEAVE) in call_stack:
-                    circular = True
+                for c, s in call_stack:
+                    if w.location == c.location and s == DFSState.LEAVE:
+                        circular = True
+                        break
         else:
             result.append(v)
     if not circular:

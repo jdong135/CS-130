@@ -178,8 +178,12 @@ class Workbook:
         Sets cells value and type based on cell's contents field
         Args:
             cell (_type_): Assume cell has contents set correctly
+        Returns:
+            None if not formula
+
         """
         cell_contents = calling_cell.contents
+        relies_on = []
         if not cell_contents or len(cell_contents) == 0:
             val = None
             type = cell.CellType.EMPTY
@@ -190,9 +194,10 @@ class Workbook:
             val = cell_contents[1:]
             type = cell.CellType.STRING
         elif cell_contents[0] == "=":
-            _, val = lark_module.evaluate_expr(
+            eval, val = lark_module.evaluate_expr(
                 self, calling_cell, calling_cell.sheet, cell_contents)
             type = cell.CellType.FORMULA
+            relies_on = eval.calling_cell_relies_on
         elif strip_module.is_number(cell_contents):
             val = decimal.Decimal(cell_contents)
             type = cell.CellType.LITERAL_NUM
@@ -200,6 +205,7 @@ class Workbook:
             val = cell_contents
             type = cell.CellType.LITERAL_STRING
         calling_cell.set_fields(value=val, type=type)
+        return relies_on
 
     def set_cell_contents(self, sheet_name: str, location: str,
                           contents: Optional[str]) -> None:
@@ -236,7 +242,11 @@ class Workbook:
         if location in sheet.cells:  # if cell already exists (modify contents)
             existing_cell = sheet.cells[location]
             existing_cell.contents = contents
-            self.__set_cell_value_and_type(existing_cell)
+            # Everything the existing cell relies on
+            relies_on = self.__set_cell_value_and_type(existing_cell)
+            for c, neighbors in self.adjacency_list.items():
+                if existing_cell in neighbors and c not in relies_on:
+                    neighbors.remove(existing_cell)
             if existing_cell.type == cell.CellType.EMPTY:
                 # existing cell is now empty so it does not depend on other cells
                 # -> remove it as a neighbor of other cells
@@ -253,19 +263,8 @@ class Workbook:
             # updating cells that depend on existing cell
             circular, cell_dependents = topo_sort(
                 existing_cell, self.adjacency_list)
-            logger.info('printing adjacency list')
-            for key, val in self.adjacency_list.items():
-                logger.info(key.location)
-                for c in val:
-                    logger.info(f'location: {c.location}')
-            logger.info('topo sort:')
-            for c in cell_dependents:
-                logger.info(c.location)
-            logger.info(circular)
             if not circular:
-                logger.info('cell dependents')
                 for dependent in cell_dependents[1:]:
-                    logger.info(dependent.location)
                     self.__set_cell_value_and_type(dependent)
             else:  # everything in the cycle should have an error value
                 for dependent in cell_dependents:
