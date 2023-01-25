@@ -1,7 +1,13 @@
 from typing import *
-from sheets import cell, strip_module, topo_sort, cell_error, lark_module, sheet
+from sheets import cell, topo_sort, cell_error, lark_module, sheet, string_conversions
 import decimal
 
+import logging
+logging.basicConfig(filename="logs/lark_module.log",
+                    format='%(asctime)s %(message)s',
+                    filemode='w')
+logger = logging.getLogger()
+logger.setLevel(logging.DEBUG)
 
 ALLOWED_PUNC = set([".", "?", "!", ",", ":", ";", "@", "#",
                     "$", "%", "^", "&", "*", "(", ")", "-", "_"])
@@ -62,7 +68,8 @@ class Workbook:
             while True:
                 sheet_name = "Sheet" + str(i + 1)
                 if sheet_name.lower() not in self.spreadsheets:
-                    self.spreadsheets[sheet_name.lower()] = sheet.Sheet(sheet_name)
+                    self.spreadsheets[sheet_name.lower()] = sheet.Sheet(
+                        sheet_name)
                     return (len(self.spreadsheets) - 1, sheet_name)
                 i += 1
         for ch in sheet_name:
@@ -111,15 +118,16 @@ class Workbook:
         if sheet_name.lower() not in self.spreadsheets:
             raise KeyError("Specified sheet name not found")
         sheet = self.spreadsheets[sheet_name.lower()]
-        for c in sheet.cells:
+        del self.spreadsheets[sheet_name.lower()]
+        for loc in sheet.cells:
+            c = sheet.cells[loc]
+            _, cell_dependents = topo_sort(c, self.adjacency_list)
             for _, neighbors in self.adjacency_list.items():
                 if c in neighbors:
                     neighbors.remove(c)
-            _, cell_dependents = topo_sort(c, self.adjacency_list)
             for dependent in cell_dependents[1:]:
                 self.__set_cell_value_and_type(dependent)
             del self.adjacency_list[c]
-        del self.spreadsheets[sheet_name.lower()]
 
     def get_sheet_extent(self, sheet_name: str) -> Tuple[int, int]:
         # Return a tuple (num-cols, num-rows) indicating the current extent of
@@ -134,31 +142,6 @@ class Workbook:
         else:
             sheet = self.spreadsheets[sheet_name.lower()]
             return ((sheet.extent_col, sheet.extent_row))
-
-    def __str_to_error(self, str_error: str) -> cell_error.CellError:
-        """
-        Convert a string error to a cell error object.
-
-        Args:
-            str_error (str): string input
-
-        Returns:
-            cell_error.CellError: Cell Error object generated from the corresponding string form. 
-        """
-        match str_error:
-            case "#ERROR!":
-                return cell_error.CellError(cell_error.CellErrorType.PARSE_ERROR, "input error")
-            case "#CIRCREF!":
-                return cell_error.CellError(cell_error.CellErrorType.CIRCULAR_REFERENCE, "input error")
-            case "#REF!":
-                return cell_error.CellError(cell_error.CellErrorType.BAD_REFERENCE, "input error")
-            case "#NAME?":
-                return cell_error.CellError(cell_error.CellErrorType.BAD_NAME, "input error")
-            case "#VALUE!":
-                return cell_error.CellError(cell_error.CellErrorType.TYPE_ERROR, "input error")
-            case "#DIV/0!":
-                return cell_error.CellError(cell_error.CellErrorType.DIVIDE_BY_ZERO, "input error")
-        return None
 
     def __set_cell_value_and_type(self, calling_cell: cell.Cell) -> list:
         """
@@ -175,8 +158,8 @@ class Workbook:
         if not cell_contents or len(cell_contents) == 0:
             val = None
             type = cell.CellType.EMPTY
-        elif self.__str_to_error(cell_contents):  # type error
-            val = self.__str_to_error(cell_contents)
+        elif string_conversions.str_to_error(cell_contents):  # type error
+            val = string_conversions.str_to_error(cell_contents)
             type = cell.CellType.ERROR
         elif cell_contents[0] == "'":
             val = cell_contents[1:]
@@ -186,8 +169,9 @@ class Workbook:
                 self, calling_cell, calling_cell.sheet, cell_contents)
             type = cell.CellType.FORMULA
             relies_on = eval.calling_cell_relies_on
-        elif strip_module.is_number(cell_contents):
-            val = decimal.Decimal(cell_contents)
+        elif string_conversions.is_number(cell_contents):
+            stripped = string_conversions.strip_zeros(cell_contents)
+            val = decimal.Decimal(stripped)
             type = cell.CellType.LITERAL_NUM
         else:
             val = cell_contents

@@ -146,7 +146,8 @@ class Workbook_Set_Cell_Contents(unittest.TestCase):
         wb = Workbook()
         wb.new_sheet()
         wb.set_cell_contents('sheet1', 'A1', "3.00")
-        self.assertEqual(wb.get_cell_contents('sheet1', 'A1'), "3")
+        self.assertEqual(wb.get_cell_value('sheet1', 'A1'), decimal.Decimal(3))
+        self.assertEqual(wb.get_cell_contents('sheet1', 'A1'), "3.00")
 
     def test_decimal2(self):
         wb = Workbook()

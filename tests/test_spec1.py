@@ -138,9 +138,10 @@ class Spec1_Tests(unittest.TestCase):
     def test_string_arithmetic(self):
         wb = Workbook()
         wb.new_sheet()
-        eval, _ = lark_module.evaluate_expr(
-            wb, None, "sheet1", "=2 * \"abc\"")
-        self.assertEqual(eval.cell_error.get_detail(), "string arithmetic")
+        wb.set_cell_contents('sheet1', 'A1', "=2 * \"abc\"")
+        value = wb.get_cell_value('sheet1', 'A1')
+        assert isinstance(value, CellError)
+        assert value.get_type() == CellErrorType.TYPE_ERROR
 
     def test_sheetname_access1(self):
         wb = Workbook()
@@ -178,9 +179,10 @@ class Spec1_Tests(unittest.TestCase):
         wb = Workbook()
         wb.new_sheet()
         wb.new_sheet('*(sheet2')
-        eval, _ = lark_module.evaluate_expr(
-            wb, None, "sheet1", "=*(sheEt2!A1")
-        self.assertEqual(eval.cell_error.get_type(), CellErrorType.PARSE_ERROR)
+        wb.set_cell_contents('sheet1', 'A1', '=*(sheEt2!A1')
+        value = wb.get_cell_value('sheet1', 'A1')
+        assert isinstance(value, CellError)
+        assert value.get_type() == CellErrorType.PARSE_ERROR
 
     def test_parse_str_as_num(self):
         wb = Workbook()
@@ -227,9 +229,10 @@ class Spec1_Tests(unittest.TestCase):
     def test_parse_err_1(self):
         wb = Workbook()
         wb.new_sheet()
-        eval, _ = lark_module.evaluate_expr(
-            wb, None, "sheet1", "=2fva3")
-        self.assertEqual(eval.cell_error.get_type(), CellErrorType.PARSE_ERROR)
+        wb.set_cell_contents('sheet1', 'A1', '=2fva3')
+        value = wb.get_cell_value('sheet1', 'A1')
+        assert isinstance(value, CellError)
+        assert value.get_type() == CellErrorType.PARSE_ERROR
 
     def test_circular_reference_L(self):
         wb = Workbook()

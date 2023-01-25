@@ -2,7 +2,7 @@ import lark
 import decimal
 import re
 from lark.visitors import visit_children_decor
-from sheets import cell_error, cell, strip_module, workbook
+from sheets import cell_error, cell, string_conversions, workbook
 from typing import Any, Union
 
 
@@ -53,7 +53,7 @@ class FormulaEvaluator(lark.visitors.Interpreter):
                 continue
             elif isinstance(value, decimal.Decimal):
                 res[i] = value
-            elif value and strip_module.is_number(value):
+            elif value and string_conversions.is_number(value):
                 res[i] = decimal.Decimal(value)
             else:
                 return cell_error.CellError(cell_error.CellErrorType.TYPE_ERROR, "string arithmetic")
@@ -205,7 +205,11 @@ class FormulaEvaluator(lark.visitors.Interpreter):
         return decimal.Decimal(tree.children[0])
 
     def string(self, tree):
-        return tree.children[0].value[1:-1]
+        value = tree.children[0].value[1:-1]
+        potential_error = string_conversions.str_to_error(value)
+        if potential_error:
+            return potential_error
+        return value
 
     def error(self, tree):
         match tree.children[0].upper():

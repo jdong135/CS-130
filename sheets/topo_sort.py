@@ -33,10 +33,6 @@ def topo_sort(cell: Cell, graph) -> Tuple[bool, list[Cell]]:
             for w in graph[v]:
                 if (w.sheet, w.location) not in visited:
                     call_stack.append((w, DFSState.ENTER))
-                # cycle detection
-                # if (w.sheet, w.location) in visited:
-                #     circular = True
-                #     # update implementation when design decision is made
                 for c, s in call_stack:
                     if w.location == c.location and s == DFSState.LEAVE:
                         circular = True
