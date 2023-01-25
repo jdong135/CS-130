@@ -12,63 +12,79 @@ PROJECT_ROOT = os.path.abspath(os.path.join(
     os.pardir)
 )
 sys.path.append(PROJECT_ROOT)
-from sheets import Workbook, lark_module  # noqa
+from sheets import Workbook, lark_module, cell_error  # noqa
+import logging
+
+# Create and configure logger
+
+logging.basicConfig(filename="logs/lark_module.log",
+
+                    format='%(asctime)s %(message)s',
+
+                    filemode='w')
+
+# Creating an object
+
+logger = logging.getLogger()
+
+# Setting the threshold of logger to DEBUG
+logger.setLevel(logging.DEBUG)
 
 
-# class Lark_Module_Basic(unittest.TestCase):
-#     def test_single_dec(self):
-#         wb = Workbook()
-#         wb.new_sheet()
-#         _, value = lark_module.evaluate_expr(wb, None, "sheet1", "=1")
-#         self.assertEqual(value, 1)
+class Lark_Module_Basic(unittest.TestCase):
+    def test_single_dec(self):
+        wb = Workbook()
+        wb.new_sheet()
+        _, value = lark_module.evaluate_expr(wb, None, "sheet1", "=1")
+        self.assertEqual(value, 1)
 
-#     def test_single_str(self):
-#         wb = Workbook()
-#         wb.new_sheet()
-#         _, value = lark_module.evaluate_expr(wb, None, "sheet1", "=\"str\"")
-#         self.assertEqual(value, "str")
+    def test_single_str(self):
+        wb = Workbook()
+        wb.new_sheet()
+        _, value = lark_module.evaluate_expr(wb, None, "sheet1", "=\"str\"")
+        self.assertEqual(value, "str")
 
-#     def test_basic1(self):
-#         wb = Workbook()
-#         wb.new_sheet()
-#         _, value = lark_module.evaluate_expr(
-#             wb, None, "sheet1", "=1 + 7 - 124 * 7 / 14")
-#         self.assertEqual(value, -54)
+    def test_basic1(self):
+        wb = Workbook()
+        wb.new_sheet()
+        _, value = lark_module.evaluate_expr(
+            wb, None, "sheet1", "=1 + 7 - 124 * 7 / 14")
+        self.assertEqual(value, -54)
 
-#     def test_basic2(self):
-#         wb = Workbook()
-#         wb.new_sheet()
-#         _, value = lark_module.evaluate_expr(
-#             wb, None, "sheet1", "=2 * 6 - 4 + 2 / 2")
-#         self.assertEqual(value, 9)
+    def test_basic2(self):
+        wb = Workbook()
+        wb.new_sheet()
+        _, value = lark_module.evaluate_expr(
+            wb, None, "sheet1", "=2 * 6 - 4 + 2 / 2")
+        self.assertEqual(value, 9)
 
-#     def test_basic_parens(self):
-#         wb = Workbook()
-#         wb.new_sheet()
-#         _, value = lark_module.evaluate_expr(
-#             wb, None, "sheet1", "= 4 - 7 + (4 * 8 - 7) - 2 / 2 + (7 - 4)")
-#         self.assertEqual(value, 24)
+    def test_basic_parens(self):
+        wb = Workbook()
+        wb.new_sheet()
+        _, value = lark_module.evaluate_expr(
+            wb, None, "sheet1", "= 4 - 7 + (4 * 8 - 7) - 2 / 2 + (7 - 4)")
+        self.assertEqual(value, 24)
 
-#     def test_nested_parens(self):
-#         wb = Workbook()
-#         wb.new_sheet()
-#         _, value = lark_module.evaluate_expr(
-#             wb, None, "sheet1", "= 4 / 2 * (7 + 8 - (6 + (2 * 4)) - 4) + 7")
-#         self.assertEqual(value, 1)
+    def test_nested_parens(self):
+        wb = Workbook()
+        wb.new_sheet()
+        _, value = lark_module.evaluate_expr(
+            wb, None, "sheet1", "= 4 / 2 * (7 + 8 - (6 + (2 * 4)) - 4) + 7")
+        self.assertEqual(value, 1)
 
-#     def test_negative1(self):
-#         wb = Workbook()
-#         wb.new_sheet()
-#         _, value = lark_module.evaluate_expr(
-#             wb, None, "sheet1", "= -1")
-#         self.assertEqual(value, -1)
+    def test_negative1(self):
+        wb = Workbook()
+        wb.new_sheet()
+        _, value = lark_module.evaluate_expr(
+            wb, None, "sheet1", "= -1")
+        self.assertEqual(value, -1)
 
-#     def test_negative2(self):
-#         wb = Workbook()
-#         wb.new_sheet()
-#         _, value = lark_module.evaluate_expr(
-#             wb, None, "sheet1", "= -1 + 2 * (-2 - 2 / (1 * -4))")
-#         self.assertEqual(value, -4)
+    def test_negative2(self):
+        wb = Workbook()
+        wb.new_sheet()
+        _, value = lark_module.evaluate_expr(
+            wb, None, "sheet1", "= -1 + 2 * (-2 - 2 / (1 * -4))")
+        self.assertEqual(value, -4)
 
 #     def test_cell_ref1(self):
 #         wb = Workbook()
@@ -227,27 +243,61 @@ from sheets import Workbook, lark_module  # noqa
 #         eval, value = lark_module.evaluate_expr(wb, None, "sheet1", "=C1")
 #         self.assertEqual(value.get_detail(), "divide by zero")
 
+
 class NewTest(unittest.TestCase):
     def test_add(self):
         wb = Workbook()
         wb.new_sheet()
         _, value = lark_module.evaluate_expr(
             wb, None, "sheet1", "=1+1")
-        self.assertEqual(value, 2)    
+        self.assertEqual(value, decimal.Decimal(2))
 
     def test_mult(self):
         wb = Workbook()
         wb.new_sheet()
         _, value = lark_module.evaluate_expr(
             wb, None, "sheet1", "=8*2")
-        self.assertEqual(value, 16)    
+        self.assertEqual(value, decimal.Decimal(16))
 
     def test_neg(self):
         wb = Workbook()
         wb.new_sheet()
         _, value = lark_module.evaluate_expr(
             wb, None, "sheet1", "=(-5 * 2) * -2")
-        self.assertEqual(value, 20)    
+        self.assertEqual(value, decimal.Decimal(20))
+
+    def test_concat(self):
+        wb = Workbook()
+        wb.new_sheet()
+        _, value = lark_module.evaluate_expr(
+            wb, None, "sheet1", '="abc" & "def" & "ghi"')
+        self.assertEqual(value, "abcdefghi")
+
+    def test_parens(self):
+        wb = Workbook()
+        wb.new_sheet()
+        _, value = lark_module.evaluate_expr(
+            wb, None, "sheet1", '=(1 * 3) + -1 * (3 * -1)')
+        self.assertEqual(value, decimal.Decimal(6))
+
+    def test_circ_ref(self):
+        wb = Workbook()
+        wb.new_sheet()
+        wb.set_cell_contents('sheet1', 'A1', '=B1')
+        wb.set_cell_contents('sheet1', 'B1', '=A1')
+        value = wb.get_cell_value('sheet1', 'B1')
+        assert isinstance(value, cell_error.CellError)
+        assert value.get_type() == cell_error.CellErrorType.CIRCULAR_REFERENCE
+
+    def test_circ_ref_update(self):
+        wb = Workbook()
+        wb.new_sheet()
+        wb.set_cell_contents('sheet1', 'A1', '=B1')
+        wb.set_cell_contents('sheet1', 'B1', '=A1')
+        wb.set_cell_contents('sheet1', 'B1', None)
+        value = wb.get_cell_value('sheet1', 'B1')
+        self.assertEqual(value, decimal.Decimal(0))
+
 
 if __name__ == "__main__":
     unittest.main()

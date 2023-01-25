@@ -8,6 +8,22 @@ import lark
 import decimal
 from sheets import lark_module
 
+import logging
+
+# Create and configure logger
+
+logging.basicConfig(filename="logs/lark_module.log",
+
+                    format='%(asctime)s %(message)s',
+
+                    filemode='w')
+
+# Creating an object
+
+logger = logging.getLogger()
+
+# Setting the threshold of logger to DEBUG
+logger.setLevel(logging.DEBUG)
 
 ALLOWED_PUNC = set([".", "?", "!", ",", ":", ";", "@", "#",
                     "$", "%", "^", "&", "*", "(", ")", "-", "_"])
@@ -20,8 +36,10 @@ class Workbook:
     # values should cause the workbook's contents to be updated properly.
 
     def __init__(self):
-        self.spreadsheets = {}  # lower case name -> sheet object
-        self.adjacency_list = {}  # Cell: [neighbor Cells]
+        # lower case name -> sheet object
+        self.spreadsheets = {}
+        # Cell: [neighbor Cells]; neighbors are cells that depend on Cell
+        self.adjacency_list = {}
 
     def num_sheets(self) -> int:
         """
@@ -119,8 +137,8 @@ class Workbook:
             for _, neighbors in self.adjacency_list.items():
                 if c in neighbors:
                     neighbors.remove(c)
-            cell_dependents = topo_sort(c, self.adjacency_list)[1:]
-            for dependent in cell_dependents:
+            _, cell_dependents = topo_sort(c, self.adjacency_list)
+            for dependent in cell_dependents[1:]:
                 self.__set_cell_value_and_type(dependent)
             del self.adjacency_list[c]
         del self.spreadsheets[sheet_name.lower()]
@@ -172,7 +190,7 @@ class Workbook:
             val = cell_contents[1:]
             type = cell.CellType.STRING
         elif cell_contents[0] == "=":
-            val = lark_module.evaluate_expr(
+            _, val = lark_module.evaluate_expr(
                 self, calling_cell, calling_cell.sheet, cell_contents)
             type = cell.CellType.FORMULA
         elif strip_module.is_number(cell_contents):
@@ -219,20 +237,41 @@ class Workbook:
             existing_cell = sheet.cells[location]
             existing_cell.contents = contents
             self.__set_cell_value_and_type(existing_cell)
-            # if no cells depend on existing cell and contents are empty, delete cell
             if existing_cell.type == cell.CellType.EMPTY:
+                # existing cell is now empty so it does not depend on other cells
+                # -> remove it as a neighbor of other cells
+                for _, neighbors in self.adjacency_list.items():
+                    if existing_cell in neighbors:
+                        neighbors.remove(existing_cell)
+                # if existing cell doesn't have neighbors, no cell relies on it
+                # -> delete cell from spreadsheet
                 if not self.adjacency_list[existing_cell]:
                     del sheet.cells[location]
                     del self.adjacency_list[existing_cell]
                     self.__update_extent(sheet, location, True)
-                    for _, neighbors in self.adjacency_list.items():
-                        if existing_cell in neighbors:
-                            neighbors.remove(existing_cell)
                     return
             # updating cells that depend on existing cell
-            cell_dependents = topo_sort(existing_cell, self.adjacency_list)[1:]
-            for dependent in cell_dependents:
-                self.__set_cell_value_and_type(dependent)
+            circular, cell_dependents = topo_sort(
+                existing_cell, self.adjacency_list)
+            logger.info('printing adjacency list')
+            for key, val in self.adjacency_list.items():
+                logger.info(key.location)
+                for c in val:
+                    logger.info(f'location: {c.location}')
+            logger.info('topo sort:')
+            for c in cell_dependents:
+                logger.info(c.location)
+            logger.info(circular)
+            if not circular:
+                logger.info('cell dependents')
+                for dependent in cell_dependents[1:]:
+                    logger.info(dependent.location)
+                    self.__set_cell_value_and_type(dependent)
+            else:  # everything in the cycle should have an error value
+                for dependent in cell_dependents:
+                    dependent.set_fields(value=cell_error.CellError(
+                        cell_error.CellErrorType.CIRCULAR_REFERENCE, "circular reference"))
+            self.__update_extent(sheet, location, False)
         else:  # if cell does not exist (create contents)
             new_cell = cell.Cell(sheet_name, location, contents, None, None)
             self.__set_cell_value_and_type(new_cell)

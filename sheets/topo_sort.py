@@ -29,15 +29,16 @@ def topo_sort(cell: Cell, graph) -> Tuple[bool, list[Cell]]:
         v, type = call_stack.pop()
         if type == DFSState.ENTER:
             visited.add((v.sheet, v.location))
-            v.onStack = True
             call_stack.append((v, DFSState.LEAVE))
             for w in graph[v]:
                 if (w.sheet, w.location) not in visited:
                     call_stack.append((w, DFSState.ENTER))
                 # cycle detection
-                if (w.sheet, w.location) in visited:
+                # if (w.sheet, w.location) in visited:
+                #     circular = True
+                #     # update implementation when design decision is made
+                if (w.location, DFSState.ENTER) in call_stack or (w.location, DFSState.LEAVE) in call_stack:
                     circular = True
-                    # update implementation when design decision is made
         else:
             result.append(v)
     if not circular:
