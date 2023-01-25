@@ -1,29 +1,7 @@
 from typing import *
-from sheets.lark_module import FormulaEvaluator
-from . import Sheet
-from sheets import cell, strip_module
-from sheets import topo_sort
-from sheets import cell_error
-import lark
+from sheets import cell, strip_module, topo_sort, cell_error, lark_module, sheet
 import decimal
-from sheets import lark_module
 
-import logging
-
-# Create and configure logger
-
-logging.basicConfig(filename="logs/lark_module.log",
-
-                    format='%(asctime)s %(message)s',
-
-                    filemode='w')
-
-# Creating an object
-
-logger = logging.getLogger()
-
-# Setting the threshold of logger to DEBUG
-logger.setLevel(logging.DEBUG)
 
 ALLOWED_PUNC = set([".", "?", "!", ",", ":", ";", "@", "#",
                     "$", "%", "^", "&", "*", "(", ")", "-", "_"])
@@ -84,7 +62,7 @@ class Workbook:
             while True:
                 sheet_name = "Sheet" + str(i + 1)
                 if sheet_name.lower() not in self.spreadsheets:
-                    self.spreadsheets[sheet_name.lower()] = Sheet(sheet_name)
+                    self.spreadsheets[sheet_name.lower()] = sheet.Sheet(sheet_name)
                     return (len(self.spreadsheets) - 1, sheet_name)
                 i += 1
         for ch in sheet_name:
@@ -98,7 +76,7 @@ class Workbook:
         elif sheet_name.lower() in self.spreadsheets:
             raise ValueError("Duplicate spreadsheet name")
         elif sheet_name.lower() not in self.spreadsheets:
-            self.spreadsheets[sheet_name.lower()] = Sheet(sheet_name)
+            self.spreadsheets[sheet_name.lower()] = sheet.Sheet(sheet_name)
             return (len(self.spreadsheets) - 1, sheet_name)
 
     def __update_extent(self, sheet, location, deletingCell: bool):
@@ -157,30 +135,40 @@ class Workbook:
             sheet = self.spreadsheets[sheet_name.lower()]
             return ((sheet.extent_col, sheet.extent_row))
 
-    def __str_to_error(self, str_error: str):
-        if str_error == "#ERROR!":
-            return cell_error.CellError(cell_error.CellErrorType.PARSE_ERROR, "input error")
-        elif str_error == "#CIRCREF!":
-            return cell_error.CellError(cell_error.CellErrorType.CIRCULAR_REFERENCE, "input error")
-        elif str_error == "#REF!":
-            return cell_error.CellError(cell_error.CellErrorType.BAD_REFERENCE, "input error")
-        elif str_error == "#NAME?":
-            return cell_error.CellError(cell_error.CellErrorType.BAD_NAME, "input error")
-        elif str_error == "#VALUE!":
-            return cell_error.CellError(cell_error.CellErrorType.TYPE_ERROR, "input error")
-        elif str_error == "#DIV/0!":
-            return cell_error.CellError(cell_error.CellErrorType.DIVIDE_BY_ZERO, "input error")
-        else:
-            return None
+    def __str_to_error(self, str_error: str) -> cell_error.CellError:
+        """
+        Convert a string error to a cell error object.
 
-    def __set_cell_value_and_type(self, calling_cell):
+        Args:
+            str_error (str): string input
+
+        Returns:
+            cell_error.CellError: Cell Error object generated from the corresponding string form. 
+        """
+        match str_error:
+            case "#ERROR!":
+                return cell_error.CellError(cell_error.CellErrorType.PARSE_ERROR, "input error")
+            case "#CIRCREF!":
+                return cell_error.CellError(cell_error.CellErrorType.CIRCULAR_REFERENCE, "input error")
+            case "#REF!":
+                return cell_error.CellError(cell_error.CellErrorType.BAD_REFERENCE, "input error")
+            case "#NAME?":
+                return cell_error.CellError(cell_error.CellErrorType.BAD_NAME, "input error")
+            case "#VALUE!":
+                return cell_error.CellError(cell_error.CellErrorType.TYPE_ERROR, "input error")
+            case "#DIV/0!":
+                return cell_error.CellError(cell_error.CellErrorType.DIVIDE_BY_ZERO, "input error")
+        return None
+
+    def __set_cell_value_and_type(self, calling_cell: cell.Cell) -> list:
         """
         Sets cells value and type based on cell's contents field
-        Args:
-            cell (_type_): Assume cell has contents set correctly
-        Returns:
-            None if not formula
 
+        Args:
+            calling_cell (Cell): Cell object that we assume has contents set correctly.
+
+        Returns:
+            list: cells that the calling cell relies on.
         """
         cell_contents = calling_cell.contents
         relies_on = []

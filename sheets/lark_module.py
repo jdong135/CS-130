@@ -1,18 +1,9 @@
 import lark
 import decimal
-from lark.visitors import visit_children_decor
-from sheets import cell_error
-from sheets import cell
-from sheets import strip_module
 import re
-from typing import Optional, Any, Union
-
-import logging
-logging.basicConfig(filename="logs/lark_module.log",
-                    format='%(asctime)s %(message)s',
-                    filemode='w')
-logger = logging.getLogger()
-logger.setLevel(logging.DEBUG)
+from lark.visitors import visit_children_decor
+from sheets import cell_error, cell, strip_module, workbook
+from typing import Any, Union
 
 
 class FormulaEvaluator(lark.visitors.Interpreter):
@@ -217,28 +208,28 @@ class FormulaEvaluator(lark.visitors.Interpreter):
         return tree.children[0].value[1:-1]
 
     def error(self, tree):
-        val = tree.children[0].upper()
-        if val == "#ERROR!":
-            return cell_error.CellError(
-                cell_error.CellErrorType.PARSE_ERROR, "input error")
-        elif val == "#CIRCREF!":
-            return cell_error.CellError(
-                cell_error.CellErrorType.CIRCULAR_REFERENCE, "input error")
-        elif val == "#REF!":
-            return cell_error.CellError(
-                cell_error.CellErrorType.BAD_REFERENCE, "input error")
-        elif val == "#NAME?":
-            return cell_error.CellError(
-                cell_error.CellErrorType.BAD_NAME, "input error")
-        elif val == "#VALUE!":
-            return cell_error.CellError(
-                cell_error.CellErrorType.TYPE_ERROR, "input error")
-        elif val == "#DIV/0!":
-            return cell_error.CellError(
-                cell_error.CellErrorType.DIVIDE_BY_ZERO, "input error")
+        match tree.children[0].upper():
+            case "#ERROR!":
+                return cell_error.CellError(
+                    cell_error.CellErrorType.PARSE_ERROR, "input error")
+            case "#CIRCREF!":
+                return cell_error.CellError(
+                    cell_error.CellErrorType.CIRCULAR_REFERENCE, "input error")
+            case "#REF!":
+                return cell_error.CellError(
+                    cell_error.CellErrorType.BAD_REFERENCE, "input error")
+            case "#NAME?":
+                return cell_error.CellError(
+                    cell_error.CellErrorType.BAD_NAME, "input error")
+            case "#VALUE!":
+                return cell_error.CellError(
+                    cell_error.CellErrorType.TYPE_ERROR, "input error")
+            case "#DIV/0!":
+                return cell_error.CellError(
+                    cell_error.CellErrorType.DIVIDE_BY_ZERO, "input error")
 
 
-def evaluate_expr(workbook, curr_cell, sheetname, contents):
+def evaluate_expr(workbook: workbook.Workbook, curr_cell: cell.Cell, sheetname: str, contents: str) -> tuple[FormulaEvaluator, Any]:
     """
     Evaluate a provided expression using the lark formula parser and evaluator.
 
