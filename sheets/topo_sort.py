@@ -1,5 +1,5 @@
 import enum
-from typing import *
+from typing import Tuple
 from sheets.cell import Cell
 from typing import Tuple
 
