@@ -21,6 +21,7 @@ class FormulaEvaluator(lark.visitors.Interpreter):
         self.wb = workbook
         self.sheet = sheet
         self.calling_cell = calling_cell
+        self.calling_cell_relies_on = []
 
     def __check_sheet_name(self, sheet_name) -> Union[str, cell_error.CellError]:
         """
@@ -186,11 +187,13 @@ class FormulaEvaluator(lark.visitors.Interpreter):
                 sheet.name, location, None, None, cell.CellType.EMPTY)
             sheet.cells[location] = new_empty_cell
             self.wb.adjacency_list[new_empty_cell] = [self.calling_cell]
+            self.calling_cell_relies_on.append(new_empty_cell)
             return decimal.Decimal(0)
         else:  # add calling_cell to the neighbors of Cell from values argument
             if self.calling_cell not in self.wb.adjacency_list[sheet.cells[location]]:
                 self.wb.adjacency_list[sheet.cells[location]].append(
                     self.calling_cell)
+            self.calling_cell_relies_on.append(sheet.cells[location])
         if not sheet.cells[location].value:  # cell exists at location but is empty
             return decimal.Decimal(0)
         return sheet.cells[location].value
@@ -198,6 +201,8 @@ class FormulaEvaluator(lark.visitors.Interpreter):
     def parens(self, tree):
         self.sub_evaluator = FormulaEvaluator(
             self.wb, self.sheet, self.calling_cell)
+        self.calling_cell_relies_on.extend(
+            self.sub_evaluator.calling_cell_relies_on)
         return self.sub_evaluator.visit(tree.children[0])
 
     def number(self, tree):
