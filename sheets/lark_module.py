@@ -229,7 +229,7 @@ class FormulaEvaluator(lark.visitors.Interpreter):
                     cell_error.CellErrorType.DIVIDE_BY_ZERO, "input error")
 
 
-def evaluate_expr(workbook: workbook.Workbook, curr_cell: cell.Cell, sheetname: str, contents: str) -> tuple[FormulaEvaluator, Any]:
+def evaluate_expr(workbook, curr_cell, sheetname: str, contents: str) -> tuple[FormulaEvaluator, Any]:
     """
     Evaluate a provided expression using the lark formula parser and evaluator.
 
