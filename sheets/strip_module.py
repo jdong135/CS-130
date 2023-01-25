@@ -11,6 +11,7 @@ def is_number(string: str) -> bool:
     Returns:
         bool: if the string is numeric
     """
+    string = string.strip()
     return string.isnumeric() or (string.replace('.', '', 1).isdigit() and string.count('.') < 2)
 
 
