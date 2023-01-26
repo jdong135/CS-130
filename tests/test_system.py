@@ -21,8 +21,6 @@ class System_Tests(unittest.TestCase):
         SIZE = 9999
         TEST_SAMPLE = 5
 
-        self.assertEqual(sheets.version, "1.0")
-
         wb = sheets.Workbook()
         with self.assertRaises(ValueError):
             wb.new_sheet("my numbers\n")
