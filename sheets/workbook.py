@@ -167,7 +167,8 @@ class Workbook:
             eval, val = lark_module.evaluate_expr(
                 self, calling_cell, calling_cell.sheet, cell_contents)
             type = cell.CellType.FORMULA
-            relies_on = eval.calling_cell_relies_on
+            if eval:
+                relies_on = eval.calling_cell_relies_on
         elif string_conversions.is_number(cell_contents):
             stripped = string_conversions.strip_zeros(cell_contents)
             val = decimal.Decimal(stripped)

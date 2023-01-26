@@ -50,7 +50,8 @@ class FormulaEvaluator(lark.visitors.Interpreter):
         for arg in args:
             assert type(arg) == int
         assert len(args) == 1 or len(args) == 2
-        res = [decimal.Decimal(0), values[1], decimal.Decimal(0)] if len(args) == 2 else [values[0], decimal.Decimal(0)]
+        res = [decimal.Decimal(0), values[1], decimal.Decimal(0)] if len(
+            args) == 2 else [values[0], decimal.Decimal(0)]
         for i in args:
             value = values[i]
             if not value:
