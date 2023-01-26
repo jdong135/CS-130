@@ -2,13 +2,6 @@ from typing import *
 from sheets import cell, topo_sort, cell_error, lark_module, sheet, string_conversions
 import decimal
 
-import logging
-logging.basicConfig(filename="logs/lark_module.log",
-                    format='%(asctime)s %(message)s',
-                    filemode='w')
-logger = logging.getLogger()
-logger.setLevel(logging.DEBUG)
-
 ALLOWED_PUNC = set([".", "?", "!", ",", ":", ";", "@", "#",
                     "$", "%", "^", "&", "*", "(", ")", "-", "_"])
 
@@ -70,6 +63,9 @@ class Workbook:
                 if sheet_name.lower() not in self.spreadsheets:
                     self.spreadsheets[sheet_name.lower()] = sheet.Sheet(
                         sheet_name)
+                    curr_cells = list(self.adjacency_list.keys())
+                    for c in curr_cells:
+                        self.__set_cell_value_and_type(c)
                     return (len(self.spreadsheets) - 1, sheet_name)
                 i += 1
         for ch in sheet_name:
@@ -84,6 +80,9 @@ class Workbook:
             raise ValueError("Duplicate spreadsheet name")
         elif sheet_name.lower() not in self.spreadsheets:
             self.spreadsheets[sheet_name.lower()] = sheet.Sheet(sheet_name)
+            curr_cells = list(self.adjacency_list.keys())
+            for c in curr_cells:
+                self.__set_cell_value_and_type(c)
             return (len(self.spreadsheets) - 1, sheet_name)
 
     def __update_extent(self, sheet, location, deletingCell: bool):
