@@ -13,22 +13,6 @@ PROJECT_ROOT = os.path.abspath(os.path.join(
 )
 sys.path.append(PROJECT_ROOT)
 from sheets import Workbook, lark_module, cell_error  # noqa
-import logging
-
-# Create and configure logger
-
-logging.basicConfig(filename="logs/lark_module.log",
-
-                    format='%(asctime)s %(message)s',
-
-                    filemode='w')
-
-# Creating an object
-
-logger = logging.getLogger()
-
-# Setting the threshold of logger to DEBUG
-logger.setLevel(logging.DEBUG)
 
 
 class Lark_Module_Basic(unittest.TestCase):
