@@ -1,10 +1,18 @@
 from __future__ import annotations
+import logging
 from typing import *
 from sheets import cell, topo_sort, cell_error, lark_module, sheet, string_conversions
 import decimal
+import json
 
 ALLOWED_PUNC = set([".", "?", "!", ",", ":", ";", "@", "#",
                     "$", "%", "^", "&", "*", "(", ")", "-", "_"])
+
+logging.basicConfig(filename="logs/results.log",
+                    format='%(asctime)s %(message)s',
+                    filemode='w')
+logger = logging.getLogger()
+logger.setLevel(logging.DEBUG)
 
 
 class Workbook:
@@ -330,7 +338,53 @@ class Workbook:
         # If any expected value in the input JSON is not of the proper type
         # (e.g. an object instead of a list, or a number instead of a string),
         # raise a TypeError with a suitably descriptive message.
-        pass
+        wb = Workbook()
+        try:
+            data = json.load(fp)
+        except json.JSONDecodeError as e:
+            print(f"{e}, Decode Error in load_workbook().")
+            return wb
+        except IOError as e:
+            print(f"{e}, IO Error in load_workbook().")
+            return wb
+
+        logger.info(data)
+        if len(data) != 1:
+            raise TypeError("Should contain one instance of sheets.")
+        if list(data.keys())[0] != "sheets":
+            raise KeyError("Key should be named \"sheets\".")
+        sheets = data["sheets"]
+        if type(sheets) != list:
+            raise TypeError("\"sheets\" value should be of type list")
+
+        for sheet in sheets:
+            if type(sheet) != dict:
+                raise TypeError("Sheet object is not of type dictionary.")
+            if len(sheet.keys()) != 2:
+                raise KeyError(
+                    "Sheet dictionary does not have exactly two keys.")
+
+            if "name" not in sheet.keys() or "cell-contents" not in sheet.keys():
+                raise KeyError(
+                    "Keys of sheet dictionray must be named \"name\" and \"cell-contents\"")
+            sheet_name = sheet["name"]
+            logger.info(sheet_name)
+            if type(sheet_name) != str:
+                raise TypeError("Sheet name is not of type string.")
+            wb.new_sheet(sheet_name)
+
+            cell_contents = sheet["cell-contents"]
+            if type(cell_contents) != dict:
+                raise TypeError(
+                    f"Cell Contents of sheet \"{sheet_name}\" is not of type dict.")
+            for location, contents in cell_contents.items():
+                if type(location) != str or type(contents) != str:
+                    raise TypeError(
+                        "Cell location and contents must be of type string.")
+                logger.info(
+                    f"sheet_name: {sheet_name}, location: {location}, contents: {contents}")
+                wb.set_cell_contents(sheet_name, location, contents)
+        return wb
 
     def save_workbook(self, fp: TextIO) -> None:
         # Instance method (not a static/class method) to save a workbook to a
@@ -343,7 +397,7 @@ class Workbook:
         pass
 
     def notify_cells_changed(self,
-            notify_function: Callable[[Workbook, Iterable[Tuple[str, str]]], None]) -> None:
+                             notify_function: Callable[[Workbook, Iterable[Tuple[str, str]]], None]) -> None:
         # Request that all changes to cell values in the workbook are reported
         # to the specified notify_function.  The values passed to the notify
         # function are the workbook, and an iterable of 2-tuples of strings,

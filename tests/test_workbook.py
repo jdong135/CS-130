@@ -22,7 +22,7 @@ MAX_ROW_COL_SIZE = 100
 INVALID_CHARS = ["¿", "\"", "░", "😀", "\n", "\t"]
 
 
-class Workbook_New_Sheet(unittest.TestCase):
+class WorkbookNewSheet(unittest.TestCase):
     def test_num_sheets(self):
         wb = Workbook()
         for _ in range(MAX_SHEETS_TEST):
@@ -108,7 +108,7 @@ class Workbook_New_Sheet(unittest.TestCase):
             wb.new_sheet("sheet1")
 
 
-class Workbook_Get_Sheet_Extent(unittest.TestCase):
+class WorkbookGetSheetExtent(unittest.TestCase):
     def test_single_cell_extent(self):
         wb = Workbook()
         wb.new_sheet("S1")
@@ -133,7 +133,7 @@ class Workbook_Get_Sheet_Extent(unittest.TestCase):
             wb.get_sheet_extent("S2")
 
 
-class Workbook_Set_Cell_Contents(unittest.TestCase):
+class WorkbookSetCellContents(unittest.TestCase):
     def test_add_cell(self):
         wb = Workbook()
         wb.new_sheet("sheet1")
@@ -174,6 +174,16 @@ class Workbook_Set_Cell_Contents(unittest.TestCase):
         wb.set_cell_contents("sheet1", "A4", "=b1")
         self.assertEqual(wb.get_cell_value('sheet1', 'A3'),
                          wb.get_cell_value('sheet1', 'A4'))
+
+
+class WorkbookLoadWorkbook(unittest.TestCase):
+    def test_load_basic(self):
+        fp = open("test-data/mock_workbook.json", "r")
+        wb = Workbook.load_workbook(fp)
+        fp.close()
+        self.assertEqual(wb.get_cell_value("sheet2", "A1"),
+                         decimal.Decimal('651.9'))
+        self.assertEqual(wb.get_cell_value("sheet2", "A2"), "\"Hello, world\"")
 
 
 if __name__ == "__main__":
