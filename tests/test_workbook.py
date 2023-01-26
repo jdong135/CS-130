@@ -188,6 +188,31 @@ class WorkbookLoadWorkbook(unittest.TestCase):
         wb.save_workbook(fpw)
         fpw.close()
 
+class WorkbookCopySheet(unittest.TestCase):
+    def test_copy_basic(self):
+        wb = Workbook()
+        wb.new_sheet("SHeet1")
+        wb.set_cell_contents("sheet1", "A1", "=3")
+        wb.set_cell_contents("sheet1", "A2", "=-2")
+        wb.set_cell_contents("sheet1", "A3", "=A2 + A1")
+        wb.new_sheet("sHeet1_1")
+        wb.new_sheet("sheET1_2")
+        wb.new_sheet("shEet1_3")
+        wb.new_sheet("sheet1_4")
+        wb.new_sheet("Sheet1_5")
+        name, index = wb.copy_sheet("sheet1")
+        self.assertEqual(name, "sheet1_6")
+        self.assertEqual(index, 6)
+        self.assertEqual(wb.get_cell_value("sheet1_6", "A3"),
+                         decimal.Decimal(1))
+
+    def test_copy_key_error(self):
+        wb = Workbook()
+        for _ in range(5):
+            wb.new_sheet()
+        with self.assertRaises(KeyError):
+            wb.copy_sheet("sheet6")
+
 
 if __name__ == "__main__":
     unittest.main()

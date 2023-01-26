@@ -348,7 +348,6 @@ class Workbook:
             print(f"{e}, IO Error in load_workbook().")
             return wb
 
-        logger.info(data)
         if len(data) != 1:
             raise TypeError("Should contain one instance of sheets.")
         if list(data.keys())[0] != "sheets":
@@ -368,7 +367,6 @@ class Workbook:
                 raise KeyError(
                     "Keys of sheet dictionray must be named \"name\" and \"cell-contents\"")
             sheet_name = sheet["name"]
-            logger.info(sheet_name)
             if type(sheet_name) != str:
                 raise TypeError("Sheet name is not of type string.")
             wb.new_sheet(sheet_name)
@@ -381,8 +379,6 @@ class Workbook:
                 if type(location) != str or type(contents) != str:
                     raise TypeError(
                         "Cell location and contents must be of type string.")
-                logger.info(
-                    f"sheet_name: {sheet_name}, location: {location}, contents: {contents}")
                 wb.set_cell_contents(sheet_name, location, contents)
         return wb
 
@@ -480,4 +476,21 @@ class Workbook:
         # sequence of sheets.
         #
         # If the specified sheet name is not found, a KeyError is raised.
-        pass
+        copy_name = None
+        for stored_name in self.spreadsheets.keys():
+            if stored_name.lower() == sheet_name.lower():
+                copy_name = stored_name
+                break
+        if not copy_name:
+            raise KeyError(f"Sheet name {sheet_name} not found in workbook.")
+        i = 1
+        while True:
+            copy_name = sheet_name + "_" + str(i)
+            if copy_name.lower() not in self.spreadsheets.keys():
+                break
+            i += 1
+            copy_name = copy_name[:-2]
+        self.new_sheet(copy_name)
+        for location, c in self.spreadsheets[stored_name].cells.items():
+            self.set_cell_contents(copy_name, location, c.contents)      
+        return copy_name, len(self.spreadsheets) - 1
