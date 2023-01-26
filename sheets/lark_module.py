@@ -161,7 +161,10 @@ class FormulaEvaluator(lark.visitors.Interpreter):
             values[1] = ""
         if not values[0]:
             values[0] = ""
-        return str(values[0]) + str(values[1])
+        res = str(values[0]) + str(values[1])
+        if string_conversions.is_number(res):
+            return string_conversions.strip_zeros(res)
+        return res
 
     @visit_children_decor
     def cell(self, values):
