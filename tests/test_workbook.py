@@ -184,6 +184,9 @@ class WorkbookLoadWorkbook(unittest.TestCase):
         self.assertEqual(wb.get_cell_value("sheet2", "A1"),
                          decimal.Decimal('651.9'))
         self.assertEqual(wb.get_cell_value("sheet2", "A2"), "\"Hello, world\"")
+        fpw = open("test-data/mock_workbook2.json", "w")
+        wb.save_workbook(fpw)
+        fpw.close()
 
 
 if __name__ == "__main__":

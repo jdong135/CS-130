@@ -394,7 +394,17 @@ class Workbook:
         #
         # If an IO write error occurs (unlikely but possible), let any raised
         # exception propagate through.
-        pass
+        data = {"sheets": []}
+        for _, sheet in self.spreadsheets.items():
+            name = sheet.name
+            cur_sheet = {'name': name, 'cell-contents': {}}
+            for location, c in sheet.cells.items():
+                cur_sheet['cell-contents'][location] = c.contents
+            data["sheets"].append(cur_sheet)
+        try:
+            json.dump(data, fp, indent=4)
+        except IOError as e:
+            print(f"{e}, IO write error in save_workbook().")
 
     def notify_cells_changed(self,
                              notify_function: Callable[[Workbook, Iterable[Tuple[str, str]]], None]) -> None:
