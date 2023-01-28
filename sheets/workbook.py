@@ -456,7 +456,24 @@ class Workbook:
         # If the specified sheet name is not found, a KeyError is raised.
         #
         # If the index is outside the valid range, an IndexError is raised.
-        pass
+        if index > self.num_sheets() - 1 or index < 0:
+            raise IndexError("Index out of range")
+        if sheet_name.lower() not in self.spreadsheets:
+            raise KeyError(f"Sheet '{sheet_name}' not found")
+
+        sheet_to_insert = self.spreadsheets[sheet_name.lower()]
+        del self.spreadsheets[sheet_name.lower()]
+        new_spreadsheets = {}
+        for i, name in enumerate(self.spreadsheets):
+            if i == index:
+                break
+            new_spreadsheets[name] = self.spreadsheets[name]
+        new_spreadsheets[sheet_name.lower()] = sheet_to_insert
+        for i, name in enumerate(self.spreadsheets):
+            if i >= index:
+                new_spreadsheets[name] = self.spreadsheets[name]
+        self.spreadsheets = new_spreadsheets
+        logger.info(list(self.spreadsheets))
 
     def copy_sheet(self, sheet_name: str) -> Tuple[int, str]:
         # Make a copy of the specified sheet, storing the copy at the end of the
@@ -492,5 +509,5 @@ class Workbook:
             copy_name = copy_name[:-2]
         self.new_sheet(copy_name)
         for location, c in self.spreadsheets[stored_name].cells.items():
-            self.set_cell_contents(copy_name, location, c.contents)      
+            self.set_cell_contents(copy_name, location, c.contents)
         return copy_name, len(self.spreadsheets) - 1

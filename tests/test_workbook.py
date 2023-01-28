@@ -188,6 +188,7 @@ class WorkbookLoadWorkbook(unittest.TestCase):
         wb.save_workbook(fpw)
         fpw.close()
 
+
 class WorkbookCopySheet(unittest.TestCase):
     def test_copy_basic(self):
         wb = Workbook()
@@ -212,6 +213,47 @@ class WorkbookCopySheet(unittest.TestCase):
             wb.new_sheet()
         with self.assertRaises(KeyError):
             wb.copy_sheet("sheet6")
+
+
+class WorkbookMoveSheet(unittest.TestCase):
+    def test_move_to_0(self):
+        wb = Workbook()
+        wb.new_sheet("SHeet1")
+        wb.new_sheet("sheet2")
+        wb.move_sheet('sheEt2', 0)
+        sheet_names = list(wb.spreadsheets.keys())
+        self.assertEqual(sheet_names[0], 'sheet2')
+
+    def test_move_to_middle(self):
+        wb = Workbook()
+        wb.new_sheet("SHeet1")
+        wb.new_sheet("sheet2")
+        wb.new_sheet("sheet3")
+        wb.new_sheet("sheet4")
+        wb.new_sheet("sheet5")
+        wb.move_sheet('sheet4', 2)
+        sheet_names = list(wb.spreadsheets.keys())
+        self.assertEqual(sheet_names[2], 'sheet4')
+
+    def test_move_to_end(self):
+        wb = Workbook()
+        wb.new_sheet("SHeet1")
+        wb.new_sheet("sheet2")
+        wb.new_sheet("sheet3")
+        wb.new_sheet("sheet4")
+        wb.new_sheet("sheet5")
+        wb.new_sheet("sheet6")
+        wb.move_sheet('sheet4', 5)
+        sheet_names = list(wb.spreadsheets.keys())
+        self.assertEqual(sheet_names[5], 'sheet4')
+
+    def test_invalid_index(self):
+        wb = Workbook()
+        wb.new_sheet("SHeet1")
+        wb.new_sheet("sheet2")
+        wb.new_sheet("sheet3")
+        with self.assertRaises(IndexError):
+            wb.move_sheet('sheet3', 3)
 
 
 if __name__ == "__main__":
