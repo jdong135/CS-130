@@ -201,11 +201,14 @@ class WorkbookCopySheet(unittest.TestCase):
         wb.new_sheet("shEet1_3")
         wb.new_sheet("sheet1_4")
         wb.new_sheet("Sheet1_5")
+        wb.set_cell_contents("sheet1_5", "A4", "Hello World")
+        wb.set_cell_contents("sheet1", "A5", "=sheet1_5!A4")
         name, index = wb.copy_sheet("sheet1")
         self.assertEqual(name, "sheet1_6")
         self.assertEqual(index, 6)
         self.assertEqual(wb.get_cell_value("sheet1_6", "A3"),
                          decimal.Decimal(1))
+        self.assertEqual(wb.get_cell_value("sheet1_6", "A5"), "Hello World")
 
     def test_copy_key_error(self):
         wb = Workbook()
@@ -213,6 +216,12 @@ class WorkbookCopySheet(unittest.TestCase):
             wb.new_sheet()
         with self.assertRaises(KeyError):
             wb.copy_sheet("sheet6")
+
+    def test_rename_sheet1(self):
+        wb = Workbook()
+        wb.new_sheet()
+        wb.set_cell_contents("sheet1", "A1", "=1 + 1")
+        wb.rename_sheet("sheet1", "renamed_sheet")
 
 
 class WorkbookMoveSheet(unittest.TestCase):
