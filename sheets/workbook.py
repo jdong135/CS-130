@@ -41,6 +41,8 @@ class Workbook:
             ValueError: Sheet name ends with white space
             ValueError: Duplicate sheet name
         """
+        if len(sheet_name) < 1 or not sheet_name:
+            raise ValueError("Empty string for sheet name.")
         for ch in sheet_name:
             if not ch.isalnum() and ch != " " and ch not in ALLOWED_PUNC:
                 raise ValueError(
@@ -470,6 +472,8 @@ class Workbook:
         if sheet_name.lower() not in self.spreadsheets:
             raise KeyError(f"Sheet name \"{sheet_name}\" not found.")
         self.__check_valid_sheet_name(new_sheet_name)
+        # get index of old sheet name
+        index = list(self.spreadsheets.keys()).index(sheet_name.lower())
         # go through all cells and see if 1) formula type, 2) contains old sheet name and !
         cells_to_update = self.__get_cells_containing_sheetname(sheet_name)
         # new sheet(new_sheet_name)
@@ -484,6 +488,7 @@ class Workbook:
         # Get contents of every cell in old sheet, call self.set_cell_contents(new_sheet, location from old cell, contents from old cell)
         # delete(old_sheet) and get index in dictionary
         # move new sheet to that index
+        self.move_sheet(new_sheet_name, index)
 
     def move_sheet(self, sheet_name: str, index: int) -> None:
         # Move the specified sheet to the specified index in the workbook's
