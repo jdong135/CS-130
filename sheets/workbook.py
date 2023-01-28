@@ -27,6 +27,89 @@ class Workbook:
         # Cell: [neighbor Cells]; neighbors are cells that depend on Cell
         self.adjacency_list = {}
 
+    def __check_valid_sheet_name(self, sheet_name: str):
+        """
+        Check if a sheet name is valid. 
+
+        Args:
+            sheet_name (str): Sheet name to check
+
+        Raises:
+            ValueError: Invalid character is used
+            ValueError: Sheet name starts with white space
+            ValueError: Sheet name ends with white space
+            ValueError: Duplicate sheet name
+        """
+        for ch in sheet_name:
+            if not ch.isalnum() and ch != " " and ch not in ALLOWED_PUNC:
+                raise ValueError(
+                    f"Invalid character in name: {ch} not allowed")
+        if sheet_name[0] == " ":
+            raise ValueError("Sheet name starts with white space")
+        elif sheet_name[-1] == " ":
+            raise ValueError("Sheet name ends with white space")
+        elif sheet_name.lower() in self.spreadsheets:
+            raise ValueError("Duplicate spreadsheet name")
+
+    def __update_extent(self, sheet, location, deletingCell: bool):
+        """
+        Update the extent of a sheet if we are deleting a cell
+        """
+        if deletingCell:
+            sheet_col, sheet_row = sheet.extent_col, sheet.extent_row
+            col, row = sheet.str_to_tuple(location)
+            max_col, max_row = 0, 0
+            if col == sheet_col or row == sheet_row:
+                for c in sheet.cells:
+                    if sheet.cells[c].type != cell.CellType.EMPTY:
+                        c_col, c_row = sheet.str_to_tuple(
+                            sheet.cells[c].location)
+                        max_col = max(max_col, c_col)
+                        max_row = max(max_row, c_row)
+                sheet.extent_col = max_col
+                sheet.extent_row = max_row
+        else:
+            curr_col, curr_row = sheet.str_to_tuple(location)
+            sheet.extent_col = max(curr_col, sheet.extent_col)
+            sheet.extent_row = max(curr_row, sheet.extent_row)
+
+    def __set_cell_value_and_type(self, calling_cell: cell.Cell) -> list:
+        """
+        Sets cells value and type based on cell's contents field
+
+        Args:
+            calling_cell (Cell): Cell object that we assume has contents set correctly.
+
+        Returns:
+            list: cells that the calling cell relies on.
+        """
+        cell_contents = calling_cell.contents
+        relies_on = []
+        if not cell_contents or len(cell_contents) == 0:
+            val = None
+            type = cell.CellType.EMPTY
+        elif string_conversions.str_to_error(cell_contents):  # type error
+            val = string_conversions.str_to_error(cell_contents)
+            type = cell.CellType.ERROR
+        elif cell_contents[0] == "'":
+            val = cell_contents[1:]
+            type = cell.CellType.STRING
+        elif cell_contents[0] == "=":
+            eval, val = lark_module.evaluate_expr(
+                self, calling_cell, calling_cell.sheet, cell_contents)
+            type = cell.CellType.FORMULA
+            if eval:
+                relies_on = eval.calling_cell_relies_on
+        elif string_conversions.is_number(cell_contents):
+            stripped = string_conversions.strip_zeros(cell_contents)
+            val = decimal.Decimal(stripped)
+            type = cell.CellType.LITERAL_NUM
+        else:
+            val = cell_contents
+            type = cell.CellType.LITERAL_STRING
+        calling_cell.set_fields(value=val, type=type)
+        return relies_on
+
     def num_sheets(self) -> int:
         """
         Return current number of spreadsheets
@@ -77,44 +160,13 @@ class Workbook:
                         self.__set_cell_value_and_type(c)
                     return (len(self.spreadsheets) - 1, sheet_name)
                 i += 1
-        for ch in sheet_name:
-            if not ch.isalnum() and ch != " " and ch not in ALLOWED_PUNC:
-                raise ValueError(
-                    f"Invalid character in name: {ch} not allowed")
-        if sheet_name[0] == " ":
-            raise ValueError("Sheet name starts with white space")
-        elif sheet_name[-1] == " ":
-            raise ValueError("Sheet name ends with white space")
-        elif sheet_name.lower() in self.spreadsheets:
-            raise ValueError("Duplicate spreadsheet name")
-        elif sheet_name.lower() not in self.spreadsheets:
+        self.__check_valid_sheet_name(sheet_name)
+        if sheet_name.lower() not in self.spreadsheets:
             self.spreadsheets[sheet_name.lower()] = sheet.Sheet(sheet_name)
             curr_cells = list(self.adjacency_list.keys())
             for c in curr_cells:
                 self.__set_cell_value_and_type(c)
             return (len(self.spreadsheets) - 1, sheet_name)
-
-    def __update_extent(self, sheet, location, deletingCell: bool):
-        """
-        Update the extent of a sheet if we are deleting a cell
-        """
-        if deletingCell:
-            sheet_col, sheet_row = sheet.extent_col, sheet.extent_row
-            col, row = sheet.str_to_tuple(location)
-            max_col, max_row = 0, 0
-            if col == sheet_col or row == sheet_row:
-                for c in sheet.cells:
-                    if sheet.cells[c].type != cell.CellType.EMPTY:
-                        c_col, c_row = sheet.str_to_tuple(
-                            sheet.cells[c].location)
-                        max_col = max(max_col, c_col)
-                        max_row = max(max_row, c_row)
-                sheet.extent_col = max_col
-                sheet.extent_row = max_row
-        else:
-            curr_col, curr_row = sheet.str_to_tuple(location)
-            sheet.extent_col = max(curr_col, sheet.extent_col)
-            sheet.extent_row = max(curr_row, sheet.extent_row)
 
     def del_sheet(self, sheet_name: str) -> None:
         # Delete the spreadsheet with the specified name.
@@ -150,43 +202,6 @@ class Workbook:
         else:
             sheet = self.spreadsheets[sheet_name.lower()]
             return ((sheet.extent_col, sheet.extent_row))
-
-    def __set_cell_value_and_type(self, calling_cell: cell.Cell) -> list:
-        """
-        Sets cells value and type based on cell's contents field
-
-        Args:
-            calling_cell (Cell): Cell object that we assume has contents set correctly.
-
-        Returns:
-            list: cells that the calling cell relies on.
-        """
-        cell_contents = calling_cell.contents
-        relies_on = []
-        if not cell_contents or len(cell_contents) == 0:
-            val = None
-            type = cell.CellType.EMPTY
-        elif string_conversions.str_to_error(cell_contents):  # type error
-            val = string_conversions.str_to_error(cell_contents)
-            type = cell.CellType.ERROR
-        elif cell_contents[0] == "'":
-            val = cell_contents[1:]
-            type = cell.CellType.STRING
-        elif cell_contents[0] == "=":
-            eval, val = lark_module.evaluate_expr(
-                self, calling_cell, calling_cell.sheet, cell_contents)
-            type = cell.CellType.FORMULA
-            if eval:
-                relies_on = eval.calling_cell_relies_on
-        elif string_conversions.is_number(cell_contents):
-            stripped = string_conversions.strip_zeros(cell_contents)
-            val = decimal.Decimal(stripped)
-            type = cell.CellType.LITERAL_NUM
-        else:
-            val = cell_contents
-            type = cell.CellType.LITERAL_STRING
-        calling_cell.set_fields(value=val, type=type)
-        return relies_on
 
     def set_cell_contents(self, sheet_name: str, location: str,
                           contents: Optional[str]) -> None:
@@ -441,7 +456,21 @@ class Workbook:
         #
         # If the new_sheet_name is an empty string or is otherwise invalid, a
         # ValueError is raised.
-        pass
+        if sheet_name.lower() not in self.spreadsheets:
+            logger.info(f"Sheet name \"{sheet_name}\" not found.")
+            raise KeyError(f"Sheet name \"{sheet_name}\" not found.")
+        self.__check_valid_sheet_name(new_sheet_name)
+        for n, sheet in self.spreadsheets.items(): # maybe add a bool field to the cell if its of type [sheet]![col][name] (ask jay)
+            for location, c in sheet.cells.items():
+                if string_conversions.sheet_cell_ref(self.get_cell_contents(n, location)) == sheet_name.lower(): # check if of form [sheet]![row][col]
+                    # sheet cell ref - return sheet name its returning to lower-case 
+                    print('i hate my life')
+                    # change cell contents to match new sheet name
+        # copy cell contents of old sheet
+        # delete old sheet
+        # add new sheet
+        # add copied contents into new sheet
+
 
     def move_sheet(self, sheet_name: str, index: int) -> None:
         # Move the specified sheet to the specified index in the workbook's
