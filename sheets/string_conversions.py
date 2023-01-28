@@ -67,16 +67,3 @@ def strip_evaluation(eval):
         return decimal.Decimal(stripped)
     else:
         return eval
-
-
-def sheet_cell_ref(contents):
-    if contents[0] != "=":
-        return False
-    accumulator = []
-    curr = contents[1]
-    i = 1
-    while curr != "!":
-        i += 1
-        curr = contents[i]
-        if curr == "":
-            return False

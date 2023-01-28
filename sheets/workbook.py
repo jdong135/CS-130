@@ -4,6 +4,7 @@ from typing import *
 from sheets import cell, topo_sort, cell_error, lark_module, sheet, string_conversions
 import decimal
 import json
+import re
 
 ALLOWED_PUNC = set([".", "?", "!", ",", ":", ";", "@", "#",
                     "$", "%", "^", "&", "*", "(", ")", "-", "_"])
@@ -440,6 +441,16 @@ class Workbook:
         # this requirement, the behavior is undefined.
         pass
 
+    def __get_cells_containing_sheetname(self, sheetname: str):
+        # match any cell that has contents sheetname!
+        cells = []
+        regex = f'.*{sheetname.lower()}!.*'
+        for _, sheet in self.spreadsheets.items():
+            for _, c in sheet.cells.items():
+                if c.contents and re.match(regex, c.contents.lower()):
+                    cells.append(c)
+        return cells
+
     def rename_sheet(self, sheet_name: str, new_sheet_name: str) -> None:
         # Rename the specified sheet to the new sheet name.  Additionally, all
         # cell formulas that referenced the original sheet name are updated to
@@ -457,21 +468,22 @@ class Workbook:
         # If the new_sheet_name is an empty string or is otherwise invalid, a
         # ValueError is raised.
         if sheet_name.lower() not in self.spreadsheets:
-            logger.info(f"Sheet name \"{sheet_name}\" not found.")
             raise KeyError(f"Sheet name \"{sheet_name}\" not found.")
         self.__check_valid_sheet_name(new_sheet_name)
-        # maybe add a bool field to the cell if its of type [sheet]![col][name] (ask jay)
-        for n, sheet in self.spreadsheets.items():
-            for location, c in sheet.cells.items():
-                # check if of form [sheet]![row][col]
-                if string_conversions.sheet_cell_ref(self.get_cell_contents(n, location)) == sheet_name.lower():
-                    # sheet cell ref - return sheet name its returning to lower-case
-                    print('i hate my life')
-                    # change cell contents to match new sheet name
-        # copy cell contents of old sheet
-        # delete old sheet
-        # add new sheet
-        # add copied contents into new sheet
+        # go through all cells and see if 1) formula type, 2) contains old sheet name and !
+        cells_to_update = self.__get_cells_containing_sheetname(sheet_name)
+        # new sheet(new_sheet_name)
+        self.new_sheet(new_sheet_name)
+
+        # then replace with new sheet name in all location instances (!) by calling set_cell_contents
+        for c in cells_to_update:
+            new_contents = re.sub(
+                f"{sheet_name}!", f"{new_sheet_name}!", c.contents, flags=re.IGNORECASE)
+            self.set_cell_contents(c.sheet, c.location, new_contents)
+        self.del_sheet(sheet_name)
+        # Get contents of every cell in old sheet, call self.set_cell_contents(new_sheet, location from old cell, contents from old cell)
+        # delete(old_sheet) and get index in dictionary
+        # move new sheet to that index
 
     def move_sheet(self, sheet_name: str, index: int) -> None:
         # Move the specified sheet to the specified index in the workbook's
@@ -503,7 +515,6 @@ class Workbook:
             if i >= index:
                 new_spreadsheets[name] = self.spreadsheets[name]
         self.spreadsheets = new_spreadsheets
-        logger.info(list(self.spreadsheets))
 
     def copy_sheet(self, sheet_name: str) -> Tuple[int, str]:
         # Make a copy of the specified sheet, storing the copy at the end of the
