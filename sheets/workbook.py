@@ -113,6 +113,16 @@ class Workbook:
         calling_cell.set_fields(value=val, type=type)
         return relies_on
 
+    def __get_cells_containing_sheetname(self, sheetname: str):
+        # match any cell that has contents sheetname!
+        cells = []
+        regex = f'.*{sheetname.lower()}!.*'
+        for _, sheet in self.spreadsheets.items():
+            for _, c in sheet.cells.items():
+                if c.contents and re.match(regex, c.contents.lower()):
+                    cells.append(c)
+        return cells
+
     def num_sheets(self) -> int:
         """
         Return current number of spreadsheets
@@ -443,16 +453,6 @@ class Workbook:
         # this requirement, the behavior is undefined.
         pass
 
-    def __get_cells_containing_sheetname(self, sheetname: str):
-        # match any cell that has contents sheetname!
-        cells = []
-        regex = f'.*{sheetname.lower()}!.*'
-        for _, sheet in self.spreadsheets.items():
-            for _, c in sheet.cells.items():
-                if c.contents and re.match(regex, c.contents.lower()):
-                    cells.append(c)
-        return cells
-
     def rename_sheet(self, sheet_name: str, new_sheet_name: str) -> None:
         # Rename the specified sheet to the new sheet name.  Additionally, all
         # cell formulas that referenced the original sheet name are updated to
@@ -472,22 +472,21 @@ class Workbook:
         if sheet_name.lower() not in self.spreadsheets:
             raise KeyError(f"Sheet name \"{sheet_name}\" not found.")
         self.__check_valid_sheet_name(new_sheet_name)
-        # get index of old sheet name
+        # Get current index of our original sheet
         index = list(self.spreadsheets.keys()).index(sheet_name.lower())
-        # go through all cells and see if 1) formula type, 2) contains old sheet name and !
-        cells_to_update = self.__get_cells_containing_sheetname(sheet_name)
-        # new sheet(new_sheet_name)
         self.new_sheet(new_sheet_name)
-
-        # then replace with new sheet name in all location instances (!) by calling set_cell_contents
+        # Copy all cell contents from our original sheet to he new sheet
+        for location, _ in self.spreadsheets[sheet_name.lower()].cells.items():
+            curr_contents = self.get_cell_contents(sheet_name, location)
+            self.set_cell_contents(new_sheet_name, location, curr_contents)
+        # Replace all instances of our old sheet name in all other cells with the new sheet name. 
+        cells_to_update = self.__get_cells_containing_sheetname(sheet_name)
         for c in cells_to_update:
             new_contents = re.sub(
                 f"{sheet_name}!", f"{new_sheet_name}!", c.contents, flags=re.IGNORECASE)
             self.set_cell_contents(c.sheet, c.location, new_contents)
+        # Replace the old sheet
         self.del_sheet(sheet_name)
-        # Get contents of every cell in old sheet, call self.set_cell_contents(new_sheet, location from old cell, contents from old cell)
-        # delete(old_sheet) and get index in dictionary
-        # move new sheet to that index
         self.move_sheet(new_sheet_name, index)
 
     def move_sheet(self, sheet_name: str, index: int) -> None:
