@@ -389,9 +389,19 @@ class WorkbookRenameSheet(unittest.TestCase):
         wb.new_sheet()
         wb.set_cell_contents("sheet2", "A1", "=1")
         wb.set_cell_contents("sheet1", "A1", "=5 * sheet2!A1")
-        wb.set_cell_contents("sheet2", "A2", "=1 + (sheet1!A1 - 6 * (A1 * 1)) * -1")
+        wb.set_cell_contents(
+            "sheet2", "A2", "=1 + (sheet1!A1 - 6 * (A1 * 1)) * -1")
         wb.set_cell_contents("sheet1", "A2", "=(((((sheet2!A2)-1)+1)))")
         self.assertEqual(wb.get_cell_value("sheet1", "A2"), decimal.Decimal(2))
+
+    def test_strip_all_quotes_rename(self):
+        wb = Workbook()
+        wb.new_sheet()
+        wb.new_sheet()
+        wb.set_cell_contents("sheet1", "A1", "='Sheet1'!A5 + 'Sheet2'!A6")
+        wb.rename_sheet("sheet2", "SheetBla")
+        self.assertEqual(wb.get_cell_contents(
+            "sheet1", "A1"), "=Sheet1!A5 + SheetBla!A6")
 
 
 if __name__ == "__main__":
