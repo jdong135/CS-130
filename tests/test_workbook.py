@@ -14,7 +14,7 @@ PROJECT_ROOT = os.path.abspath(os.path.join(
     os.pardir)
 )
 sys.path.append(PROJECT_ROOT)
-from sheets import Workbook, cell  # noqa
+from sheets import Workbook, cell, cell_error  # noqa
 
 MAX_SHEETS_TEST = 100
 MAX_STR_LEN_TEST = 100
@@ -269,6 +269,100 @@ class WorkbookMoveSheet(unittest.TestCase):
         wb.new_sheet("sheet3")
         with self.assertRaises(IndexError):
             wb.move_sheet('sheet3', 3)
+
+
+class WorkbookRenameSheet(unittest.TestCase):
+    def test_basic_rename(self):
+        wb = Workbook()
+        wb.new_sheet("Sheet 1")
+        wb.new_sheet("Sheet 2")
+        wb.rename_sheet("Sheet 2", "Renamed2")
+        wb.rename_sheet("Sheet 1", "Renamed1")
+        self.assertEqual(list(wb.spreadsheets.keys()), ["renamed1", "renamed2"])
+
+    def test_rename_ref1(self):
+        wb = Workbook()
+        wb.new_sheet()
+        wb.new_sheet()
+        wb.new_sheet()
+        wb.set_cell_contents("Sheet3", "A1", "=3")
+        wb.set_cell_contents("Sheet2", "A1", "'2")
+        wb.set_cell_contents("Sheet1", "A1", "1")
+        wb.set_cell_contents("Sheet1", "A2", "=A1 + 2 * Sheet2!A1 - 3 * Sheet3!A1")
+        wb.rename_sheet("Sheet2", "SheetB")
+        wb.rename_sheet("Sheet3", "SheetC")
+        self.assertEqual(wb.get_cell_value("Sheet1", "A2"), decimal.Decimal(-4))
+
+    def test_rename_ref2(self):
+        wb = Workbook()
+        wb.new_sheet()
+        wb.new_sheet()
+        wb.set_cell_contents("sheet2", "A1", "=4")
+        wb.set_cell_contents("sheet1", "A1", "=sheet3!A1")
+        wb.rename_sheet("sheet2", "sheet3")
+        self.assertEqual(wb.get_cell_value("sheet1", "A1"), decimal.Decimal(4))
+
+    def test_quoted_rename_ref(self):
+        wb = Workbook()
+        wb.new_sheet()
+        wb.new_sheet()
+        wb.new_sheet()
+        wb.set_cell_contents("Sheet3", "A1", "=3")
+        wb.set_cell_contents("Sheet2", "A1", "'2")
+        wb.set_cell_contents("Sheet1", "A1", "1")
+        wb.set_cell_contents("Sheet1", "A2", "=A1 + 2 * 'Sheet2'!A1 - 3 * 'Sheet3'!A1")
+        wb.rename_sheet("Sheet2", "SheetB")
+        wb.rename_sheet("Sheet3", "SheetC")
+        self.assertEqual(wb.get_cell_value("Sheet1", "A2"), decimal.Decimal(-4))
+
+    def test_invalid_sheet_rename1(self):
+        wb = Workbook()
+        wb.new_sheet()
+        with self.assertRaises(KeyError):
+            wb.rename_sheet("S2", "S3")
+
+    def test_invalid_sheet_rename2(self):
+        wb = Workbook()
+        wb.new_sheet()
+        with self.assertRaises(ValueError):
+            wb.rename_sheet("sheet1", " a ")
+
+    def test_invalid_sheet_rename3(self):
+        wb = Workbook()
+        wb.new_sheet()
+        with self.assertRaises(ValueError):
+            wb.rename_sheet("sheet1", " ")
+
+    def test_invalid_sheet_rename4(self):
+        wb = Workbook()
+        wb.new_sheet()
+        wb.new_sheet()
+        wb.new_sheet()
+        wb.rename_sheet("sheet2", "sheet4")
+        with self.assertRaises(ValueError):
+            wb.rename_sheet("sheet3", "sheet4")
+
+    def test_unparsable_rename(self):
+        wb = Workbook()
+        wb.new_sheet()
+        wb.new_sheet()
+        wb.set_cell_contents("sheet2", "A1", "=5")
+        wb.set_cell_contents("sheet1", "A1", "=5Q sheet2!A1 Z")
+        wb.rename_sheet("sheet2", "sheet3")
+        self.assertEqual(wb.get_cell_contents("sheet1", "A1"), "=5Q sheet2!A1 Z")
+
+    def test_error_rename(self):
+        wb = Workbook()
+        wb.new_sheet()
+        wb.new_sheet()
+        wb.set_cell_contents("sheet2", "A1", "=0")
+        wb.set_cell_contents("sheet1", "A1", "=5/Sheet2!A1")
+        wb.rename_sheet("sheet2", "sheet3")
+        contents = wb.get_cell_contents("sheet1", "A1")
+        value = wb.get_cell_value("sheet1", "A1")
+        self.assertEqual(contents, "=5/sheet3!A1")
+        self.assertTrue(isinstance(value, cell_error.CellError))
+        self.assertTrue(value.get_type() == cell_error.CellErrorType.DIVIDE_BY_ZERO)
 
 
 if __name__ == "__main__":
