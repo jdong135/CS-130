@@ -114,7 +114,7 @@ class Workbook:
         return relies_on
 
     def __get_cells_containing_sheetname(self, sheetname: str):
-        # match any cell that has contents sheetname!
+        # match any cell that has contents sheetname! or 'sheetname'!
         cells = []
         regex = f'.*{sheetname.lower()}!.*'
         for name, sheet in self.spreadsheets.items():
@@ -483,15 +483,15 @@ class Workbook:
         # Get current index of our original sheet
         index = list(self.spreadsheets.keys()).index(sheet_name.lower())
         self.new_sheet(new_sheet_name)
-        # Copy all cell contents from our original sheet to he new sheet
+        # Copy all cell contents from our original sheet to the new sheet
         for location, _ in self.spreadsheets[sheet_name.lower()].cells.items():
             curr_contents = self.get_cell_contents(sheet_name, location)
             self.set_cell_contents(new_sheet_name, location, curr_contents)
-        # Replace all instances of our old sheet name in all other cells with the new sheet name. 
+        # Replace all instances of our old sheet name in all other cells with the new sheet name.
         cells_to_update = self.__get_cells_containing_sheetname(sheet_name)
         for c in cells_to_update:
             new_contents = re.sub(
-                f"{sheet_name}!", f"{new_sheet_name}!", c.contents, flags=re.IGNORECASE)
+                f"{sheet_name}!|'{sheet_name}'!", f"{new_sheet_name}!", c.contents, flags=re.IGNORECASE)
             self.set_cell_contents(c.sheet, c.location, new_contents)
         # Replace the old sheet
         self.del_sheet(sheet_name)
