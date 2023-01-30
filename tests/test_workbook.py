@@ -95,6 +95,12 @@ class WorkbookNewSheet(unittest.TestCase):
         with self.assertRaises(ValueError):
             wb.new_sheet(''.join(sheet_name))
 
+    def test_new_sheet_tail_white_space2(self):
+        wb = Workbook()
+        sheet_name = "a "
+        with self.assertRaises(ValueError):
+            wb.new_sheet(sheet_name)
+
     def test_new_sheet_duplicate1(self):
         wb = Workbook()
         wb.new_sheet("Sheet1")
