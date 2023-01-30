@@ -25,6 +25,10 @@ class FormulaEvaluator(lark.visitors.Interpreter):
             Union[str, cell_error.CellError]: lower-case form of the sheet name or an instance
             of a Parse Error if the sheet name is found to be invalid. 
         """
+        if sheet_name[0] == " ":
+            return cell_error.CellError(cell_error.CellErrorType.PARSE_ERROR, "invalid sheet name")
+        elif sheet_name[-1] == " ":
+            return cell_error.CellError(cell_error.CellErrorType.PARSE_ERROR, "invalid sheet name")
         if re.match("\'[^']*\'", sheet_name):  # quoted sheet name
             sheet_name = sheet_name.lower()[1:-1]
         elif re.match("[A-Za-z_][A-Za-z0-9_]*", sheet_name):  # unquoted sheet name
