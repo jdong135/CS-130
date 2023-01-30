@@ -117,9 +117,17 @@ class Workbook:
         # match any cell that has contents sheetname!
         cells = []
         regex = f'.*{sheetname.lower()}!.*'
-        for _, sheet in self.spreadsheets.items():
-            for _, c in sheet.cells.items():
+        for name, sheet in self.spreadsheets.items():
+            for loc, c in sheet.cells.items():
                 if c.contents and re.match(regex, c.contents.lower()):
+                    try: 
+                        # If a cell is an error type, check if it is a parse error and don't 
+                        # add to our list of cells. Otherwise, if it is not a cell error type, 
+                        # get_type() will throw an attribute error. 
+                        if self.get_cell_value(name, loc).get_type() == cell_error.CellErrorType.PARSE_ERROR:
+                            continue
+                    except AttributeError:
+                        pass
                     cells.append(c)
         return cells
 
