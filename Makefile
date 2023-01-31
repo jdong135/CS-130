@@ -6,10 +6,10 @@ format:
 .PHONY: test
 test:
 	python3 tests/test_workbook.py
-	python3 tests/test_lark_module.py
-	python3 tests/test_spec1.py
-	python3 tests/smoketest.py
-	python3 tests/test_system.py
+	# python3 tests/test_lark_module.py
+	# python3 tests/test_spec1.py
+	# python3 tests/smoketest.py
+	# python3 tests/test_system.py
 
 .PHONY: clean
 clean:

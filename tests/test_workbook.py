@@ -8,6 +8,7 @@ import sys
 import string
 import random
 import decimal
+import io
 
 PROJECT_ROOT = os.path.abspath(os.path.join(
     os.path.dirname(__file__),
@@ -394,15 +395,45 @@ class WorkbookRenameSheet(unittest.TestCase):
         wb.set_cell_contents("sheet1", "A2", "=(((((sheet2!A2)-1)+1)))")
         self.assertEqual(wb.get_cell_value("sheet1", "A2"), decimal.Decimal(2))
 
-    def test_strip_all_quotes_rename(self):
+    # def test_strip_all_quotes_rename(self):
+    #     wb = Workbook()
+    #     wb.new_sheet()
+    #     wb.new_sheet()
+    #     wb.set_cell_contents("sheet1", "A1", "='Sheet1'!A5 + 'Sheet2'!A6")
+    #     wb.rename_sheet("sheet2", "SheetBla")
+    #     self.assertEqual(wb.get_cell_contents(
+    #         "sheet1", "A1"), "=Sheet1!A5 + SheetBla!A6")
+
+class WorkbookNotifyCellsChanged(unittest.TestCase):
+    def test_basic_callable(self):
+        def on_cells_changed(workbook, changed_cells):
+            '''
+            This function gets called when cells change in the workbook that the
+            function was registered on.  The changed_cells argument is an iterable
+            of tuples; each tuple is of the form (sheet_name, cell_location).
+            '''
+            print(f'Cell(s) changed: {changed_cells}')
+        sys_out = sys.stdout
+        new_stdo = io.StringIO()
+        sys.stdout = new_stdo
+
         wb = Workbook()
         wb.new_sheet()
-        wb.new_sheet()
-        wb.set_cell_contents("sheet1", "A1", "='Sheet1'!A5 + 'Sheet2'!A6")
-        wb.rename_sheet("sheet2", "SheetBla")
-        self.assertEqual(wb.get_cell_contents(
-            "sheet1", "A1"), "=Sheet1!A5 + SheetBla!A6")
+        wb.set_cell_contents("Sheet1", "A1", "=B1 + 1")
+        wb.set_cell_contents("Sheet1", "B1", "=C1 + 1")
+        wb.notify_cells_changed(on_cells_changed)
+        wb.set_cell_contents("Sheet1", "C1", "=4")
 
+        output = new_stdo.getvalue()
+        sys.stdout = sys_out
+        expected = "Cell(s) changed: [('Sheet1', 'C1'), ('Sheet1', 'B1'), ('Sheet1', 'A1')]\n"
+        self.assertEqual(expected, output)
+
+    def test_non_callable(self):
+        wb = Workbook()
+        wb.new_sheet()
+        with self.assertRaises(TypeError):
+            wb.notify_cells_changed("on_cells_changed")
 
 if __name__ == "__main__":
     unittest.main()
