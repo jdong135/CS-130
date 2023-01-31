@@ -79,6 +79,8 @@ class Workbook:
             sheet.extent_row = max(curr_row, sheet.extent_row)
 
     def __generate_notify_list(self, cell_list: list):
+        if cell_list == []:
+            return
         changed_cells = []
         for c in cell_list:
             changed_cells.append((c.sheet, c.location))
@@ -88,7 +90,7 @@ class Workbook:
             except:
                 continue
 
-    def __set_cell_value_and_type(self, calling_cell: cell.Cell) -> list:
+    def __set_cell_value_and_type(self, calling_cell: cell.Cell) -> Tuple[list, bool]:
         """
         Sets cells value and type based on cell's contents field
 
@@ -97,6 +99,7 @@ class Workbook:
 
         Returns:
             list: cells that the calling cell relies on.
+            bool: if the value of the calling cell changed
         """
         cell_contents = calling_cell.contents
         relies_on = []
@@ -122,8 +125,9 @@ class Workbook:
         else:
             val = cell_contents
             type = cell.CellType.LITERAL_STRING
+        val_update = True if val != calling_cell.value else False
         calling_cell.set_fields(value=val, type=type)
-        return relies_on
+        return relies_on, val_update
 
     def __get_cells_containing_sheetname(self, sheetname: str):
         # match any cell that has contents sheetname! or 'sheetname'!
@@ -202,20 +206,27 @@ class Workbook:
             while True:
                 sheet_name = "Sheet" + str(i + 1)
                 if sheet_name.lower() not in self.spreadsheets:
-                    changed_cells = [] # add boolean ret value to set cell value and type 
+                    changed_cells = []
                     self.spreadsheets[sheet_name.lower()] = sheet.Sheet(
                         sheet_name)
                     curr_cells = list(self.adjacency_list.keys())
                     for c in curr_cells:
-                        self.__set_cell_value_and_type(c)
+                        _, c_updated = self.__set_cell_value_and_type(c)
+                        if c_updated:
+                            changed_cells.append(c)
+                    self.__generate_notify_list(changed_cells)
                     return (len(self.spreadsheets) - 1, sheet_name)
                 i += 1
         self.__check_valid_sheet_name(sheet_name)
         if sheet_name.lower() not in self.spreadsheets:
+            changed_cells = []
             self.spreadsheets[sheet_name.lower()] = sheet.Sheet(sheet_name)
             curr_cells = list(self.adjacency_list.keys())
             for c in curr_cells:
-                self.__set_cell_value_and_type(c)
+                _, c_updated = self.__set_cell_value_and_type(c)
+                if c_updated:
+                    changed_cells.append(c)
+            self.__generate_notify_list(changed_cells)
             return (len(self.spreadsheets) - 1, sheet_name)
 
     def del_sheet(self, sheet_name: str) -> None:
@@ -292,7 +303,7 @@ class Workbook:
             existing_cell = sheet.cells[location]
             existing_cell.contents = contents
             # Everything the existing cell relies on
-            relies_on = self.__set_cell_value_and_type(existing_cell)
+            relies_on, _ = self.__set_cell_value_and_type(existing_cell)
             for c, neighbors in self.adjacency_list.items():
                 if existing_cell in neighbors and c not in relies_on:
                     neighbors.remove(existing_cell)

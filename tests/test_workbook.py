@@ -556,8 +556,24 @@ class WorkbookNotifyCellsChanged(unittest.TestCase):
         wb.new_sheet("sheet2")
         output = new_stdo.getvalue()
         sys.stdout = sys_out
-        expected = "[('Sheet1', 'A1')\n"
+        expected = "[('sheet1', 'A1')]\n"
         self.assertEqual(expected, output)            
+
+    def test_copy_sheet_notify(self):
+        def on_cells_changed(workbook, cells_changed):
+            print(cells_changed)
+        sys_out = sys.stdout
+        new_stdo = io.StringIO()
+        sys.stdout = new_stdo
+        wb = Workbook()
+        wb.new_sheet("sheet1")
+        wb.set_cell_contents("sheet1", "A1", "=5")
+        wb.notify_cells_changed(on_cells_changed)
+        wb.copy_sheet("sheet1")
+        output = new_stdo.getvalue()
+        sys.stdout = sys_out
+        expected = "[('sheet1_1', 'A1')]\n"
+        self.assertEqual(expected, output)         
 
 if __name__ == "__main__":
     unittest.main()
