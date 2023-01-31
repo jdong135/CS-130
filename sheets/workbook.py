@@ -491,12 +491,28 @@ class Workbook:
         # Replace all instances of our old sheet name in all other cells with the new sheet name.
         cells_to_update = self.__get_cells_containing_sheetname(sheet_name)
         for c in cells_to_update:
-            new_contents = re.sub(
-                f"{sheet_name}!|'{sheet_name}'!", f"{new_sheet_name}!", c.contents, flags=re.IGNORECASE)
+            # Check for quotation insertion/deletion for all sheet references
+            new_contents = self.__get_cell_contents_after_rename(
+                c, sheet_name, new_sheet_name)
             self.set_cell_contents(c.sheet, c.location, new_contents)
         # Replace the old sheet
         self.del_sheet(sheet_name)
         self.move_sheet(new_sheet_name, index)
+
+    def __get_cell_contents_after_rename(self, c, sheet_name, new_sheet_name):
+        # ensure names with spaces are wrapped in quotes
+        if ' ' in new_sheet_name:
+            new_sheet_name = f"'{new_sheet_name}'"
+        new_contents = re.sub(f"{sheet_name}!|'{sheet_name}'!",
+                              f"{new_sheet_name}!", c.contents, flags=re.IGNORECASE)
+        # remove '' around names that don't need quotations
+        quoted = re.findall(r"'[\w\s.?!,:;!@#$%^&*()-_]+'!", new_contents)
+        for name in quoted:
+            if ' ' not in name:
+                # name = 'sheetname'!
+                new_contents = re.sub(
+                    f"{name}", f"{name[1:-2]}!", new_contents, flags=re.IGNORECASE)
+        return new_contents
 
     def move_sheet(self, sheet_name: str, index: int) -> None:
         # Move the specified sheet to the specified index in the workbook's
