@@ -435,5 +435,59 @@ class WorkbookNotifyCellsChanged(unittest.TestCase):
         with self.assertRaises(TypeError):
             wb.notify_cells_changed("on_cells_changed")
 
+    def test_continual_notify(self):
+        def on_cells_changed(workbook, cells_changed):
+            print(cells_changed)
+        sys_out = sys.stdout
+        new_stdo = io.StringIO()
+        sys.stdout = new_stdo
+
+        wb = Workbook()
+        wb.new_sheet()
+        wb.notify_cells_changed(on_cells_changed)
+        wb.set_cell_contents("Sheet1", "A1", "=B1 + 1")
+        wb.set_cell_contents("Sheet1", "B1", "=C1 + 1")
+        wb.set_cell_contents("Sheet1", "C1", "=4")
+
+        output = new_stdo.getvalue()
+        sys.stdout = sys_out
+        expected = "[('Sheet1', 'A1')]\n[('Sheet1', 'B1'), ('Sheet1', 'A1')]\n[('Sheet1', 'C1'), ('Sheet1', 'B1'), ('Sheet1', 'A1')]\n"
+        self.assertEqual(expected, output)        
+
+    def test_clear_cell_notify(self):
+        def on_cells_changed(workbook, cells_changed):
+            print(cells_changed)
+        sys_out = sys.stdout
+        new_stdo = io.StringIO()
+        sys.stdout = new_stdo
+
+        wb = Workbook()
+        wb.new_sheet()
+        wb.notify_cells_changed(on_cells_changed)
+        wb.set_cell_contents("Sheet1", "A1", "=5")
+        wb.set_cell_contents("Sheet1", "A1", "")
+
+        output = new_stdo.getvalue()
+        sys.stdout = sys_out
+        expected = "[('Sheet1', 'A1')]\n[('Sheet1', 'A1')]\n"
+        self.assertEqual(expected, output)       
+    
+    def test_rename_notify(self):
+        def on_cells_changed(workbook, cells_changed):
+            print(f"\nCells changed: {cells_changed}")
+        wb = Workbook()
+        wb.new_sheet("sheet1")
+        wb.new_sheet("sheet2")
+        wb.notify_cells_changed(on_cells_changed)
+        wb.set_cell_contents("sheet1", "A1", "=sheet2!A1")
+        wb.set_cell_contents("sheet2", "A1", "=5")
+        # should output 
+        """
+        Cells changed: [('sheet1', 'A1')]
+
+        Cells changed: [('sheet2', 'A1'), ('sheet1', 'A1')]
+        """
+        wb.rename_sheet("sheet2", "sheet3")
+
 if __name__ == "__main__":
     unittest.main()
