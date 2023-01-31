@@ -404,6 +404,7 @@ class WorkbookRenameSheet(unittest.TestCase):
         self.assertEqual(wb.get_cell_contents(
             "sheet1", "A1"), "=Sheet1!A5 + 'Sheet Space'!A6")
 
+
 class WorkbookNotifyCellsChanged(unittest.TestCase):
     def test_basic_callable(self):
         def on_cells_changed(workbook, changed_cells):
@@ -452,7 +453,7 @@ class WorkbookNotifyCellsChanged(unittest.TestCase):
         output = new_stdo.getvalue()
         sys.stdout = sys_out
         expected = "[('Sheet1', 'A1')]\n[('Sheet1', 'B1'), ('Sheet1', 'A1')]\n[('Sheet1', 'C1'), ('Sheet1', 'B1'), ('Sheet1', 'A1')]\n"
-        self.assertEqual(expected, output)        
+        self.assertEqual(expected, output)
 
     def test_clear_cell_notify(self):
         def on_cells_changed(workbook, cells_changed):
@@ -470,8 +471,8 @@ class WorkbookNotifyCellsChanged(unittest.TestCase):
         output = new_stdo.getvalue()
         sys.stdout = sys_out
         expected = "[('Sheet1', 'A1')]\n[('Sheet1', 'A1')]\n"
-        self.assertEqual(expected, output)       
-    
+        self.assertEqual(expected, output)
+
     def test_rename_notify(self):
         def on_cells_changed(workbook, cells_changed):
             print(f"\nCells changed: {cells_changed}")
@@ -481,13 +482,14 @@ class WorkbookNotifyCellsChanged(unittest.TestCase):
         wb.notify_cells_changed(on_cells_changed)
         wb.set_cell_contents("sheet1", "A1", "=sheet2!A1")
         wb.set_cell_contents("sheet2", "A1", "=5")
-        # should output 
+        # should output
         """
         Cells changed: [('sheet1', 'A1')]
 
         Cells changed: [('sheet2', 'A1'), ('sheet1', 'A1')]
         """
         wb.rename_sheet("sheet2", "sheet3")
+
 
 if __name__ == "__main__":
     unittest.main()
