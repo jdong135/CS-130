@@ -395,14 +395,14 @@ class WorkbookRenameSheet(unittest.TestCase):
         wb.set_cell_contents("sheet1", "A2", "=(((((sheet2!A2)-1)+1)))")
         self.assertEqual(wb.get_cell_value("sheet1", "A2"), decimal.Decimal(2))
 
-    # def test_strip_all_quotes_rename(self):
-    #     wb = Workbook()
-    #     wb.new_sheet()
-    #     wb.new_sheet()
-    #     wb.set_cell_contents("sheet1", "A1", "='Sheet1'!A5 + 'Sheet2'!A6")
-    #     wb.rename_sheet("sheet2", "SheetBla")
-    #     self.assertEqual(wb.get_cell_contents(
-    #         "sheet1", "A1"), "=Sheet1!A5 + SheetBla!A6")
+    def test_strip_some_quotes_rename(self):
+        wb = Workbook()
+        wb.new_sheet()
+        wb.new_sheet()
+        wb.set_cell_contents("sheet1", "A1", "='Sheet1'!A5 + 'Sheet2'!A6")
+        wb.rename_sheet("sheet2", "Sheet Space")
+        self.assertEqual(wb.get_cell_contents(
+            "sheet1", "A1"), "=Sheet1!A5 + 'Sheet Space'!A6")
 
 class WorkbookNotifyCellsChanged(unittest.TestCase):
     def test_basic_callable(self):
