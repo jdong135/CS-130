@@ -2,4 +2,4 @@
 __pycache__/
 *.py[cod]
 logs
-test-outputs
+test-outputs/*
