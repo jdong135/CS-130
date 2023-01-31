@@ -28,7 +28,7 @@ class Workbook:
         # Cell: [neighbor Cells]; neighbors are cells that depend on Cell
         self.adjacency_list = {}
         # notify functions = set of user-inputted notify functions
-        self.notify_functions = set()
+        self.notify_functions = []
 
     def __check_valid_sheet_name(self, sheet_name: str):
         """
@@ -202,6 +202,7 @@ class Workbook:
             while True:
                 sheet_name = "Sheet" + str(i + 1)
                 if sheet_name.lower() not in self.spreadsheets:
+                    changed_cells = [] # add boolean ret value to set cell value and type 
                     self.spreadsheets[sheet_name.lower()] = sheet.Sheet(
                         sheet_name)
                     curr_cells = list(self.adjacency_list.keys())
@@ -228,15 +229,18 @@ class Workbook:
             raise KeyError("Specified sheet name not found")
         sheet = self.spreadsheets[sheet_name.lower()]
         del self.spreadsheets[sheet_name.lower()]
+        changed_cells = []
         for loc in sheet.cells:
             c = sheet.cells[loc]
             _, cell_dependents = topo_sort(c, self.adjacency_list)
+            changed_cells.extend(cell_dependents[1:])
             for _, neighbors in self.adjacency_list.items():
                 if c in neighbors:
                     neighbors.remove(c)
             for dependent in cell_dependents[1:]:
                 self.__set_cell_value_and_type(dependent)
             del self.adjacency_list[c]
+        self.__generate_notify_list(changed_cells)
 
     def get_sheet_extent(self, sheet_name: str) -> Tuple[int, int]:
         # Return a tuple (num-cols, num-rows) indicating the current extent of
@@ -492,7 +496,7 @@ class Workbook:
         # this requirement, the behavior is undefined.
         if not callable(notify_function):
             raise TypeError(f"Input notify function {notify_function} is not callable.")
-        self.notify_functions.add(notify_function)
+        self.notify_functions.append(notify_function)
 
     def rename_sheet(self, sheet_name: str, new_sheet_name: str) -> None:
         # Rename the specified sheet to the new sheet name.  Additionally, all

@@ -416,14 +416,12 @@ class WorkbookNotifyCellsChanged(unittest.TestCase):
         sys_out = sys.stdout
         new_stdo = io.StringIO()
         sys.stdout = new_stdo
-
         wb = Workbook()
         wb.new_sheet()
         wb.set_cell_contents("Sheet1", "A1", "=B1 + 1")
         wb.set_cell_contents("Sheet1", "B1", "=C1 + 1")
         wb.notify_cells_changed(on_cells_changed)
         wb.set_cell_contents("Sheet1", "C1", "=4")
-
         output = new_stdo.getvalue()
         sys.stdout = sys_out
         expected = "Cell(s) changed: [('Sheet1', 'C1'), ('Sheet1', 'B1'), ('Sheet1', 'A1')]\n"
@@ -441,14 +439,12 @@ class WorkbookNotifyCellsChanged(unittest.TestCase):
         sys_out = sys.stdout
         new_stdo = io.StringIO()
         sys.stdout = new_stdo
-
         wb = Workbook()
         wb.new_sheet()
         wb.notify_cells_changed(on_cells_changed)
         wb.set_cell_contents("Sheet1", "A1", "=B1 + 1")
         wb.set_cell_contents("Sheet1", "B1", "=C1 + 1")
         wb.set_cell_contents("Sheet1", "C1", "=4")
-
         output = new_stdo.getvalue()
         sys.stdout = sys_out
         expected = "[('Sheet1', 'A1')]\n[('Sheet1', 'B1'), ('Sheet1', 'A1')]\n[('Sheet1', 'C1'), ('Sheet1', 'B1'), ('Sheet1', 'A1')]\n"
@@ -460,34 +456,108 @@ class WorkbookNotifyCellsChanged(unittest.TestCase):
         sys_out = sys.stdout
         new_stdo = io.StringIO()
         sys.stdout = new_stdo
-
         wb = Workbook()
         wb.new_sheet()
         wb.notify_cells_changed(on_cells_changed)
         wb.set_cell_contents("Sheet1", "A1", "=5")
         wb.set_cell_contents("Sheet1", "A1", "")
-
         output = new_stdo.getvalue()
         sys.stdout = sys_out
         expected = "[('Sheet1', 'A1')]\n[('Sheet1', 'A1')]\n"
         self.assertEqual(expected, output)       
     
-    def test_rename_notify(self):
+    # def test_rename_notify(self):
+    #     def on_cells_changed(workbook, cells_changed):
+    #         print(f"\nCells changed: {cells_changed}")
+    #     wb = Workbook()
+    #     wb.new_sheet("sheet1")
+    #     wb.new_sheet("sheet2")
+    #     wb.notify_cells_changed(on_cells_changed)
+    #     wb.set_cell_contents("sheet1", "A1", "=sheet2!A1")
+    #     wb.set_cell_contents("sheet2", "A1", "=5")
+    #     # should output 
+    #     """
+    #     Cells changed: [('sheet1', 'A1')]
+
+    #     Cells changed: [('sheet2', 'A1'), ('sheet1', 'A1')]
+    #     """
+    #     wb.rename_sheet("sheet2", "sheet3")
+
+    def test_multiple_notify(self):
+        def on_cells_changed1(workbook, cells_changed):
+            print(cells_changed)
+        def on_cells_changed2(workbook, cells_changed):
+            print(f"Updated: {cells_changed}")
+        sys_out = sys.stdout
+        new_stdo = io.StringIO()
+        sys.stdout = new_stdo
+        wb = Workbook()
+        wb.new_sheet()
+        wb.notify_cells_changed(on_cells_changed1)
+        wb.notify_cells_changed(on_cells_changed1)
+        wb.notify_cells_changed(on_cells_changed2)
+        wb.set_cell_contents("Sheet1", "A1", "=5")
+        output = new_stdo.getvalue()
+        sys.stdout = sys_out
+        expected = "[('Sheet1', 'A1')]\n[('Sheet1', 'A1')]\nUpdated: [('Sheet1', 'A1')]\n"
+        self.assertEqual(expected, output)                 
+
+    def test_tree_notify(self):
         def on_cells_changed(workbook, cells_changed):
-            print(f"\nCells changed: {cells_changed}")
+            print(cells_changed)
+        sys_out = sys.stdout
+        new_stdo = io.StringIO()
+        sys.stdout = new_stdo
+        wb = Workbook()
+        wb.new_sheet()
+        wb.set_cell_contents("Sheet1", "A1", "=0")
+        wb.set_cell_contents("Sheet1", "B1", "=A1 + 1")
+        wb.set_cell_contents("Sheet1", "B2", "=A1 + 1")
+        wb.set_cell_contents("Sheet1", "C1", "=B1 + 2")
+        wb.set_cell_contents("Sheet1", "C2", "=B1 + 2")
+        wb.set_cell_contents("Sheet1", "C3", "=B2 + 2")
+        wb.set_cell_contents("Sheet1", "C4", "=B2 + 2")
+        wb.notify_cells_changed(on_cells_changed)
+        wb.set_cell_contents("Sheet1", "A1", "=5")
+        output = new_stdo.getvalue()
+        sys.stdout = sys_out
+        expected = "[('Sheet1', 'A1'), ('Sheet1', 'B1'), ('Sheet1', 'C1'), ('Sheet1', 'C2'), ('Sheet1', 'B2'), ('Sheet1', 'C3'), ('Sheet1', 'C4')]\n"
+        self.assertEqual(expected, output)
+
+    def test_delete_sheet_notify(self):
+        def on_cells_changed(workbook, cells_changed):
+            print(cells_changed)
+        sys_out = sys.stdout
+        new_stdo = io.StringIO()
+        sys.stdout = new_stdo
+        wb = Workbook()
+        wb.new_sheet()
+        wb.new_sheet()
+        wb.set_cell_contents("Sheet1", "A1", "=sheet2!A1")
+        wb.set_cell_contents("Sheet1", "A2", "=sheet2!A1 + 5")
+        wb.set_cell_contents("Sheet1", "A3", "=sheet2!A2")
+        wb.notify_cells_changed(on_cells_changed)
+        wb.del_sheet("sheet2")
+        output = new_stdo.getvalue()
+        sys.stdout = sys_out
+        expected = "[('Sheet1', 'A1'), ('Sheet1', 'A2'), ('Sheet1', 'A3')]\n"
+        self.assertEqual(expected, output)        
+
+    def test_new_sheet_notify(self):
+        def on_cells_changed(workbook, cells_changed):
+            print(cells_changed)
+        sys_out = sys.stdout
+        new_stdo = io.StringIO()
+        sys.stdout = new_stdo
         wb = Workbook()
         wb.new_sheet("sheet1")
-        wb.new_sheet("sheet2")
+        wb.set_cell_contents("sheet1", "A1", "=Sheet2!A1")
         wb.notify_cells_changed(on_cells_changed)
-        wb.set_cell_contents("sheet1", "A1", "=sheet2!A1")
-        wb.set_cell_contents("sheet2", "A1", "=5")
-        # should output 
-        """
-        Cells changed: [('sheet1', 'A1')]
-
-        Cells changed: [('sheet2', 'A1'), ('sheet1', 'A1')]
-        """
-        wb.rename_sheet("sheet2", "sheet3")
+        wb.new_sheet("sheet2")
+        output = new_stdo.getvalue()
+        sys.stdout = sys_out
+        expected = "[('Sheet1', 'A1')\n"
+        self.assertEqual(expected, output)            
 
 if __name__ == "__main__":
     unittest.main()
