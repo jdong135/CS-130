@@ -15,9 +15,9 @@ class Cell:
         return isinstance(obj, Cell) and obj.__dict__ == self.__dict__
 
     def __hash__(self):
-        return hash((self.sheet, self.location))
+        return hash((str(self.sheet.uuid), self.location))
 
-    def __init__(self, sheet: str, location: str, contents: str, value: str, type: CellType):
+    def __init__(self, sheet, location: str, contents: str, value: str, type: CellType):
         """
         Initialize a cell object
 

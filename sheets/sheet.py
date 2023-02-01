@@ -1,7 +1,14 @@
 from typing import Tuple
+import uuid
 
 
 class Sheet:
+    def __eq__(self, obj):
+        return isinstance(obj, Sheet) and obj.__dict__ == self.__dict__
+
+    def __hash__(self):
+        return hash(str(self.uuid))
+
     def __init__(self, name: str):
         """
         Initialize an empty sheet object with a given name. This sheet has a
@@ -15,6 +22,7 @@ class Sheet:
         self.extent_row = 0
         self.extent_col = 0
         self.cells = {}  # {'A1': Cell} UPPERCASE location to cell
+        self.uuid = uuid.uuid1()
 
     def str_to_tuple(self, location: str) -> Tuple[int, int]:
         """

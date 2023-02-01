@@ -83,7 +83,7 @@ class Workbook:
             return
         changed_cells = []
         for c in cell_list:
-            changed_cells.append((c.sheet, c.location))
+            changed_cells.append((c.sheet.name, c.location))
         for notify_function in self.notify_functions:
             try:
                 notify_function(self, changed_cells)
@@ -114,7 +114,7 @@ class Workbook:
             type = cell.CellType.STRING
         elif cell_contents[0] == "=":
             eval, val = lark_module.evaluate_expr(
-                self, calling_cell, calling_cell.sheet, cell_contents)
+                self, calling_cell, calling_cell.sheet.name, cell_contents)
             type = cell.CellType.FORMULA
             if eval:
                 relies_on = eval.calling_cell_relies_on
@@ -334,7 +334,7 @@ class Workbook:
             self.__update_extent(sheet, location, False)
             self.__generate_notify_list(cell_dependents)
         else:  # if cell does not exist (create contents)
-            new_cell = cell.Cell(sheet_name, location, contents, None, None)
+            new_cell = cell.Cell(sheet, location, contents, None, None)
             self.__set_cell_value_and_type(new_cell)
             if new_cell.type != cell.CellType.EMPTY:
                 self.adjacency_list[new_cell] = []
@@ -506,7 +506,8 @@ class Workbook:
         # iterable that it is passed to it.  If a notification function violates
         # this requirement, the behavior is undefined.
         if not callable(notify_function):
-            raise TypeError(f"Input notify function {notify_function} is not callable.")
+            raise TypeError(
+                f"Input notify function {notify_function} is not callable.")
         self.notify_functions.append(notify_function)
 
     def rename_sheet(self, sheet_name: str, new_sheet_name: str) -> None:
@@ -530,21 +531,38 @@ class Workbook:
         self.__check_valid_sheet_name(new_sheet_name)
         # Get current index of our original sheet
         index = list(self.spreadsheets.keys()).index(sheet_name.lower())
-        self.new_sheet(new_sheet_name)
-        # Copy all cell contents from our original sheet to the new sheet
-        for location, _ in self.spreadsheets[sheet_name.lower()].cells.items():
-            curr_contents = self.get_cell_contents(sheet_name, location)
-            self.set_cell_contents(new_sheet_name, location, curr_contents)
-        # Replace all instances of our old sheet name in all other cells with the new sheet name.
+
+        # Rename the current sheet
+        self.spreadsheets[new_sheet_name.lower()] = self.spreadsheets.pop(
+            sheet_name.lower())
+        self.spreadsheets[new_sheet_name.lower()].name = new_sheet_name
+        self.move_sheet(new_sheet_name, index)
+
         cells_to_update = self.__get_cells_containing_sheetname(sheet_name)
         for c in cells_to_update:
-            # Check for quotation insertion/deletion for all sheet references
             new_contents = self.__get_cell_contents_after_rename(
                 c, sheet_name, new_sheet_name)
-            self.set_cell_contents(c.sheet, c.location, new_contents)
-        # Replace the old sheet
-        self.del_sheet(sheet_name)
-        self.move_sheet(new_sheet_name, index)
+            self.set_cell_contents(c.sheet.name, c.location, new_contents)
+
+        ref_error_cells = self.__get_cells_containing_sheetname(new_sheet_name)
+        for c in ref_error_cells:
+            self.set_cell_contents(c.sheet.name, c.location, c.contents)
+
+        # self.new_sheet(new_sheet_name)
+        # # Copy all cell contents from our original sheet to the new sheet
+        # for location, _ in self.spreadsheets[sheet_name.lower()].cells.items():
+        #     curr_contents = self.get_cell_contents(sheet_name, location)
+        #     self.set_cell_contents(new_sheet_name, location, curr_contents)
+        # # Replace all instances of our old sheet name in all other cells with the new sheet name.
+        # cells_to_update = self.__get_cells_containing_sheetname(sheet_name)
+        # for c in cells_to_update:
+        #     # Check for quotation insertion/deletion for all sheet references
+        #     new_contents = self.__get_cell_contents_after_rename(
+        #         c, sheet_name, new_sheet_name)
+        #     self.set_cell_contents(c.sheet.name, c.location, new_contents)
+        # # Replace the old sheet
+        # self.del_sheet(sheet_name)
+        # self.move_sheet(new_sheet_name, index)
 
     def move_sheet(self, sheet_name: str, index: int) -> None:
         # Move the specified sheet to the specified index in the workbook's

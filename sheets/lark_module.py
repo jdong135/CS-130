@@ -186,11 +186,11 @@ class FormulaEvaluator(lark.visitors.Interpreter):
         sheet = self.wb.spreadsheets[sheet_name]
         if not sheet.check_valid_location(location):
             return cell_error.CellError(cell_error.CellErrorType.BAD_REFERENCE, "invalid location")
-        if self.calling_cell and self.calling_cell.sheet.lower() == sheet_name and self.calling_cell.location == location:
+        if self.calling_cell and self.calling_cell.sheet.name.lower() == sheet_name and self.calling_cell.location == location:
             return cell_error.CellError(cell_error.CellErrorType.CIRCULAR_REFERENCE, "circular reference")
         if location not in sheet.cells:  # no cell in this location yet
             new_empty_cell = cell.Cell(
-                sheet.name, location, None, None, cell.CellType.EMPTY)
+                sheet, location, None, None, cell.CellType.EMPTY)
             sheet.cells[location] = new_empty_cell
             self.wb.adjacency_list[new_empty_cell] = [self.calling_cell]
             self.calling_cell_relies_on.append(new_empty_cell)
