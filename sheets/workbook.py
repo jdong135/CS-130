@@ -3,6 +3,7 @@ import logging
 from typing import *
 from sheets import cell, topo_sort, cell_error, lark_module, sheet, string_conversions
 import decimal
+import copy
 import json
 import re
 
@@ -30,7 +31,7 @@ class Workbook:
         # notify functions = set of user-inputted notify functions
         self.notify_functions = []
 
-    def __check_valid_sheet_name(self, sheet_name: str):
+    def __check_valid_sheet_name(self, sheet_name: str) -> None:
         """
         Check if a sheet name is valid. 
 
@@ -56,7 +57,7 @@ class Workbook:
         elif sheet_name.lower() in self.spreadsheets:
             raise ValueError("Duplicate spreadsheet name")
 
-    def __update_extent(self, sheet, location, deletingCell: bool):
+    def __update_extent(self, sheet, location, deletingCell: bool) -> None:
         """
         Update the extent of a sheet if we are deleting a cell
         """
@@ -78,7 +79,7 @@ class Workbook:
             sheet.extent_col = max(curr_col, sheet.extent_col)
             sheet.extent_row = max(curr_row, sheet.extent_row)
 
-    def __generate_notify_list(self, cell_list: list):
+    def __generate_notify_list(self, cell_list: list) -> None:
         if cell_list == []:
             return
         changed_cells = []
@@ -86,7 +87,7 @@ class Workbook:
             changed_cells.append((c.sheet.name, c.location))
         for notify_function in self.notify_functions:
             try:
-                notify_function(self, changed_cells)
+                notify_function(copy.deepcopy(self), changed_cells)
             except:
                 continue
 
@@ -129,7 +130,7 @@ class Workbook:
         calling_cell.set_fields(value=val, type=type)
         return relies_on, val_update
 
-    def __get_cells_containing_sheetname(self, sheetname: str):
+    def __get_cells_containing_sheetname(self, sheetname: str) -> list[cell.Cell]:
         # match any cell that has contents sheetname! or 'sheetname'!
         cells = []
         regex = f'.*{sheetname.lower()}!.*'
@@ -200,34 +201,23 @@ class Workbook:
         # otherwise invalid, a ValueError is raised.
         if sheet_name == "":
             raise ValueError("Sheet name is empty string")
-        elif not sheet_name:
-            # handle null name
-            i = 0
+        elif sheet_name:
+            self.__check_valid_sheet_name(sheet_name)
+        else: # handle null input 
+            i = 1
             while True:
-                sheet_name = "Sheet" + str(i + 1)
+                sheet_name = "Sheet" + str(i)
                 if sheet_name.lower() not in self.spreadsheets:
-                    changed_cells = []
-                    self.spreadsheets[sheet_name.lower()] = sheet.Sheet(
-                        sheet_name)
-                    curr_cells = list(self.adjacency_list.keys())
-                    for c in curr_cells:
-                        _, c_updated = self.__set_cell_value_and_type(c)
-                        if c_updated:
-                            changed_cells.append(c)
-                    self.__generate_notify_list(changed_cells)
-                    return (len(self.spreadsheets) - 1, sheet_name)
+                    break
                 i += 1
-        self.__check_valid_sheet_name(sheet_name)
-        if sheet_name.lower() not in self.spreadsheets:
-            changed_cells = []
-            self.spreadsheets[sheet_name.lower()] = sheet.Sheet(sheet_name)
-            curr_cells = list(self.adjacency_list.keys())
-            for c in curr_cells:
-                _, c_updated = self.__set_cell_value_and_type(c)
-                if c_updated:
-                    changed_cells.append(c)
-            self.__generate_notify_list(changed_cells)
-            return (len(self.spreadsheets) - 1, sheet_name)
+        self.spreadsheets[sheet_name.lower()] = sheet.Sheet(sheet_name)
+        changed_cells = []
+        for c in list(self.adjacency_list.keys()):
+            _, c_updated = self.__set_cell_value_and_type(c)
+            if c_updated:
+                changed_cells.append(c)
+        self.__generate_notify_list(changed_cells)
+        return len(self.spreadsheets) - 1, sheet_name
 
     def del_sheet(self, sheet_name: str) -> None:
         # Delete the spreadsheet with the specified name.
@@ -547,22 +537,6 @@ class Workbook:
         ref_error_cells = self.__get_cells_containing_sheetname(new_sheet_name)
         for c in ref_error_cells:
             self.set_cell_contents(c.sheet.name, c.location, c.contents)
-
-        # self.new_sheet(new_sheet_name)
-        # # Copy all cell contents from our original sheet to the new sheet
-        # for location, _ in self.spreadsheets[sheet_name.lower()].cells.items():
-        #     curr_contents = self.get_cell_contents(sheet_name, location)
-        #     self.set_cell_contents(new_sheet_name, location, curr_contents)
-        # # Replace all instances of our old sheet name in all other cells with the new sheet name.
-        # cells_to_update = self.__get_cells_containing_sheetname(sheet_name)
-        # for c in cells_to_update:
-        #     # Check for quotation insertion/deletion for all sheet references
-        #     new_contents = self.__get_cell_contents_after_rename(
-        #         c, sheet_name, new_sheet_name)
-        #     self.set_cell_contents(c.sheet.name, c.location, new_contents)
-        # # Replace the old sheet
-        # self.del_sheet(sheet_name)
-        # self.move_sheet(new_sheet_name, index)
 
     def move_sheet(self, sheet_name: str, index: int) -> None:
         # Move the specified sheet to the specified index in the workbook's
