@@ -189,7 +189,7 @@ class FormulaEvaluator(lark.visitors.Interpreter):
             return cell_error.CellError(cell_error.CellErrorType.BAD_REFERENCE, "invalid location")
         if self.calling_cell and self.calling_cell.sheet.name.lower() == sheet_name and self.calling_cell.location == location:
             return cell_error.CellError(cell_error.CellErrorType.CIRCULAR_REFERENCE, "circular reference")
-        
+
         # no cell in this location yet
         if location not in sheet.cells:
             new_empty_cell = cell.Cell(
