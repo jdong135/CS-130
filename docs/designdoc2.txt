@@ -37,7 +37,15 @@ D1.  [3pts] Briefly describe how your workbook-loading code operates.  Does
      workbook, such as deferring cell-value update calculations, or analyzing
      the graph of cell dependencies?
 
-We utilize the json library and catch any errors involved in json.load(). If there are no issues with loading the file pointer, then we check the format of the returned dictionary (one key named ‘sheets’, type of value corresponding to ‘sheets’ is a list, etc.). After these checks, we initialize a new workbook. We then go through all the sheet dictionaries within the returned dictionary from json.load() and again check for valid key value types and values. If there are no issues, then we call our methods from project 1 to create a new sheet and set cell contents at the locations given in the dictionary. 
+We utilize the json library and catch any errors involved in json.load().
+If there are no issues with loading the file pointer, then we check the
+format of the returned dictionary (one key named ‘sheets’, type of value
+corresponding to ‘sheets’ is a list, etc.). After these checks, we initialize
+a new workbook. We then go through all the sheet dictionaries within the
+returned dictionary from json.load() and again check for valid key value types
+and values. If there are no issues, then we call our methods from project 1 to
+create a new sheet and set cell contents at the locations given in the
+dictionary. 
 
 We did not consider optimization when implementing work-book loading.
 
@@ -46,15 +54,28 @@ D2.  [3pts] Sheet-level operations like copying a sheet, deleting a sheet,
      to be updated.  How does your workbook identify such cells and ensure
      that they are updated properly?
 
-All of these functions share a choke point, set_cell_contents(), that identifies the dependencies of a cell by using an adjacency list and a topological sorting algorithm. The adjacency list allows us to identify which cells should be updated as a result of updating the value of a given cell, while the topological sorting provides us with the order the dependent cells should be updated in. 
+All of these functions share a choke point, set_cell_contents(), that
+identifies the dependencies of a cell by using an adjacency list and a
+topological sorting algorithm. The adjacency list allows us to identify
+which cells should be updated as a result of updating the value of a given cell,
+while the topological sorting provides us with the order the dependent cells
+should be updated in. 
 
 D3.  [4pts] When renaming a sheet, cells with formulas that explicitly
      reference the renamed sheet must be updated with the new sheet name.
      Give an overview of how your implementation updates these formulas.
 
-Given sheet_name, which is the original name of the sheet, we wrote a helper function to find all cells with contents containing this sheet_name. This helper function searches for sheet_name (unquoted or quoted) in cell contents. We then return a list of such cells. 
+Given sheet_name, which is the original name of the sheet, we wrote a helper
+function to find all cells with contents containing this sheet_name. This
+helper function searches for sheet_name (unquoted or quoted) in cell contents.
+We then return a list of such cells. 
 
-Then, for each cell in this list, we call another helper function that takes in a cell, sheet_name, and new_sheet_name. It first checks if new_sheet_name requires quotations. It then replaces all instances of sheet_name with new_sheet_name. Next, it looks to see if any quotations can be stripped from other sheet references within this cell’s contents. Finally, we call set_cell_contents() on this cell to update its value based on the new contents.
+Then, for each cell in this list, we call another helper function that takes in
+a cell, sheet_name, and new_sheet_name. It first checks if new_sheet_name
+requires quotations. It then replaces all instances of sheet_name with
+new_sheet_name. Next, it looks to see if any quotations can be stripped
+from other sheet references within this cell’s contents. Finally, we call
+set_cell_contents() on this cell to update its value based on the new contents.
 
 
 
@@ -64,31 +85,58 @@ Spreadsheet Engine Code Review (17 pts)
 R1.  [2pts] What part of your spreadsheet code-base did your team select to
      review?  Why did you select this portion of your code to review?
 
-For our code review, we reviewed the formula evaluator portion of our spreadsheet. We defined a FormulaEvaluator class in a file named lark_module. This file is approximately 270 lines long. We selected this portion of the code due to both recommendations in the project specification and since the formula evaluator class is a portion of the code that we will likely all be working on as we add features to the spreadsheet.
+For our code review, we reviewed the formula evaluator portion of our
+spreadsheet. We defined a FormulaEvaluator class in a file named lark_module.
+This file is approximately 270 lines long. We selected this portion of the
+code due to both recommendations in the project specification and since the
+formula evaluator class is a portion of the code that we will likely all be
+working on as we add features to the spreadsheet.
 
 R2.  [2pts] Approximately how much code did your team review?  How much time did
      the meeting take?
 
-Our formula evaluator class in total is approximately 270 lines. Our meeting took around 40 minutes.
+Our formula evaluator class in total is approximately 270 lines.
+Our meeting took around 40 minutes.
 
 R3.  [6pts] Include the list of action-items that were generated by the
      code-review here.
 
-__check_string_arithmetic is written non pythonically. We will attempt to clean up the code and make it easier to understand. 
-Clean up cell function and make more readable by modularizing code and using helper function to replace repeated code
-Evaluate_expr currently uses try except in a manner that makes it difficult to identify the cause of the exception. Change contents of try except to make more sense.
-Change functions from relying on sheet name as argument to using a sheet object as argument when referencing sheet objects. Thereby, removing currently necessary error checks.
+__check_string_arithmetic is written non pythonically. We will attempt to clean
+up the code and make it easier to understand. 
+Clean up cell function and make more readable by modularizing code and using
+helper function to replace repeated code
+Evaluate_expr currently uses try except in a manner that makes it difficult
+to identify the cause of the exception. Change contents of try except to
+make more sense.
+Change functions from relying on sheet name as argument to using a sheet
+object as argument when referencing sheet objects. Thereby, removing
+currently necessary error checks.
 
 R4.  [3pts] Have you been able to address the action items identified?  If not,
      what is your plan and timeframe to do so?
 
-Yes. We were able to address the first three action items presented right after the meeting together; however, the last action item is a little more extensive as it requires updating our current implementation in many areas. We plan to complete this action item during our project review which we hold the day after each project. 
+Yes. We were able to address the first three action items presented right after
+the meeting together; however, the last action item is a little more extensive
+as it requires updating our current implementation in many areas. We plan to
+complete this action item during our project review which we hold the day
+after each project. 
 
 R5.  [4pts] Reflect on whether the code review helped with knowledge-sharing in
      the team.  Do teammates feel more confident maintaining the code that was
      reviewed, and/or extending the code in the future?
 
-Yes. The code review did solidify everyone’s collective understanding of our Formula Evaluator class. Especially complex functions like cells were difficult to understand for those not directly involved in its implementation. Enabling everyone to have a similar understanding of more complex functions, allowed more suggestions to be made to simplify/ improve the code. We added these suggestions as action items. Teammates do feel more confident maintaining the code that was received and are confident in their ability to extend the code in the future. Having the team member who coded a function verbally walk through the code and the reasoning behind implementations provided a level of understanding to the other members that could not be attained by simply reading the functions. Having an understanding of why and how the code works, enables other members to use and add to complex functions.
+Yes. The code review did solidify everyone’s collective understanding of our
+Formula Evaluator class. Especially complex functions like cells were difficult
+to understand for those not directly involved in its implementation. Enabling
+everyone to have a similar understanding of more complex functions, allowed
+more suggestions to be made to simplify/ improve the code. We added these
+suggestions as action items. Teammates do feel more confident maintaining the
+code that was received and are confident in their ability to extend the code
+in the future. Having the team member who coded a function verbally walk through
+the code and the reasoning behind implementations provided a level of
+understanding to the other members that could not be attained by simply
+reading the functions. Having an understanding of why and how the code works,
+enables other members to use and add to complex functions.
 
 Performance Analysis (16 pts)
 -----------------------------
@@ -102,24 +150,92 @@ A1.  [4pts] Briefly enumerate the performance tests you created to exercise
      your implementation, along with the teammates that collaborated to
      implement each of them.
 
-We made stress tests testing eight different scenarios with plans to expand the types of scenarios. Andy and Jay collaborated on the performance tests. Each test is generalized in a manner such that the parameters can be customized(i.e. length of chain, size of block). Each scenario is run multiple times with different parameters to recognize how the performance scales with different magnitudes. The eight different scenarios are as follows. The first scenario generates a large number of cells in a sheet each referencing the same cell, A1. Then, A1’s contents are altered. According to the specifications, the large number of cells referencing A1 must also update their values. We collect the profiling data for this update. We run this scenario multiple times with different numbers of cells referencing A1. The second scenario generates two sheets. Then, for a customizable sized block of cells in the first sheet, they reference the identical location of the second sheet. We then update the block of cells in the second sheet whilst collecting profiling data. The third scenario generates a large chain of customizable length. Then, it sets the contents of the first cell in the chain and collects the profiling data. The fourth scenario first generates a large chain of an input length. When the last cell contents are set in such a way that creates a cycle, the cProfile determines the time required for all the cells in the chain to correctly update their values to a reference error. The fifth scenario tests the delete sheet performance. The scenario generates two sheets. Then, for a customizable sized block of cells in the first sheet, they reference the identical location of the second sheet. We then delete the second sheet and collect profiling data on this operation. The sixth scenario generates an input length cycle. Then it makes and breaks the cycle an input number of times and collects profiling data on these operations. The seventh scenario tests the renaming sheet performance. Similar to above, the scenario generates two sheets. Then, for a customizable sized block of cells in the first sheet, they reference the identical location of the second sheet. We then rename the second sheet and collect profiling data on this operation. The eighth scenario generates a main long “chain” where each cell references the cell before it in the chain. Each cell also has another minor “chain” emerging from it. Then, we set the first cell in the main cell’s value and collect profiling data on how long it takes to update the values of the cells in the entire main chain and in the minor chains emerging from the main chain.
+Out performance tests are written in a file name test_stresstest.py
+We made stress tests testing eight different scenarios with plans to expand the
+types of scenarios. Andy and Jay collaborated on the performance tests.
+Each test is generalized in a manner such that the parameters can be customized
+(i.e. length of chain, size of block). Each scenario is run multiple times
+with different parameters to recognize how the performance scales with different
+magnitudes. The eight different scenarios are as follows. The first scenario
+generates a large number of cells in a sheet each referencing the same cell, A1.
+Then, A1’s contents are altered. According to the specifications, the large
+number of cells referencing A1 must also update their values. We collect the
+profiling data for this update. We run this scenario multiple times with
+different numbers of cells referencing A1. The second scenario generates two
+sheets. Then, for a customizable sized block of cells in the first sheet,
+they reference the identical location of the second sheet. We then update
+the block of cells in the second sheet whilst collecting profiling data.
+The third scenario generates a large chain of customizable length. Then,
+it sets the contents of the first cell in the chain and collects the profiling
+data. The fourth scenario first generates a large chain of an input length.
+When the last cell contents are set in such a way that creates a cycle,
+the cProfile determines the time required for all the cells in the chain
+to correctly update their values to a reference error. The fifth scenario
+tests the delete sheet performance. The scenario generates two sheets. Then,
+for a customizable sized block of cells in the first sheet, they reference the
+identical location of the second sheet. We then delete the second sheet and
+collect profiling data on this operation. The sixth scenario generates an
+input length cycle. Then it makes and breaks the cycle an input number of times
+and collects profiling data on these operations. The seventh scenario tests the
+renaming sheet performance. Similar to above, the scenario generates two sheets.
+Then, for a customizable sized block of cells in the first sheet, they reference
+the identical location of the second sheet. We then rename the second sheet and
+collect profiling data on this operation. The eighth scenario generates a main
+long “chain” where each cell references the cell before it in the chain. Each
+cell also has another minor “chain” emerging from it. Then, we set the first
+cell in the main cell’s value and collect profiling data on how long it takes
+to update the values of the cells in the entire main chain and in the minor
+chains emerging from the main chain.
 
 A2.  [2pts] What profiler did you choose to run your performance tests with?
      Why?  Give an example of how to invoke one of your tests with the profiler.
 
-We chose to use the built in Cprofile profiler since it is already built in. Interpreting the output from the Cprofile profiler also required the built in pstats package. To use the profiler, we first initialize an instance of the profiler. Then, before running the test we start collecting profiling data using the cProfile enable function and stop collecting profiler data with the disable function after code we are testing is run. In order to facilitate running multiple tests at once, we use the dump_stats function to dump the stats in a file. Then, we open the file with pstats.Stats which creates a file with the profile statistics in a readable format.
+We chose to use the built in Cprofile profiler since it is already built in.
+Interpreting the output from the Cprofile profiler also required the built in
+pstats package. To use the profiler, we first initialize an instance of the
+profiler. Then, before running the test we start collecting profiling data
+using the cProfile enable function and stop collecting profiler data with the
+disable function after code we are testing is run. In order to facilitate
+running multiple tests at once, we use the dump_stats function to dump the
+stats in a file. Then, we open the file with pstats.Stats which creates a
+file with the profile statistics in a readable format.
 
 A3.  [6pts] What are ~3 of the most significant hot-spots you identified in your
      performance testing?  Did you expect these hot-spots, or were they
      surprising to you?
 
-The main hot-spot we identified was actually within our set cell value and type function, our Formula Evaluator module, and Lark. For our implementation, the set cell value and type function is utilized whenever we need to change a cell’s contents and update any cells that reference the cell, e.g. set cell contents, sheet renaming, new sheet, deleting a sheet. When the cell is a formula, the set cell value and type function internally calls our Formula Evaluator. For our scenarios listed above it makes sense that the majority of time is spent within this function, since every cell in our scenarios is a function. Thus, our Formula Evaluator is called for every cell. Within the Formula Evaluator, it uses Lark to parse the formula. We were already aware that Lark tends to be inefficient and costly. Since we are calling Lark so often for every cell, it makes sense that most of the time is spent within Lark for our scenarios. Keeping this in mind, we should work to make our Lark implementation more efficient by increasing our familiarization with the package or maybe somehow decreasing the number of calls to Lark. 
+The main hot-spot we identified was actually within our set cell value and type
+function, our Formula Evaluator module, and Lark. For our implementation, the
+set cell value and type function is utilized whenever we need to change a cell’s
+contents and update any cells that reference the cell, e.g. set cell contents,
+sheet renaming, new sheet, deleting a sheet. When the cell is a formula, the set
+cell value and type function internally calls our Formula Evaluator. For our
+scenarios listed above it makes sense that the majority of time is spent within
+this function, since every cell in our scenarios is a function. Thus, our
+Formula Evaluator is called for every cell. Within the Formula Evaluator,
+it uses Lark to parse the formula. We were already aware that Lark tends to be
+inefficient and costly. Since we are calling Lark so often for every cell,
+it makes sense that most of the time is spent within Lark for our scenarios.
+Keeping this in mind, we should work to make our Lark implementation more
+efficient by increasing our familiarization with the package or maybe somehow
+decreasing the number of calls to Lark. 
 
 A4.  [4pts] Reflect on the experience of pair-programming as you constructed
      these tests.  What went well with it?  What would you like to try to do
      better in the future?
 
-Similar to our past experiences with pair-programming, it was extremely beneficial and made writing our scenarios far quicker than without pair-programming. Discussing possible scenarios made coming up with possible scenarios far easier and actual implementation took less time since we had two people’s implementation ideas. Each partner implements code differently and implementing code together allows us to combine our best ideas. In the future, I would like to switch the “driver” and “navigator” more frequently. For our pair programming, we ended up sticking with one driver for the entirety of the coding session. This unknowingly led the driver to fatigue and decreased our productivity. By constantly switching between “driver” and “navigator”, we would be able to produce higher quality code for a longer time.
+Similar to our past experiences with pair-programming, it was extremely
+beneficial and made writing our scenarios far quicker than without
+pair-programming. Discussing possible scenarios made coming up with
+possible scenarios far easier and actual implementation took less time
+since we had two people’s implementation ideas. Each partner implements code
+differently and implementing code together allows us to combine our best ideas.
+In the future, I would like to switch the “driver” and “navigator” more
+frequently. For our pair programming, we ended up sticking with one driver
+for the entirety of the coding session. This unknowingly led the driver to
+fatigue and decreased our productivity. By constantly switching between 
+“driver” and “navigator”, we would be able to produce higher quality code
+for a longer time.
 
 Section F:  CS130 Project 2 Feedback [OPTIONAL]
 -----------------------------------------------
@@ -141,7 +257,10 @@ F2.  What parts of the assignment helped you learn more about software
 F3.  Were there any parts of the assignment that seemed _unnecessarily_ tedious?
      (Some parts of software development are always tedious, of course.)
 
-This project was much less tedious than the first one. The only task that we had to keep coming back to and fixing was rename_sheet. Cell notifications took a bit to grasp conceptually, but were easy to implement once we figured them out. 
+This project was much less tedious than the first one. The only task that we
+had to keep coming back to and fixing was rename_sheet. Cell notifications took
+a bit to grasp conceptually, but were easy to implement once we figured them
+out. 
 
 F4.  Do you have any feedback and/or constructive criticism about how this
      project can be made better in future iterations of CS130?
