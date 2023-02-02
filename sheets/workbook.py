@@ -31,7 +31,7 @@ class Workbook:
         # notify functions = set of user-inputted notify functions
         self.notify_functions = []
 
-    def __check_valid_sheet_name(self, sheet_name: str) -> None:
+    def __check_valid_sheet_name(self, sheet_name: str):
         """
         Check if a sheet name is valid. 
 
@@ -57,7 +57,7 @@ class Workbook:
         elif sheet_name.lower() in self.spreadsheets:
             raise ValueError("Duplicate spreadsheet name")
 
-    def __update_extent(self, sheet, location, deletingCell: bool) -> None:
+    def __update_extent(self, sheet:sheet.Sheet , location: str, deletingCell: bool):
         """
         Update the extent of a sheet if we are deleting a cell
         """
@@ -79,7 +79,16 @@ class Workbook:
             sheet.extent_col = max(curr_col, sheet.extent_col)
             sheet.extent_row = max(curr_row, sheet.extent_row)
 
-    def __generate_notify_list(self, cell_list: list) -> None:
+    def __generate_notifications(self, cell_list: list[cell.Cell]):
+        """
+        Given a list of cells, create a corresponding list of tuples containing
+        each cell's sheet name and location. Then, call each registered notify
+        function on the created list. 
+
+        Args:
+            cell_list (list): List of Cell objects to generate a list of 
+            notifications from. 
+        """
         if cell_list == []:
             return
         changed_cells = []
@@ -149,7 +158,7 @@ class Workbook:
                     cells.append(c)
         return cells
 
-    def __get_cell_contents_after_rename(self, c, sheet_name, new_sheet_name):
+    def __get_cell_contents_after_rename(self, c: cell.Cell , sheet_name: str, new_sheet_name: str):
         # ensure names with spaces are wrapped in quotes
         if ' ' in new_sheet_name:
             new_sheet_name = f"'{new_sheet_name}'"
@@ -216,7 +225,7 @@ class Workbook:
             _, c_updated = self.__set_cell_value_and_type(c)
             if c_updated:
                 changed_cells.append(c)
-        self.__generate_notify_list(changed_cells)
+        self.__generate_notifications(changed_cells)
         return len(self.spreadsheets) - 1, sheet_name
 
     def del_sheet(self, sheet_name: str) -> None:
@@ -241,7 +250,7 @@ class Workbook:
             for dependent in cell_dependents[1:]:
                 self.__set_cell_value_and_type(dependent)
             del self.adjacency_list[c]
-        self.__generate_notify_list(changed_cells)
+        self.__generate_notifications(changed_cells)
 
     def get_sheet_extent(self, sheet_name: str) -> Tuple[int, int]:
         # Return a tuple (num-cols, num-rows) indicating the current extent of
@@ -292,11 +301,11 @@ class Workbook:
         if location in sheet.cells:  # if cell already exists (modify contents)
             existing_cell = sheet.cells[location]
             existing_cell.contents = contents
+            relies_on, val_updated = self.__set_cell_value_and_type(existing_cell)
             # Everything the existing cell relies on
-            relies_on, _ = self.__set_cell_value_and_type(existing_cell)
             for c, neighbors in self.adjacency_list.items():
                 if existing_cell in neighbors and c not in relies_on:
-                    neighbors.remove(existing_cell)
+                    neighbors.remove(existing_cell)       
             if existing_cell.type == cell.CellType.EMPTY:
                 # existing cell is now empty so it does not depend on other cells
                 # -> remove it as a neighbor of other cells
@@ -309,7 +318,7 @@ class Workbook:
                     del sheet.cells[location]
                     del self.adjacency_list[existing_cell]
                     self.__update_extent(sheet, location, True)
-                    self.__generate_notify_list([existing_cell])
+                    self.__generate_notifications([existing_cell])
                     return
             # updating cells that depend on existing cell
             circular, cell_dependents = topo_sort(
@@ -322,7 +331,7 @@ class Workbook:
                     dependent.set_fields(value=cell_error.CellError(
                         cell_error.CellErrorType.CIRCULAR_REFERENCE, "circular reference"))
             self.__update_extent(sheet, location, False)
-            self.__generate_notify_list(cell_dependents)
+            self.__generate_notifications(cell_dependents if val_updated else cell_dependents[1:])
         else:  # if cell does not exist (create contents)
             new_cell = cell.Cell(sheet, location, contents, None, None)
             self.__set_cell_value_and_type(new_cell)
@@ -330,7 +339,7 @@ class Workbook:
                 self.adjacency_list[new_cell] = []
                 sheet.cells[location] = new_cell
             self.__update_extent(sheet, location, False)
-            self.__generate_notify_list([new_cell])
+            self.__generate_notifications([new_cell])
 
     def get_cell_contents(self, sheet_name: str, location: str) -> Optional[str]:
         # Return the contents of the specified cell on the specified sheet.
@@ -536,7 +545,8 @@ class Workbook:
 
         ref_error_cells = self.__get_cells_containing_sheetname(new_sheet_name)
         for c in ref_error_cells:
-            self.set_cell_contents(c.sheet.name, c.location, c.contents)
+            if c not in cells_to_update:
+                self.set_cell_contents(c.sheet.name, c.location, c.contents)
 
     def move_sheet(self, sheet_name: str, index: int) -> None:
         # Move the specified sheet to the specified index in the workbook's
