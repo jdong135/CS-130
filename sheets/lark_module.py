@@ -25,6 +25,10 @@ class FormulaEvaluator(lark.visitors.Interpreter):
             Union[str, cell_error.CellError]: lower-case form of the sheet name or an instance
             of a Parse Error if the sheet name is found to be invalid. 
         """
+        if sheet_name[0] == " ":
+            return cell_error.CellError(cell_error.CellErrorType.PARSE_ERROR, "invalid sheet name")
+        elif sheet_name[-1] == " ":
+            return cell_error.CellError(cell_error.CellErrorType.PARSE_ERROR, "invalid sheet name")
         if re.match("\'[^']*\'", sheet_name):  # quoted sheet name
             sheet_name = sheet_name.lower()[1:-1]
         elif re.match("[A-Za-z_][A-Za-z0-9_]*", sheet_name):  # unquoted sheet name
@@ -49,18 +53,16 @@ class FormulaEvaluator(lark.visitors.Interpreter):
         """
         for arg in args:
             assert type(arg) == int
-        assert len(args) == 1 or len(args) == 2
+        assert len(args) in [1, 2]
         res = [decimal.Decimal(0), values[1], decimal.Decimal(0)] if len(
             args) == 2 else [values[0], decimal.Decimal(0)]
         for i in args:
             value = values[i]
-            if not value:
-                continue
-            elif isinstance(value, decimal.Decimal):
+            if isinstance(value, decimal.Decimal):
                 res[i] = value
             elif value and string_conversions.is_number(value):
                 res[i] = decimal.Decimal(value)
-            else:
+            elif isinstance(value, str):
                 return cell_error.CellError(cell_error.CellErrorType.TYPE_ERROR, "string arithmetic")
         return res
 
@@ -169,6 +171,7 @@ class FormulaEvaluator(lark.visitors.Interpreter):
 
     @visit_children_decor
     def cell(self, values):
+        # handle different input formats for value
         if len(values) > 1:  # =[sheet]![col][row]
             sheet_name = self.__check_sheet_name(values[0].value)
             if isinstance(sheet_name, cell_error.CellError):
@@ -177,21 +180,27 @@ class FormulaEvaluator(lark.visitors.Interpreter):
         else:  # = [col][row]
             sheet_name = self.sheet.name.lower()
             location = values[0].value.upper()
+
+        # check for invalid references or errors
         if sheet_name not in self.wb.spreadsheets:
             return cell_error.CellError(cell_error.CellErrorType.BAD_REFERENCE, "sheet name not found")
         sheet = self.wb.spreadsheets[sheet_name]
         if not sheet.check_valid_location(location):
             return cell_error.CellError(cell_error.CellErrorType.BAD_REFERENCE, "invalid location")
-        if self.calling_cell and self.calling_cell.sheet.lower() == sheet_name and self.calling_cell.location == location:
+        if self.calling_cell and self.calling_cell.sheet.name.lower() == sheet_name and self.calling_cell.location == location:
             return cell_error.CellError(cell_error.CellErrorType.CIRCULAR_REFERENCE, "circular reference")
-        if location not in sheet.cells:  # no cell in this location yet
+
+        # no cell in this location yet
+        if location not in sheet.cells:
             new_empty_cell = cell.Cell(
-                sheet.name, location, None, None, cell.CellType.EMPTY)
+                sheet, location, None, None, cell.CellType.EMPTY)
             sheet.cells[location] = new_empty_cell
             self.wb.adjacency_list[new_empty_cell] = [self.calling_cell]
             self.calling_cell_relies_on.append(new_empty_cell)
             return decimal.Decimal(0)
-        else:  # add calling_cell to the neighbors of Cell from values argument
+
+        # add calling_cell to the neighbors of Cell from values argument
+        else:
             if self.calling_cell not in self.wb.adjacency_list[sheet.cells[location]]:
                 self.wb.adjacency_list[sheet.cells[location]].append(
                     self.calling_cell)
@@ -258,11 +267,11 @@ def evaluate_expr(workbook, curr_cell, sheetname: str, contents: str) -> tuple[F
         FormulaEvaluator, Any: Evaluator object and provided value 
     """
     try:
-        eval = FormulaEvaluator(
-            workbook, workbook.spreadsheets[sheetname.lower()], curr_cell)
+        sheet = workbook.spreadsheets[sheetname.lower()]
     except KeyError:
         return None, cell_error.CellError(
             cell_error.CellErrorType.BAD_REFERENCE, "bad reference")
+    eval = FormulaEvaluator(workbook, sheet, curr_cell)
     parser = lark.Lark.open('sheets/formulas.lark', start='formula')
     try:
         tree = parser.parse(contents)

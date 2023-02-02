@@ -1,0 +1,19 @@
+{
+    "sheets":[
+        {
+            "name":"Sheet1",
+            "cell-contents":{
+                "A1":"'123",
+                "B1":"5.3",
+                "C1":"=A1*B1"
+            }
+        },
+        {
+            "name":"sheet2",
+            "cell-contents":{
+                "A1": 4,
+                "A2":"\"Hello, world\""
+            }
+        }
+    ]
+}
