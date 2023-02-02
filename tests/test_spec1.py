@@ -308,7 +308,8 @@ class Spec1_Tests(unittest.TestCase):
         wb = Workbook()
         wb.new_sheet()
         wb.set_cell_contents("sheet1", "A1", "=Sheet2!A1")
-        self.assertEqual(wb.get_cell_value("Sheet1", "A1").get_type(), CellErrorType.BAD_REFERENCE)
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "A1").get_type(), CellErrorType.BAD_REFERENCE)
         wb.new_sheet()
         self.assertEqual(wb.get_cell_value("sheet1", "a1"), decimal.Decimal(0))
 
@@ -316,9 +317,11 @@ class Spec1_Tests(unittest.TestCase):
         wb = Workbook()
         wb.new_sheet()
         wb.set_cell_contents("sheet1", "A1", "=Sheet2!A1")
-        self.assertEqual(wb.get_cell_value("Sheet1", "A1").get_type(), CellErrorType.BAD_REFERENCE)
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "A1").get_type(), CellErrorType.BAD_REFERENCE)
         wb.set_cell_contents("sheet1", "B1", "=-A1")
-        self.assertEqual(wb.get_cell_value("Sheet1", "B1").get_type(), CellErrorType.BAD_REFERENCE)
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "B1").get_type(), CellErrorType.BAD_REFERENCE)
 
     def test_delete_middle_ref(self):
         wb = Workbook()
@@ -329,8 +332,9 @@ class Spec1_Tests(unittest.TestCase):
         wb.set_cell_contents("sheet2", "A1", "=sheet3!A1")
         wb.set_cell_contents("sheet1", "A1", "=sheet2!A1")
         wb.del_sheet("sheet2")
-        self.assertEqual(wb.get_cell_value("Sheet1", "A1").get_type(), CellErrorType.BAD_REFERENCE)
-        self.assertEqual(wb.get_cell_value("sheet3", "A1"), decimal.Decimal(5))        
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "A1").get_type(), CellErrorType.BAD_REFERENCE)
+        self.assertEqual(wb.get_cell_value("sheet3", "A1"), decimal.Decimal(5))
 
     def test_negate_circ_ref(self):
         wb = Workbook()
@@ -338,29 +342,38 @@ class Spec1_Tests(unittest.TestCase):
         wb.set_cell_contents("sheet1", "A1", "=A2")
         wb.set_cell_contents("sheet1", "A2", "=A3")
         wb.set_cell_contents("sheet1", "A3", "=A1")
-        self.assertEqual(wb.get_cell_value("Sheet1", "A1").get_type(), CellErrorType.CIRCULAR_REFERENCE)
-        self.assertEqual(wb.get_cell_value("Sheet1", "A2").get_type(), CellErrorType.CIRCULAR_REFERENCE)
-        self.assertEqual(wb.get_cell_value("Sheet1", "A3").get_type(), CellErrorType.CIRCULAR_REFERENCE)
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "A1").get_type(), CellErrorType.CIRCULAR_REFERENCE)
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "A2").get_type(), CellErrorType.CIRCULAR_REFERENCE)
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "A3").get_type(), CellErrorType.CIRCULAR_REFERENCE)
         wb.set_cell_contents("sheet1", "B1", "=-A1")
-        self.assertEqual(wb.get_cell_value("Sheet1", "B1").get_type(), CellErrorType.CIRCULAR_REFERENCE)
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "B1").get_type(), CellErrorType.CIRCULAR_REFERENCE)
 
     def test_negate_div_by_zero(self):
         wb = Workbook()
         wb.new_sheet()
         wb.set_cell_contents("sheet1", "A1", "=1/0")
-        self.assertEqual(wb.get_cell_value("Sheet1", "A1").get_type(), CellErrorType.DIVIDE_BY_ZERO)
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "A1").get_type(), CellErrorType.DIVIDE_BY_ZERO)
         wb.set_cell_contents("sheet1", "B1", "=-A1")
-        self.assertEqual(wb.get_cell_value("Sheet1", "B1").get_type(), CellErrorType.DIVIDE_BY_ZERO)    
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "B1").get_type(), CellErrorType.DIVIDE_BY_ZERO)
 
     def test_unary_error_literal(self):
         wb = Workbook()
         wb.new_sheet()
         wb.set_cell_contents("sheet1", "A1", "=-#REF!")
-        self.assertEqual(wb.get_cell_value("Sheet1", "A1").get_type(), CellErrorType.BAD_REFERENCE)
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "A1").get_type(), CellErrorType.BAD_REFERENCE)
         wb.set_cell_contents("sheet1", "A1", "=3 * 5 -#REF!")
-        self.assertEqual(wb.get_cell_value("Sheet1", "A1").get_type(), CellErrorType.BAD_REFERENCE)
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "A1").get_type(), CellErrorType.BAD_REFERENCE)
         wb.set_cell_contents("sheet1", "A2", "=A1 + 5")
-        self.assertEqual(wb.get_cell_value("Sheet1", "A2").get_type(), CellErrorType.BAD_REFERENCE)
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "A2").get_type(), CellErrorType.BAD_REFERENCE)
 
     def test_unary_concat_str(self):
         wb = Workbook()
@@ -368,7 +381,8 @@ class Spec1_Tests(unittest.TestCase):
         wb.set_cell_contents("sheet1", "A1", "=(3 + 5 * 7 - 37) & \"a\"")
         self.assertEqual(wb.get_cell_value("sheet1", "A1"), "1a")
         wb.set_cell_contents("sheet1", "A2", "=1 + 1 & \"a\"")
-        self.assertEqual(wb.get_cell_value("Sheet1", "A2").get_type(), CellErrorType.PARSE_ERROR)   
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "A2").get_type(), CellErrorType.PARSE_ERROR)
 
     def test_strip_concat_zeros(self):
         wb = Workbook()
@@ -430,7 +444,8 @@ class Spec1_Tests(unittest.TestCase):
         wb.set_cell_contents("sheet1", "A1", "'123")
         self.assertIsInstance(wb.get_cell_value("sheet1", "A1"), str)
         wb.set_cell_contents("sheet1", "A2", "123")
-        self.assertIsInstance(wb.get_cell_value("sheet1", "A2"), decimal.Decimal)
+        self.assertIsInstance(wb.get_cell_value(
+            "sheet1", "A2"), decimal.Decimal)
 
     def test_string_concat_whitespace(self):
         wb = Workbook()

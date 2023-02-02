@@ -57,7 +57,7 @@ class Workbook:
         elif sheet_name.lower() in self.spreadsheets:
             raise ValueError("Duplicate spreadsheet name")
 
-    def __update_extent(self, sheet:sheet.Sheet , location: str, deletingCell: bool):
+    def __update_extent(self, sheet: sheet.Sheet, location: str, deletingCell: bool):
         """
         Update the extent of a sheet if we are deleting a cell
         """
@@ -158,7 +158,7 @@ class Workbook:
                     cells.append(c)
         return cells
 
-    def __get_cell_contents_after_rename(self, c: cell.Cell , sheet_name: str, new_sheet_name: str):
+    def __get_cell_contents_after_rename(self, c: cell.Cell, sheet_name: str, new_sheet_name: str):
         # ensure names with spaces are wrapped in quotes
         if ' ' in new_sheet_name:
             new_sheet_name = f"'{new_sheet_name}'"
@@ -212,7 +212,7 @@ class Workbook:
             raise ValueError("Sheet name is empty string")
         elif sheet_name:
             self.__check_valid_sheet_name(sheet_name)
-        else: # handle null input 
+        else:  # handle null input
             i = 1
             while True:
                 sheet_name = "Sheet" + str(i)
@@ -301,11 +301,12 @@ class Workbook:
         if location in sheet.cells:  # if cell already exists (modify contents)
             existing_cell = sheet.cells[location]
             existing_cell.contents = contents
-            relies_on, val_updated = self.__set_cell_value_and_type(existing_cell)
+            relies_on, val_updated = self.__set_cell_value_and_type(
+                existing_cell)
             # Everything the existing cell relies on
             for c, neighbors in self.adjacency_list.items():
                 if existing_cell in neighbors and c not in relies_on:
-                    neighbors.remove(existing_cell)       
+                    neighbors.remove(existing_cell)
             if existing_cell.type == cell.CellType.EMPTY:
                 # existing cell is now empty so it does not depend on other cells
                 # -> remove it as a neighbor of other cells
@@ -332,7 +333,8 @@ class Workbook:
                         cell_error.CellErrorType.CIRCULAR_REFERENCE, "circular reference"))
             self.__update_extent(sheet, location, False)
             # include the existing cell iff its value is updated
-            self.__generate_notifications(cell_dependents if val_updated else cell_dependents[1:])
+            self.__generate_notifications(
+                cell_dependents if val_updated else cell_dependents[1:])
         else:  # if cell does not exist (create contents)
             new_cell = cell.Cell(sheet, location, contents, None, None)
             self.__set_cell_value_and_type(new_cell)
