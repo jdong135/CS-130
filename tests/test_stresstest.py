@@ -45,23 +45,30 @@ def many_reference_one(self, rows):
         p = pstats.Stats(f'logs/test_many_reference_one_{rows}.stats', stream=stream)
         p.sort_stats(pstats.SortKey.CUMULATIVE).print_stats()
 
-def many_reference_many(self, rows):
+def many_reference_many(self, rows: int , cols: int):
+    """
+    Generates two sheets. On sheet1, cells in a block sized row x cols
+    reference the corresponding cell in sheet2. Then each cell in sheet2's
+    value is updated.
+    """
     pc = cProfile.Profile()
     pc.enable()
     wb = Workbook()
     wb.new_sheet("sheet1")
     wb.new_sheet("sheet2")
-    for c in ["A", "B", "C", "D", "E", "F", "G", "H", "I"]:
+    for y in range(cols):
+        c = chr(65 + y)
         for i in range(1, rows):
             wb.set_cell_contents("sheet1", f"{c}{i}", f"= sheet2!{c}{i}")
-    for c in ["A", "B", "C", "D", "E", "F", "G", "H", "I"]:
+    for y in range(cols):
+        c = chr(65 + y)
         for i in range(1, rows):
             wb.set_cell_contents("sheet2", f"{c}{i}", f"3")
     pc.disable()
     self.assertEqual(wb.get_cell_value("sheet1", "A1"), 3)
-    pc.dump_stats(f'logs/test_many_reference_many_{rows}.stats')
-    with open(f'logs/test_many_reference_many_stats_{rows}.stats', 'w') as stream:
-        p = pstats.Stats(f'logs/test_many_reference_many_{rows}.stats', stream=stream)
+    pc.dump_stats(f'logs/test_many_reference_many_{rows}_{cols}.stats')
+    with open(f'logs/test_many_reference_many_stats_{rows}_{cols}.stats', 'w') as stream:
+        p = pstats.Stats(f'logs/test_many_reference_many_{rows}_{cols}.stats', stream=stream)
         p.sort_stats(pstats.SortKey.CUMULATIVE).print_stats()
 
 
@@ -106,26 +113,27 @@ def large_cycle(self, cycle_size):
         p = pstats.Stats(f'logs/test_large_cycle_{cycle_size}.stats', stream=stream)
         p.sort_stats(pstats.SortKey.CUMULATIVE).print_stats()
 
-def delete_sheet(self, rows):
+def delete_sheet1(self, rows, cols):
     """
-    Generates two sheets. On sheet1, cells from columns A to I and rows
-    1 to rows reference the corresponding cell in sheet2. Then sheet2 is
-    deleted. The sheet1 cells become Reference Errors
+    Generates two sheets. On sheet1, cells in a block sized row x cols
+    reference the corresponding cell in sheet2. Then sheet2 is
+    deleted.
     """
     pc = cProfile.Profile()
     pc.enable()
     wb = Workbook()
     wb.new_sheet("sheet1")
     wb.new_sheet("sheet2")
-    for c in ["A", "B", "C", "D", "E", "F", "G", "H", "I"]:
+    for y in range(cols):
+        c = chr(65+y)
         for i in range(1, rows):
             wb.set_cell_contents("sheet1", f"{c}{i}", f"= sheet2!{c}{i}")
     wb.del_sheet("sheet2")
     pc.disable()
     self.assertEqual(wb.get_cell_value("sheet1", "A1").get_type(), CellErrorType.BAD_REFERENCE)
-    pc.dump_stats(f'logs/test_delete_sheet1_{rows}.stats')
-    with open(f'logs/test_delete_sheet1_stats_{rows}.stats', 'w') as stream:
-        p = pstats.Stats(f'logs/test_delete_sheet1_{rows}.stats', stream=stream)
+    pc.dump_stats(f'logs/test_delete_sheet1_{rows}_{cols}.stats')
+    with open(f'logs/test_delete_sheet1_stats_{rows}_{cols}.stats', 'w') as stream:
+        p = pstats.Stats(f'logs/test_delete_sheet1_{rows}_{cols}.stats', stream=stream)
         p.sort_stats(pstats.SortKey.CUMULATIVE).print_stats()
 
 def make_break_cycle(self, cycle_size, make_break):
@@ -150,14 +158,14 @@ def make_break_cycle(self, cycle_size, make_break):
     pc.disable()
     self.assertEqual(wb.get_cell_value("sheet1", "A1").get_type(), CellErrorType.CIRCULAR_REFERENCE)
     pc.dump_stats(f'logs/test_make_break_cycle_{cycle_size}_{make_break}.stats')
-    with open(f'logs/test_large_make_break_stats_{cycle_size}_{make_break}.stats', 'w') as stream:
+    with open(f'logs/test__make_break_cycle_stats_{cycle_size}_{make_break}.stats', 'w') as stream:
         p = pstats.Stats(f'logs/test_make_break_cycle_{cycle_size}_{make_break}.stats', stream=stream)
         p.sort_stats(pstats.SortKey.CUMULATIVE).print_stats()
 
-def reference_rename_sheet(self, rows):
+def reference_rename_sheet(self, rows, cols):
     """
-    Generates two sheets. On sheet1, cells from columns A to I and rows
-    1 to rows reference the corresponding cell in sheet2. Then sheet2 is
+    Generates two sheets. On sheet1, cells in a block sized row x cols
+    reference the corresponding cell in sheet2. Then sheet2 is
     renamed.
     """
     pc = cProfile.Profile()
@@ -165,12 +173,14 @@ def reference_rename_sheet(self, rows):
     wb = Workbook()
     wb.new_sheet("sheet1")
     wb.new_sheet("sheet2")
-    for c in ["A", "B", "C", "D", "E", "F", "G", "H", "I"]:
+    for y in range(cols):
+        c = chr(65 + y)
         for i in range(1, rows):
             wb.set_cell_contents("sheet1", f"{c}{i}", f"= sheet2!{c}{i}")
     wb.rename_sheet("sheet2", "sheet3")
     pc.disable()
-    for c in ["A", "B", "C", "D", "E", "F", "G", "H", "I"]:
+    for y in range(cols):
+        c = chr(65 + y)
         for i in range(1, rows):
             wb.set_cell_contents("sheet3", f"{c}{i}", f"3")
     self.assertEqual(wb.get_cell_value("sheet1", "A1"), 3)
@@ -179,17 +189,39 @@ def reference_rename_sheet(self, rows):
         p = pstats.Stats(f'logs/test_reference_rename_sheet_{rows}.stats', stream=stream)
         p.sort_stats(pstats.SortKey.CUMULATIVE).print_stats()
 
+def dangling_chain(self, width, height):
+    pc = cProfile.Profile()
+    pc.enable()
+    wb = Workbook()
+    wb.new_sheet("sheet1")
+    wb.set_cell_contents("sheet1", "A1", "10")
+    for y in range(1, width):
+        c = chr(65 + y)
+        c1 = chr(64 + y)
+        wb.set_cell_contents("sheet1", f"{c}1", f"={c1}1")
+    for y in range(width):
+        c = chr(65 + y)
+        for i in range(2, height):
+            wb.set_cell_contents("sheet1", f"{c}{i}", f"={c}{i-1}")
+    wb.set_cell_contents("sheet1", "A1", "20")
+    pc.disable()
+    self.assertEqual(wb.get_cell_value("sheet1", f"{chr(64+width)}{height-1}"), 20)
+    pc.dump_stats(f'logs/test_dangling_chain_{height}_{width}.stats')
+    with open(f'logs/test_dangling_chain_stats_{height}_{width}.stats', 'w') as stream:
+        p = pstats.Stats(f'logs/test_dangling_chain_{height}_{width}.stats', stream=stream)
+        p.sort_stats(pstats.SortKey.CUMULATIVE).print_stats()
+
 
 class Multiple_Reference_Tests(unittest.TestCase):
     def test_many_reference_one(self):
         many_reference_one(self, 50)
         many_reference_one(self, 100)
-        many_reference_one(self, 200)
+        many_reference_one(self, 150)
 
     def test_many_reference_many(self):
-        many_reference_many(self, 5)
-        many_reference_many(self, 10)
-        many_reference_many(self, 15)
+        many_reference_many(self, 5, 10)
+        many_reference_many(self, 10, 10)
+        many_reference_many(self, 15, 10)
 
     def test_chain(self):
         chain(self, 50)
@@ -202,9 +234,9 @@ class Multiple_Reference_Tests(unittest.TestCase):
         large_cycle(self, 150)
 
     def test_delete_sheet(self):
-        delete_sheet(self, 5)
-        delete_sheet(self, 10)
-        delete_sheet(self, 15)
+        delete_sheet1(self, 5, 10)
+        delete_sheet1(self, 10, 10)
+        delete_sheet1(self, 15, 10)
 
     def test_make_break_cycle(self):
         make_break_cycle(self, 20, 3)
@@ -214,9 +246,14 @@ class Multiple_Reference_Tests(unittest.TestCase):
         make_break_cycle(self, 20, 9)
 
     def test_rename_sheet(self):
-        reference_rename_sheet(self, 5)
-        reference_rename_sheet(self, 10)
-        reference_rename_sheet(self, 15)
+        reference_rename_sheet(self, 5, 10)
+        reference_rename_sheet(self, 10, 10)
+        reference_rename_sheet(self, 15, 10)
+
+    def test_dangling_chain(self):
+        dangling_chain(self, 5, 10)
+        dangling_chain(self, 10, 10)
+        dangling_chain(self, 15, 10)
 
 
 if __name__ == "__main__":

@@ -12,6 +12,11 @@ test:
 	# python3 tests/test_system.py
 	python3 tests/test_spec2.py
 
+.PHONY: stresstest
+stresstest:
+	python3 tests/test_stresstest.py
+
 .PHONY: clean
 clean:
 	pyclean .
+	rm -f logs/*.stats
