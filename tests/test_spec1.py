@@ -4,6 +4,7 @@ Generic Integration tests adhering to Specification 1.
 
 import unittest
 import os
+import io
 import sys
 import decimal
 
@@ -302,6 +303,134 @@ class Spec1_Tests(unittest.TestCase):
         value = wb.get_cell_value('sheet1', 'E2')
         assert isinstance(value, CellError)
         assert value.get_type() == CellErrorType.DIVIDE_BY_ZERO
+
+    def test_update_bad_ref_missing_sheet(self):
+        wb = Workbook()
+        wb.new_sheet()
+        wb.set_cell_contents("sheet1", "A1", "=Sheet2!A1")
+        self.assertEqual(wb.get_cell_value("Sheet1", "A1").get_type(), CellErrorType.BAD_REFERENCE)
+        wb.new_sheet()
+        self.assertEqual(wb.get_cell_value("sheet1", "a1"), decimal.Decimal(0))
+
+    def test_negate_bad_ref(self):
+        wb = Workbook()
+        wb.new_sheet()
+        wb.set_cell_contents("sheet1", "A1", "=Sheet2!A1")
+        self.assertEqual(wb.get_cell_value("Sheet1", "A1").get_type(), CellErrorType.BAD_REFERENCE)
+        wb.set_cell_contents("sheet1", "B1", "=-A1")
+        self.assertEqual(wb.get_cell_value("Sheet1", "B1").get_type(), CellErrorType.BAD_REFERENCE)
+
+    def test_delete_middle_ref(self):
+        wb = Workbook()
+        wb.new_sheet()
+        wb.new_sheet()
+        wb.new_sheet()
+        wb.set_cell_contents("sheet3", "A1", "=5")
+        wb.set_cell_contents("sheet2", "A1", "=sheet3!A1")
+        wb.set_cell_contents("sheet1", "A1", "=sheet2!A1")
+        wb.del_sheet("sheet2")
+        self.assertEqual(wb.get_cell_value("Sheet1", "A1").get_type(), CellErrorType.BAD_REFERENCE)
+        self.assertEqual(wb.get_cell_value("sheet3", "A1"), decimal.Decimal(5))        
+
+    def test_negate_circ_ref(self):
+        wb = Workbook()
+        wb.new_sheet()
+        wb.set_cell_contents("sheet1", "A1", "=A2")
+        wb.set_cell_contents("sheet1", "A2", "=A3")
+        wb.set_cell_contents("sheet1", "A3", "=A1")
+        self.assertEqual(wb.get_cell_value("Sheet1", "A1").get_type(), CellErrorType.CIRCULAR_REFERENCE)
+        self.assertEqual(wb.get_cell_value("Sheet1", "A2").get_type(), CellErrorType.CIRCULAR_REFERENCE)
+        self.assertEqual(wb.get_cell_value("Sheet1", "A3").get_type(), CellErrorType.CIRCULAR_REFERENCE)
+        wb.set_cell_contents("sheet1", "B1", "=-A1")
+        self.assertEqual(wb.get_cell_value("Sheet1", "B1").get_type(), CellErrorType.CIRCULAR_REFERENCE)
+
+    def test_negate_div_by_zero(self):
+        wb = Workbook()
+        wb.new_sheet()
+        wb.set_cell_contents("sheet1", "A1", "=1/0")
+        self.assertEqual(wb.get_cell_value("Sheet1", "A1").get_type(), CellErrorType.DIVIDE_BY_ZERO)
+        wb.set_cell_contents("sheet1", "B1", "=-A1")
+        self.assertEqual(wb.get_cell_value("Sheet1", "B1").get_type(), CellErrorType.DIVIDE_BY_ZERO)    
+
+    def test_unary_error_literal(self):
+        wb = Workbook()
+        wb.new_sheet()
+        wb.set_cell_contents("sheet1", "A1", "=-#REF!")
+        self.assertEqual(wb.get_cell_value("Sheet1", "A1").get_type(), CellErrorType.BAD_REFERENCE)
+        wb.set_cell_contents("sheet1", "A1", "=3 * 5 -#REF!")
+        self.assertEqual(wb.get_cell_value("Sheet1", "A1").get_type(), CellErrorType.BAD_REFERENCE)
+        wb.set_cell_contents("sheet1", "A2", "=A1 + 5")
+        self.assertEqual(wb.get_cell_value("Sheet1", "A2").get_type(), CellErrorType.BAD_REFERENCE)
+
+    def test_unary_concat_str(self):
+        wb = Workbook()
+        wb.new_sheet()
+        wb.set_cell_contents("sheet1", "A1", "=(3 + 5 * 7 - 37) & \"a\"")
+        self.assertEqual(wb.get_cell_value("sheet1", "A1"), "1a")
+        wb.set_cell_contents("sheet1", "A2", "=1 + 1 & \"a\"")
+        self.assertEqual(wb.get_cell_value("Sheet1", "A2").get_type(), CellErrorType.PARSE_ERROR)   
+
+    def test_strip_concat_zeros(self):
+        wb = Workbook()
+        wb.new_sheet()
+        wb.set_cell_contents("sheet1", "A1", "=1.50 & \"50\"")
+        self.assertEqual(wb.get_cell_value("sheet1", "A1"), "1.505")
+        wb.set_cell_contents("sheet1", "A2", "=1.50 & \"050\"")
+        self.assertEqual(wb.get_cell_value("sheet1", "A2"), "1.5005")
+        wb.set_cell_contents("sheet1", "A1", "=\"1.0\" & 0")
+        self.assertEqual(wb.get_cell_value("sheet1", "A1"), "1")
+
+    def test_topo_update_order(self):
+        def on_cells_changed(workbook, cells_changed):
+            print(cells_changed)
+        sys_out = sys.stdout
+        new_stdo = io.StringIO()
+        sys.stdout = new_stdo
+        wb = Workbook()
+        wb.new_sheet()
+        wb.set_cell_contents("sheet1", "A1", "=1")
+        wb.set_cell_contents("sheet1", "A2", "=A1 * 2")
+        wb.set_cell_contents("sheet1", "A3", "=A1 * 3")
+        wb.set_cell_contents("sheet1", "A4", "=A2 + A3 * 4")
+        wb.set_cell_contents("sheet1", "A5", "=A4 * 5")
+        wb.set_cell_contents("sheet1", "A6", "=A2 + A5 * 6")
+        wb.notify_cells_changed(on_cells_changed)
+        wb.set_cell_contents("sheet1", "A1", "=5")
+        output = new_stdo.getvalue()
+        sys.stdout = sys_out
+        expected = "[('Sheet1', 'A1'), ('Sheet1', 'A2'), ('Sheet1', 'A3'), ('Sheet1', 'A4'), ('Sheet1', 'A5'), ('Sheet1', 'A6')]\n"
+        self.assertEqual(expected, output)
+
+    def test_topo_update_order_multiple_sheets(self):
+        def on_cells_changed(workbook, cells_changed):
+            print(cells_changed)
+        sys_out = sys.stdout
+        new_stdo = io.StringIO()
+        sys.stdout = new_stdo
+        wb = Workbook()
+        wb.new_sheet()
+        wb.new_sheet()
+        wb.new_sheet()
+        wb.set_cell_contents("sheet1", "A1", "=1")
+        wb.set_cell_contents("sheet2", "A2", "=sheet1!A1 * 2")
+        wb.set_cell_contents("sheet1", "A3", "=sheet1!A1 * 3")
+        wb.set_cell_contents("sheet3", "A4", "=sheet2!A2 + sheet1!A3 * 4")
+        wb.set_cell_contents("sheet2", "A5", "=sheet3!A4 * 5")
+        wb.set_cell_contents("sheet3", "A6", "=sheet2!A2 + sheet2!A5 * 6")
+        wb.notify_cells_changed(on_cells_changed)
+        wb.set_cell_contents("sheet1", "A1", "=5")
+        output = new_stdo.getvalue()
+        sys.stdout = sys_out
+        expected = "[('Sheet1', 'A1'), ('Sheet2', 'A2'), ('Sheet1', 'A3'), ('Sheet3', 'A4'), ('Sheet2', 'A5'), ('Sheet3', 'A6')]\n"
+        self.assertEqual(expected, output)
+
+    def test_string_num_conversion(self):
+        wb = Workbook()
+        wb.new_sheet()
+        wb.set_cell_contents("sheet1", "A1", "'123")
+        self.assertIsInstance(wb.get_cell_value("sheet1", "A1"), str)
+        wb.set_cell_contents("sheet1", "A2", "123")
+        self.assertIsInstance(wb.get_cell_value("sheet1", "A2"), decimal.Decimal)
 
 
 if __name__ == "__main__":
