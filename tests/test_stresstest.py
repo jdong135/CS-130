@@ -31,12 +31,12 @@ def many_reference_one(self, rows):
     A1's value. Records time to update A1's value
     """
     pc = cProfile.Profile()
-    pc.enable()
     wb = Workbook()
     wb.new_sheet("sheet1")
     wb.set_cell_contents("sheet1", "A1", "= 5000 * 2")
     for i in range(2, rows):
         wb.set_cell_contents("sheet1", f"A{i}", "=A1")
+    pc.enable()
     wb.set_cell_contents("sheet1", "A1", "= 5000")
     pc.disable()
     self.assertEqual(wb.get_cell_value("sheet1", "A2"), 5000)
@@ -52,7 +52,6 @@ def many_reference_many(self, rows: int , cols: int):
     value is updated.
     """
     pc = cProfile.Profile()
-    pc.enable()
     wb = Workbook()
     wb.new_sheet("sheet1")
     wb.new_sheet("sheet2")
@@ -60,6 +59,7 @@ def many_reference_many(self, rows: int , cols: int):
         c = chr(65 + y)
         for i in range(1, rows):
             wb.set_cell_contents("sheet1", f"{c}{i}", f"= sheet2!{c}{i}")
+    pc.enable()
     for y in range(cols):
         c = chr(65 + y)
         for i in range(1, rows):
@@ -78,12 +78,12 @@ def chain(self, chain_size):
     the cell at the left end of the cell.
     """
     pc = cProfile.Profile()
-    pc.enable()
     wb = Workbook()
     wb.new_sheet("sheet1")
     wb.set_cell_contents("sheet1", "A1", "1")
     for i in range(2, chain_size):
         wb.set_cell_contents("sheet1", f"A{i}", f"= A{(i-1)}")
+    pc.enable()
     wb.set_cell_contents("sheet1", "A1", "20")
     pc.disable()
     self.assertEqual(wb.get_cell_value("sheet1", f"A{i}"), 
@@ -100,12 +100,12 @@ def large_cycle(self, cycle_size):
     cycle are updated to a CellError of type CIRCULAR_REFERENCE
     """
     pc = cProfile.Profile()
-    pc.enable()
     wb = Workbook()
     wb.new_sheet("sheet1")
-    wb.set_cell_contents("sheet1", "A1", f"= A{cycle_size-1}")
     for i in range(2, cycle_size):
         wb.set_cell_contents("sheet1", f"A{i}", f"= A{(i-1)}")
+    pc.enable()
+    wb.set_cell_contents("sheet1", "A1", f"= A{cycle_size-1}")
     pc.disable()
     self.assertEqual(wb.get_cell_value("sheet1", "A1").get_type(), CellErrorType.CIRCULAR_REFERENCE)
     pc.dump_stats(f'logs/test_large_cycle_{cycle_size}.stats')
@@ -120,7 +120,6 @@ def delete_sheet1(self, rows, cols):
     deleted.
     """
     pc = cProfile.Profile()
-    pc.enable()
     wb = Workbook()
     wb.new_sheet("sheet1")
     wb.new_sheet("sheet2")
@@ -128,6 +127,7 @@ def delete_sheet1(self, rows, cols):
         c = chr(65+y)
         for i in range(1, rows):
             wb.set_cell_contents("sheet1", f"{c}{i}", f"= sheet2!{c}{i}")
+    pc.enable()
     wb.del_sheet("sheet2")
     pc.disable()
     self.assertEqual(wb.get_cell_value("sheet1", "A1").get_type(), CellErrorType.BAD_REFERENCE)
@@ -144,14 +144,14 @@ def make_break_cycle(self, cycle_size, make_break):
     this process make_break number of times.
     """
     pc = cProfile.Profile()
-    pc.enable()
     wb = Workbook()
     wb.new_sheet("sheet1")
-    # make cycle
-    wb.set_cell_contents("sheet1", "A1", f"= A{cycle_size-1}")
     for i in range(2, cycle_size):
         wb.set_cell_contents("sheet1", f"A{i}", f"= A{(i-1)}")
+    # make cycle
+    pc.enable()
     # break cycle
+    wb.set_cell_contents("sheet1", "A1", f"= A{cycle_size-1}")
     for _ in range(make_break):
         wb.set_cell_contents("sheet1", "A1", f"0")
         wb.set_cell_contents("sheet1", f"A1", f"= A{(cycle_size-1)}")
@@ -169,7 +169,6 @@ def reference_rename_sheet(self, rows, cols):
     renamed.
     """
     pc = cProfile.Profile()
-    pc.enable()
     wb = Workbook()
     wb.new_sheet("sheet1")
     wb.new_sheet("sheet2")
@@ -177,6 +176,7 @@ def reference_rename_sheet(self, rows, cols):
         c = chr(65 + y)
         for i in range(1, rows):
             wb.set_cell_contents("sheet1", f"{c}{i}", f"= sheet2!{c}{i}")
+    pc.enable()
     wb.rename_sheet("sheet2", "sheet3")
     pc.disable()
     for y in range(cols):
@@ -191,7 +191,6 @@ def reference_rename_sheet(self, rows, cols):
 
 def dangling_chain(self, width, height):
     pc = cProfile.Profile()
-    pc.enable()
     wb = Workbook()
     wb.new_sheet("sheet1")
     wb.set_cell_contents("sheet1", "A1", "10")
@@ -203,6 +202,7 @@ def dangling_chain(self, width, height):
         c = chr(65 + y)
         for i in range(2, height):
             wb.set_cell_contents("sheet1", f"{c}{i}", f"={c}{i-1}")
+    pc.enable()
     wb.set_cell_contents("sheet1", "A1", "20")
     pc.disable()
     self.assertEqual(wb.get_cell_value("sheet1", f"{chr(64+width)}{height-1}"), 20)
