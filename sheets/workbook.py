@@ -331,6 +331,7 @@ class Workbook:
                     dependent.set_fields(value=cell_error.CellError(
                         cell_error.CellErrorType.CIRCULAR_REFERENCE, "circular reference"))
             self.__update_extent(sheet, location, False)
+            # include the existing cell iff its value is updated
             self.__generate_notifications(cell_dependents if val_updated else cell_dependents[1:])
         else:  # if cell does not exist (create contents)
             new_cell = cell.Cell(sheet, location, contents, None, None)
