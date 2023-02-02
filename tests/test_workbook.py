@@ -230,6 +230,13 @@ class WorkbookCopySheet(unittest.TestCase):
         wb.set_cell_contents("sheet1", "A1", "=1 + 1")
         wb.rename_sheet("sheet1", "renamed_sheet")
 
+    def test_copy_ref(self):
+        wb = Workbook()
+        wb.new_sheet()
+        wb.set_cell_contents("sheet1", "A1", "=A3")
+        wb.copy_sheet("sheet1")
+        self.assertEqual(wb.get_cell_contents("sheet1_1", "A1"), "=A3")
+
 
 class WorkbookMoveSheet(unittest.TestCase):
     def test_move_to_0(self):
