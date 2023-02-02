@@ -410,6 +410,15 @@ class WorkbookRenameSheet(unittest.TestCase):
         wb.set_cell_contents("sheet1", "A2", "=(((((sheet2!A2)-1)+1)))")
         self.assertEqual(wb.get_cell_value("sheet1", "A2"), decimal.Decimal(2))
 
+    def test_strip_newname_rename(self):
+        wb = Workbook()
+        wb.new_sheet()
+        wb.new_sheet()
+        wb.set_cell_contents("sheet1", "A1", "='Sheet1'!A5 + 'Sheet2'!A6")
+        wb.rename_sheet("sheet2", "SheetBla")
+        self.assertEqual(wb.get_cell_contents(
+            "sheet1", "A1"), "=Sheet1!A5 + SheetBla!A6")
+
     def test_strip_some_quotes_rename(self):
         wb = Workbook()
         wb.new_sheet()
@@ -507,15 +516,16 @@ class WorkbookNotifyCellsChanged(unittest.TestCase):
         wb.new_sheet("sheet1")
         wb.new_sheet("sheet2")
         wb.set_cell_contents("sheet1", "A1", "=sheet3!A1")
-        self.assertEqual(wb.get_cell_value("Sheet1", "A1").get_type(), cell_error.CellErrorType.BAD_REFERENCE)
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "A1").get_type(), cell_error.CellErrorType.BAD_REFERENCE)
         wb.notify_cells_changed(on_cells_changed)
         wb.rename_sheet("sheet2", "sheet3")
         output = new_stdo.getvalue()
         sys.stdout = sys_out
         expected = "[('sheet1', 'A1')]\n"
         self.assertEqual(expected, output)
-    
-    def test_rename_notify3(self):
+
+    def test_rename_notify2(self):
         def on_cells_changed(workbook, cells_changed):
             print(cells_changed)
         sys_out = sys.stdout
@@ -541,7 +551,8 @@ class WorkbookNotifyCellsChanged(unittest.TestCase):
         wb.new_sheet()
         wb.new_sheet()
         wb.set_cell_contents("sheet1", "A1", "=5Q sheet2!A1 Z")
-        self.assertEqual(wb.get_cell_value("Sheet1", "A1").get_type(), cell_error.CellErrorType.PARSE_ERROR)        
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "A1").get_type(), cell_error.CellErrorType.PARSE_ERROR)
         wb.notify_cells_changed(on_cells_changed)
         wb.rename_sheet("sheet2", "sheet3")
         wb.rename_sheet("sheet1", "sheet2")
@@ -552,6 +563,7 @@ class WorkbookNotifyCellsChanged(unittest.TestCase):
     def test_multiple_notify1(self):
         def on_cells_changed1(workbook, cells_changed):
             print(cells_changed)
+
         def on_cells_changed2(workbook, cells_changed):
             print(f"Updated: {cells_changed}")
         sys_out = sys.stdout
@@ -571,6 +583,7 @@ class WorkbookNotifyCellsChanged(unittest.TestCase):
     def test_multiple_notify2(self):
         def on_cells_changed1(workbook, cells_changed):
             print(cells_changed)
+
         def on_cells_changed2(workbook, cells_changed):
             raise ValueError
         sys_out = sys.stdout
@@ -638,13 +651,15 @@ class WorkbookNotifyCellsChanged(unittest.TestCase):
         wb.new_sheet()
         wb.set_cell_contents("Sheet1", "A1", "=sheet2!A1")
         wb.set_cell_contents("Sheet2", "A1", "=sheet1!A1")
-        self.assertEqual(wb.get_cell_value("Sheet1", "A1").get_type(), cell_error.CellErrorType.CIRCULAR_REFERENCE)
+        self.assertEqual(wb.get_cell_value("Sheet1", "A1").get_type(
+        ), cell_error.CellErrorType.CIRCULAR_REFERENCE)
         wb.notify_cells_changed(on_cells_changed)
         wb.del_sheet("sheet2")
         output = new_stdo.getvalue()
         sys.stdout = sys_out
         expected = "[('Sheet1', 'A1')]\n"
-        self.assertEqual(wb.get_cell_value("Sheet1", "A1").get_type(), cell_error.CellErrorType.BAD_REFERENCE)
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "A1").get_type(), cell_error.CellErrorType.BAD_REFERENCE)
         self.assertEqual(expected, output)
 
     def test_new_sheet_notify(self):
@@ -688,13 +703,16 @@ class WorkbookNotifyCellsChanged(unittest.TestCase):
         wb = Workbook()
         wb.new_sheet()
         wb.set_cell_contents("Sheet1", "A1", "=sheet1_1!A1")
-        self.assertEqual(wb.get_cell_value("Sheet1", "A1").get_type(), cell_error.CellErrorType.BAD_REFERENCE)
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "A1").get_type(), cell_error.CellErrorType.BAD_REFERENCE)
         wb.notify_cells_changed(on_cells_changed)
         wb.copy_sheet("sheet1")
         output = new_stdo.getvalue()
         sys.stdout = sys_out
-        self.assertEqual(wb.get_cell_value("Sheet1_1", "A1").get_type(), cell_error.CellErrorType.CIRCULAR_REFERENCE)        
-        self.assertEqual(wb.get_cell_value("Sheet1", "A1").get_type(), cell_error.CellErrorType.CIRCULAR_REFERENCE)
+        self.assertEqual(wb.get_cell_value("Sheet1_1", "A1").get_type(
+        ), cell_error.CellErrorType.CIRCULAR_REFERENCE)
+        self.assertEqual(wb.get_cell_value("Sheet1", "A1").get_type(
+        ), cell_error.CellErrorType.CIRCULAR_REFERENCE)
         expected = "[('Sheet1', 'A1')]\n[('sheet1_1', 'A1'), ('Sheet1', 'A1')]\n"
         self.assertEqual(expected, output)
 
