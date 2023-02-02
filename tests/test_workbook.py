@@ -435,6 +435,21 @@ class WorkbookRenameSheet(unittest.TestCase):
         self.assertEqual(wb.get_cell_contents(
             "sheet1", "A1"), "=Sheet1!A5 + 'Sheet Space'!A6")
 
+    def test_mathematical_rename(self):
+        wb = Workbook()
+        wb.new_sheet('a')
+        wb.new_sheet('3*a')
+        wb.set_cell_contents("a", "A1", "=3*a!B1")
+        wb.rename_sheet("a", "b")
+        self.assertEqual(wb.get_cell_contents("b", "A1"), "=3*b!B1")
+
+    def test_ref_self_updated_rename(self):
+        wb = Workbook()
+        wb.new_sheet('a')
+        wb.set_cell_contents("a", "A1", "='b'!A2")
+        wb.rename_sheet('a', 'b')
+        self.assertEqual(wb.get_cell_contents("b", "A1"), "='b'!A2")
+
 
 class WorkbookNotifyCellsChanged(unittest.TestCase):
     def test_basic_callable1(self):

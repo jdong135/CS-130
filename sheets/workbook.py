@@ -135,7 +135,7 @@ class Workbook:
         else:
             val = cell_contents
             type = cell.CellType.LITERAL_STRING
-        val_update = True if val != calling_cell.value else False
+        val_update = True if val != calling_cell.value or type != calling_cell.type else False
         calling_cell.set_fields(value=val, type=type)
         return relies_on, val_update
 

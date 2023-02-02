@@ -432,6 +432,21 @@ class Spec1_Tests(unittest.TestCase):
         wb.set_cell_contents("sheet1", "A2", "123")
         self.assertIsInstance(wb.get_cell_value("sheet1", "A2"), decimal.Decimal)
 
+    def test_string_concat_whitespace(self):
+        wb = Workbook()
+        wb.new_sheet()
+        wb.set_cell_contents("sheet1", "A1", " abc ")
+        self.assertEqual(wb.get_cell_value("sheet1", "A1"), "abc")
+        wb.set_cell_contents("sheet1", "A2", "=\" abc \" & \" def \"")
+        self.assertEqual(wb.get_cell_value("sheet1", "A2"), " abc  def ")
+
+    def test_empty_string(self):
+        wb = Workbook()
+        wb.new_sheet()
+        wb.set_cell_contents("sheet1", "A1", '=""')
+        self.assertEqual(wb.get_cell_value("sheet1", "A1"), "")
+        self.assertNotEqual(wb.get_cell_value("sheet1", "A1"), None)
+
 
 if __name__ == "__main__":
     unittest.main()
