@@ -490,6 +490,21 @@ class WorkbookNotifyCellsChanged(unittest.TestCase):
         sys.stdout = new_stdo
         wb = Workbook()
         wb.new_sheet("sheet1")
+        wb.set_cell_contents("sheet1", "A1", "=5")
+        wb.notify_cells_changed(on_cells_changed)
+        wb.rename_sheet("sheet1", "sheet2")
+        output = new_stdo.getvalue()
+        sys.stdout = sys_out
+        self.assertEqual("", output)
+
+    def test_rename_notify2(self):
+        def on_cells_changed(workbook, cells_changed):
+            print(cells_changed)
+        sys_out = sys.stdout
+        new_stdo = io.StringIO()
+        sys.stdout = new_stdo
+        wb = Workbook()
+        wb.new_sheet("sheet1")
         wb.new_sheet("sheet2")
         wb.set_cell_contents("sheet1", "A1", "=sheet3!A1")
         self.assertEqual(wb.get_cell_value("Sheet1", "A1").get_type(), cell_error.CellErrorType.BAD_REFERENCE)
@@ -500,7 +515,7 @@ class WorkbookNotifyCellsChanged(unittest.TestCase):
         expected = "[('sheet1', 'A1')]\n"
         self.assertEqual(expected, output)
     
-    def test_rename_notify2(self):
+    def test_rename_notify3(self):
         def on_cells_changed(workbook, cells_changed):
             print(cells_changed)
         sys_out = sys.stdout
@@ -512,6 +527,24 @@ class WorkbookNotifyCellsChanged(unittest.TestCase):
         wb.set_cell_contents("sheet11", "A1", "=sheet12!A1")
         wb.notify_cells_changed(on_cells_changed)
         wb.rename_sheet("sheet12", "sheet13")
+        output = new_stdo.getvalue()
+        sys.stdout = sys_out
+        self.assertEqual("", output)
+
+    def test_rename_notify4(self):
+        def on_cells_changed(workbook, cells_changed):
+            print(cells_changed)
+        sys_out = sys.stdout
+        new_stdo = io.StringIO()
+        sys.stdout = new_stdo
+        wb = Workbook()
+        wb.new_sheet()
+        wb.new_sheet()
+        wb.set_cell_contents("sheet1", "A1", "=5Q sheet2!A1 Z")
+        self.assertEqual(wb.get_cell_value("Sheet1", "A1").get_type(), cell_error.CellErrorType.PARSE_ERROR)        
+        wb.notify_cells_changed(on_cells_changed)
+        wb.rename_sheet("sheet2", "sheet3")
+        wb.rename_sheet("sheet1", "sheet2")
         output = new_stdo.getvalue()
         sys.stdout = sys_out
         self.assertEqual("", output)
