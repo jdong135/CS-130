@@ -15,6 +15,7 @@ PROJECT_ROOT = os.path.abspath(os.path.join(
 sys.path.append(PROJECT_ROOT)
 from sheets import Workbook, lark_module, CellErrorType, CellError  # noqa
 
+
 class Spec2_Tests(unittest.TestCase):
     def test_loading_workbook_basic(self):
         fp = open("test-data/mock_workbook.json", "r")
@@ -81,7 +82,7 @@ class Spec2_Tests(unittest.TestCase):
         self.assertEqual(data["sheets"][0]["cell-contents"]['B1'], '3')
         self.assertEqual(data["sheets"][0]["cell-contents"]['B2'], '4')
         # VISUAL CHECK
-    
+
     def test_bad_json1(self):
         """
         Since we are focusing on implementing high-quality software, the code
@@ -94,7 +95,7 @@ class Spec2_Tests(unittest.TestCase):
         with self.assertRaises(KeyError):
             wb = Workbook.load_workbook(f)
         f.close()
-    
+
     def test_bad_json2(self):
         f = open("test-data/mockwb_bad_json2.json", "r")
         with self.assertRaises(KeyError):
@@ -128,6 +129,16 @@ class Spec2_Tests(unittest.TestCase):
         value = wb.get_cell_value('sheet1', 'C1')
         assert isinstance(value, CellError)
         assert value.get_type() == CellErrorType.PARSE_ERROR
+
+    def test_copy_sheet(self):
+        wb = Workbook()
+        wb.new_sheet()
+        wb.copy_sheet('sheet1')
+        self.assertEqual(list(wb.spreadsheets.keys())[1], 'sheet1_1')
+        wb.copy_sheet('sheet1')
+        self.assertEqual(list(wb.spreadsheets.keys())[2], 'sheet1_2')
+        wb.copy_sheet('sheet1_1')
+        self.assertEqual(list(wb.spreadsheets.keys())[3], 'sheet1_1_1')
 
 
 if __name__ == "__main__":
