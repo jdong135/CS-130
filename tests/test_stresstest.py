@@ -45,6 +45,26 @@ def many_reference_one(self, rows):
         p = pstats.Stats(f'logs/test_many_reference_one_{rows}.stats', stream=stream)
         p.sort_stats(pstats.SortKey.CUMULATIVE).print_stats()
 
+def many_reference_many(self, rows):
+    pc = cProfile.Profile()
+    pc.enable()
+    wb = Workbook()
+    wb.new_sheet("sheet1")
+    wb.new_sheet("sheet2")
+    for c in ["A", "B", "C", "D", "E", "F", "G", "H", "I"]:
+        for i in range(1, rows):
+            wb.set_cell_contents("sheet1", f"{c}{i}", f"= sheet2!{c}{i}")
+    for c in ["A", "B", "C", "D", "E", "F", "G", "H", "I"]:
+        for i in range(1, rows):
+            wb.set_cell_contents("sheet2", f"{c}{i}", f"3")
+    pc.disable()
+    self.assertEqual(wb.get_cell_value("sheet1", "A1"), 3)
+    pc.dump_stats(f'logs/test_many_reference_many_{rows}.stats')
+    with open(f'logs/test_many_reference_many_stats_{rows}.stats', 'w') as stream:
+        p = pstats.Stats(f'logs/test_many_reference_many_{rows}.stats', stream=stream)
+        p.sort_stats(pstats.SortKey.CUMULATIVE).print_stats()
+
+
 def chain(self, chain_size):
     """
     Generates a chain of cells that references the cells to the left. Updates
@@ -166,6 +186,11 @@ class Multiple_Reference_Tests(unittest.TestCase):
         many_reference_one(self, 100)
         many_reference_one(self, 200)
 
+    def test_many_reference_many(self):
+        many_reference_many(self, 5)
+        many_reference_many(self, 10)
+        many_reference_many(self, 15)
+
     def test_chain(self):
         chain(self, 50)
         chain(self, 100)
@@ -192,10 +217,6 @@ class Multiple_Reference_Tests(unittest.TestCase):
         reference_rename_sheet(self, 5)
         reference_rename_sheet(self, 10)
         reference_rename_sheet(self, 15)
-
-    
-
-
 
 
 if __name__ == "__main__":
