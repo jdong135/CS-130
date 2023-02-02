@@ -1,5 +1,4 @@
 from __future__ import annotations
-import logging
 from typing import *
 from sheets import cell, topo_sort, cell_error, lark_module, sheet, string_conversions
 import decimal
@@ -9,12 +8,6 @@ import re
 
 ALLOWED_PUNC = set([".", "?", "!", ",", ":", ";", "@", "#",
                     "$", "%", "^", "&", "*", "(", ")", "-", "_"])
-
-logging.basicConfig(filename="logs/results.log",
-                    format='%(asctime)s %(message)s',
-                    filemode='w')
-logger = logging.getLogger()
-logger.setLevel(logging.DEBUG)
 
 
 class Workbook:
