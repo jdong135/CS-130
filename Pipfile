@@ -10,6 +10,7 @@ pyclean = "*"
 typing = "*"
 flake8 = "*"
 cs130-sheets-cui = {file = "http://courses.cms.caltech.edu/cs130/projects/sheets_cui/cs130_sheets_cui-0.9.2-py3-none-any.whl"}
+pylint = "*"
 
 [dev-packages]
 

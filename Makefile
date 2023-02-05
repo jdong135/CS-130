@@ -15,7 +15,12 @@ test:
 stresstest:
 	python3 tests/test_stresstest.py
 
+.PHONY: lint
+lint:
+	pylint ./sheets
+
 .PHONY: clean
 clean:
 	pyclean .
 	rm -f logs/*.stats
+	rm -f test-outputs/*.json
