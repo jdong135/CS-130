@@ -1,3 +1,7 @@
+"""
+Imports necessary to include sheets module in test files
+"""
+
 import os
 import sys
 PROJECT_ROOT = os.path.abspath(os.path.join(
@@ -5,4 +9,4 @@ PROJECT_ROOT = os.path.abspath(os.path.join(
     os.pardir)
 )
 sys.path.append(PROJECT_ROOT)
-import sheets
+import sheets  # noqa # pylint: disable=unused-import,import-error,wrong-import-position

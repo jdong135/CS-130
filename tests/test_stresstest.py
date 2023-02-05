@@ -3,21 +3,21 @@ Performance Analysis For Project 2
 """
 
 import unittest
-import os
-import sys
-import decimal
 import cProfile
-import re
 import pstats
-import context
-from sheets import Workbook, lark_module, CellErrorType, CellError  # noqa
+import re  # pylint: disable=unused-import
+from context import sheets
 
 
 class CProfile_Test(unittest.TestCase):
+    """
+    Test that CProfile is functional
+    """
+
     def test_cprofile_functionality(self):
         cProfile.run('re.compile("foo|bar")',
                      'logs/test_cprofile_functionality.stats')
-        with open('logs/test_cprofile_functionality_stats.stats', 'w') as stream:
+        with open('logs/test_cprofile_functionality_stats.stats', 'w', encoding="utf8") as stream:
             p = pstats.Stats(
                 'logs/test_cprofile_functionality.stats', stream=stream)
             p.sort_stats(pstats.SortKey.CUMULATIVE).print_stats()
@@ -30,7 +30,7 @@ def many_reference_one(self, rows):
     A1's value. Records time to update A1's value
     """
     pc = cProfile.Profile()
-    wb = Workbook()
+    wb = sheets.Workbook()
     wb.new_sheet("sheet1")
     wb.set_cell_contents("sheet1", "A1", "= 5000 * 2")
     for i in range(2, rows):
@@ -40,7 +40,7 @@ def many_reference_one(self, rows):
     pc.disable()
     self.assertEqual(wb.get_cell_value("sheet1", "A2"), 5000)
     pc.dump_stats(f'logs/test_many_reference_one_{rows}.stats')
-    with open(f'logs/test_many_reference_one_stats_{rows}.stats', 'w') as stream:
+    with open(f'logs/test_many_reference_one_stats_{rows}.stats', 'w', encoding="utf8") as stream:
         p = pstats.Stats(
             f'logs/test_many_reference_one_{rows}.stats', stream=stream)
         p.sort_stats(pstats.SortKey.CUMULATIVE).print_stats()
@@ -53,7 +53,7 @@ def many_reference_many(self, rows: int, cols: int):
     value is updated.
     """
     pc = cProfile.Profile()
-    wb = Workbook()
+    wb = sheets.Workbook()
     wb.new_sheet("sheet1")
     wb.new_sheet("sheet2")
     for y in range(cols):
@@ -64,11 +64,12 @@ def many_reference_many(self, rows: int, cols: int):
     for y in range(cols):
         c = chr(65 + y)
         for i in range(1, rows):
-            wb.set_cell_contents("sheet2", f"{c}{i}", f"3")
+            wb.set_cell_contents("sheet2", f"{c}{i}", "3")
     pc.disable()
     self.assertEqual(wb.get_cell_value("sheet1", "A1"), 3)
     pc.dump_stats(f'logs/test_many_reference_many_{rows}_{cols}.stats')
-    with open(f'logs/test_many_reference_many_stats_{rows}_{cols}.stats', 'w') as stream:
+    with open(f'logs/test_many_reference_many_stats_{rows}_{cols}.stats', 'w',
+              encoding="utf8") as stream:
         p = pstats.Stats(
             f'logs/test_many_reference_many_{rows}_{cols}.stats', stream=stream)
         p.sort_stats(pstats.SortKey.CUMULATIVE).print_stats()
@@ -80,7 +81,7 @@ def chain(self, chain_size):
     the cell at the left end of the cell.
     """
     pc = cProfile.Profile()
-    wb = Workbook()
+    wb = sheets.Workbook()
     wb.new_sheet("sheet1")
     wb.set_cell_contents("sheet1", "A1", "1")
     for i in range(2, chain_size):
@@ -91,7 +92,7 @@ def chain(self, chain_size):
     self.assertEqual(wb.get_cell_value("sheet1", f"A{i}"),
                      wb.get_cell_value("sheet1", "A1"))
     pc.dump_stats(f'logs/test_chain_{chain_size}.stats')
-    with open(f'logs/test_chain_stats_{chain_size}.stats', 'w') as stream:
+    with open(f'logs/test_chain_stats_{chain_size}.stats', 'w', encoding="utf8") as stream:
         p = pstats.Stats(f'logs/test_chain_{chain_size}.stats', stream=stream)
         p.sort_stats(pstats.SortKey.CUMULATIVE).print_stats()
 
@@ -100,10 +101,10 @@ def large_cycle(self, cycle_size):
     """
     Generates cycle_size number of cells that reference the cell to the right,
     creating a cycle of size cycle_size. Then, the value of all cells in the
-    cycle are updated to a CellError of type CIRCULAR_REFERENCE
+    cycle are updated to a sheets.CellError of type CIRCULAR_REFERENCE
     """
     pc = cProfile.Profile()
-    wb = Workbook()
+    wb = sheets.Workbook()
     wb.new_sheet("sheet1")
     for i in range(2, cycle_size):
         wb.set_cell_contents("sheet1", f"A{i}", f"= A{(i-1)}")
@@ -111,9 +112,9 @@ def large_cycle(self, cycle_size):
     wb.set_cell_contents("sheet1", "A1", f"= A{cycle_size-1}")
     pc.disable()
     self.assertEqual(wb.get_cell_value("sheet1", "A1").get_type(),
-                     CellErrorType.CIRCULAR_REFERENCE)
+                     sheets.CellErrorType.CIRCULAR_REFERENCE)
     pc.dump_stats(f'logs/test_large_cycle_{cycle_size}.stats')
-    with open(f'logs/test_large_cycle_stats_{cycle_size}.stats', 'w') as stream:
+    with open(f'logs/test_large_cycle_stats_{cycle_size}.stats', 'w', encoding="utf8") as stream:
         p = pstats.Stats(
             f'logs/test_large_cycle_{cycle_size}.stats', stream=stream)
         p.sort_stats(pstats.SortKey.CUMULATIVE).print_stats()
@@ -126,7 +127,7 @@ def delete_sheet1(self, rows, cols):
     deleted.
     """
     pc = cProfile.Profile()
-    wb = Workbook()
+    wb = sheets.Workbook()
     wb.new_sheet("sheet1")
     wb.new_sheet("sheet2")
     for y in range(cols):
@@ -137,9 +138,9 @@ def delete_sheet1(self, rows, cols):
     wb.del_sheet("sheet2")
     pc.disable()
     self.assertEqual(wb.get_cell_value(
-        "sheet1", "A1").get_type(), CellErrorType.BAD_REFERENCE)
+        "sheet1", "A1").get_type(), sheets.CellErrorType.BAD_REFERENCE)
     pc.dump_stats(f'logs/test_delete_sheet1_{rows}_{cols}.stats')
-    with open(f'logs/test_delete_sheet1_stats_{rows}_{cols}.stats', 'w') as stream:
+    with open(f'logs/test_delete_sheet1_stats_{rows}_{cols}.stats', 'w', encoding="utf8") as stream:
         p = pstats.Stats(
             f'logs/test_delete_sheet1_{rows}_{cols}.stats', stream=stream)
         p.sort_stats(pstats.SortKey.CUMULATIVE).print_stats()
@@ -149,11 +150,11 @@ def make_break_cycle(self, cycle_size, make_break):
     """
     Generates cycle_size number of cells that reference the cell to the right,
     creating a cycle of size cycle_size. Then, the value of all cells in the
-    cycle are updated to a CellError of type CIRCULAR_REFERENCE. Repeats
+    cycle are updated to a sheets.CellError of type CIRCULAR_REFERENCE. Repeats
     this process make_break number of times.
     """
     pc = cProfile.Profile()
-    wb = Workbook()
+    wb = sheets.Workbook()
     wb.new_sheet("sheet1")
     for i in range(2, cycle_size):
         wb.set_cell_contents("sheet1", f"A{i}", f"= A{(i-1)}")
@@ -162,14 +163,16 @@ def make_break_cycle(self, cycle_size, make_break):
     # break cycle
     wb.set_cell_contents("sheet1", "A1", f"= A{cycle_size-1}")
     for _ in range(make_break):
-        wb.set_cell_contents("sheet1", "A1", f"0")
-        wb.set_cell_contents("sheet1", f"A1", f"= A{(cycle_size-1)}")
+        wb.set_cell_contents("sheet1", "A1", "0")
+        wb.set_cell_contents("sheet1", "A1", f"= A{(cycle_size-1)}")
     pc.disable()
     self.assertEqual(wb.get_cell_value("sheet1", "A1").get_type(),
-                     CellErrorType.CIRCULAR_REFERENCE)
+                     sheets.CellErrorType.CIRCULAR_REFERENCE)
     pc.dump_stats(
         f'logs/test_make_break_cycle_{cycle_size}_{make_break}.stats')
-    with open(f'logs/test__make_break_cycle_stats_{cycle_size}_{make_break}.stats', 'w') as stream:
+    with open(
+        f'logs/test__make_break_cycle_stats_{cycle_size}_{make_break}.stats',
+            'w', encoding="utf8") as stream:
         p = pstats.Stats(
             f'logs/test_make_break_cycle_{cycle_size}_{make_break}.stats', stream=stream)
         p.sort_stats(pstats.SortKey.CUMULATIVE).print_stats()
@@ -182,7 +185,7 @@ def reference_rename_sheet(self, rows, cols):
     renamed.
     """
     pc = cProfile.Profile()
-    wb = Workbook()
+    wb = sheets.Workbook()
     wb.new_sheet("sheet1")
     wb.new_sheet("sheet2")
     for y in range(cols):
@@ -195,10 +198,11 @@ def reference_rename_sheet(self, rows, cols):
     for y in range(cols):
         c = chr(65 + y)
         for i in range(1, rows):
-            wb.set_cell_contents("sheet3", f"{c}{i}", f"3")
+            wb.set_cell_contents("sheet3", f"{c}{i}", "3")
     self.assertEqual(wb.get_cell_value("sheet1", "A1"), 3)
     pc.dump_stats(f'logs/test_reference_rename_sheet_{rows}.stats')
-    with open(f'logs/test_reference_rename_sheet_stats_{rows}.stats', 'w') as stream:
+    with open(f'logs/test_reference_rename_sheet_stats_{rows}.stats', 'w',
+              encoding="utf8") as stream:
         p = pstats.Stats(
             f'logs/test_reference_rename_sheet_{rows}.stats', stream=stream)
         p.sort_stats(pstats.SortKey.CUMULATIVE).print_stats()
@@ -206,7 +210,7 @@ def reference_rename_sheet(self, rows, cols):
 
 def dangling_chain(self, width, height):
     pc = cProfile.Profile()
-    wb = Workbook()
+    wb = sheets.Workbook()
     wb.new_sheet("sheet1")
     wb.set_cell_contents("sheet1", "A1", "10")
     for y in range(1, width):
@@ -223,13 +227,18 @@ def dangling_chain(self, width, height):
     self.assertEqual(wb.get_cell_value(
         "sheet1", f"{chr(64+width)}{height-1}"), 20)
     pc.dump_stats(f'logs/test_dangling_chain_{height}_{width}.stats')
-    with open(f'logs/test_dangling_chain_stats_{height}_{width}.stats', 'w') as stream:
+    with open(f'logs/test_dangling_chain_stats_{height}_{width}.stats', 'w',
+              encoding="utf8") as stream:
         p = pstats.Stats(
             f'logs/test_dangling_chain_{height}_{width}.stats', stream=stream)
         p.sort_stats(pstats.SortKey.CUMULATIVE).print_stats()
 
 
 class Multiple_Reference_Tests(unittest.TestCase):
+    """
+    Initialize and execute all test cases. 
+    """
+
     def test_many_reference_one(self):
         many_reference_one(self, 50)
         many_reference_one(self, 100)

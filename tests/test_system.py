@@ -6,9 +6,13 @@ to "from sheets import *" for better representation of user experience
 import unittest
 from context import sheets
 
+
 class System_Tests(unittest.TestCase):
+    """
+    Implementations of full system tests for the sheets module.
+    """
+
     def test_system1(self):
-        MAX_NUM = 10000000
         SIZE = 9999
         TEST_SAMPLE = 5
 
@@ -18,7 +22,7 @@ class System_Tests(unittest.TestCase):
         wb.new_sheet("my numbers")
 
         nums = []
-        with open("test-data/numbers.txt", "r") as f:
+        with open("test-data/numbers.txt", "r", encoding="utf8") as f:
             nums = f.readlines()
             for i in range(SIZE):
                 nums[i] = int(nums[i])
