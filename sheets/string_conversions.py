@@ -1,5 +1,7 @@
-from sheets import cell_error
+"""Module containing functions involving converting strings between ints,
+errors, and numbers. Also contains method to strip zeros from string num. """
 import decimal
+from sheets import cell_error
 
 
 def str_to_error(str_error: str) -> cell_error.CellError:
@@ -59,11 +61,10 @@ def strip_evaluation(eval):
     """
     given evaluation from lark, return value
     """
-    if type(eval) == str and is_number(eval):
+    if isinstance(eval, str) and is_number(eval):
         contents = strip_zeros(eval)
         return decimal.Decimal(contents)
-    elif type(eval) == decimal.Decimal:
+    if isinstance(eval, decimal.Decimal):
         stripped = strip_zeros(str(eval))
         return decimal.Decimal(stripped)
-    else:
-        return eval
+    return eval

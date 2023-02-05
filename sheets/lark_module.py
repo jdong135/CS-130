@@ -1,9 +1,9 @@
-import lark
 import decimal
 import re
+from typing import Any, Union
+import lark
 from lark.visitors import visit_children_decor
 from sheets import cell_error, cell, string_conversions
-from typing import Any, Union
 
 
 class FormulaEvaluator(lark.visitors.Interpreter):
@@ -27,7 +27,7 @@ class FormulaEvaluator(lark.visitors.Interpreter):
         """
         if sheet_name[0] == " ":
             return cell_error.CellError(cell_error.CellErrorType.PARSE_ERROR, "invalid sheet name")
-        elif sheet_name[-1] == " ":
+        if sheet_name[-1] == " ":
             return cell_error.CellError(cell_error.CellErrorType.PARSE_ERROR, "invalid sheet name")
         if re.match("\'[^']*\'", sheet_name):  # quoted sheet name
             sheet_name = sheet_name.lower()[1:-1]
@@ -52,7 +52,7 @@ class FormulaEvaluator(lark.visitors.Interpreter):
             corresponding operationg in string form, or an instance of a type error. 
         """
         for arg in args:
-            assert type(arg) == int
+            assert isinstance(arg, int)
         assert len(args) in [1, 2]
         res = [decimal.Decimal(0), values[1], decimal.Decimal(0)] if len(
             args) == 2 else [values[0], decimal.Decimal(0)]
@@ -63,7 +63,8 @@ class FormulaEvaluator(lark.visitors.Interpreter):
             elif value and string_conversions.is_number(value):
                 res[i] = decimal.Decimal(value)
             elif isinstance(value, str):
-                return cell_error.CellError(cell_error.CellErrorType.TYPE_ERROR, "string arithmetic")
+                return cell_error.CellError(
+                    cell_error.CellErrorType.TYPE_ERROR, "string arithmetic")
         return res
 
     def __check_for_error(self, values, *args) -> Union[bool, cell_error.CellError]:
@@ -80,7 +81,7 @@ class FormulaEvaluator(lark.visitors.Interpreter):
         """
         errs = {}  # {int error enum : CellError object}
         for arg in args:
-            assert type(arg) == int
+            assert isinstance(arg, int)
         for i in args:
             if isinstance(values[i], cell_error.CellError):
                 match values[i].get_type():
@@ -88,7 +89,8 @@ class FormulaEvaluator(lark.visitors.Interpreter):
                         errs[cell_error.CellErrorType.PARSE_ERROR.value] = cell_error.CellError(
                             cell_error.CellErrorType.PARSE_ERROR, "parsing error")
                     case cell_error.CellErrorType.CIRCULAR_REFERENCE:
-                        errs[cell_error.CellErrorType.CIRCULAR_REFERENCE.value] = cell_error.CellError(
+                        errs[cell_error.CellErrorType.CIRCULAR_REFERENCE.value] = \
+                            cell_error.CellError(
                             cell_error.CellErrorType.CIRCULAR_REFERENCE, "circular reference")
                     case cell_error.CellErrorType.BAD_REFERENCE:
                         errs[cell_error.CellErrorType.BAD_REFERENCE.value] = cell_error.CellError(
@@ -104,8 +106,7 @@ class FormulaEvaluator(lark.visitors.Interpreter):
                             cell_error.CellErrorType.DIVIDE_BY_ZERO, "divide by zero")
         if len(errs) > 0:
             return errs[min(list(errs.keys()))]
-        else:
-            return False
+        return False
 
     @visit_children_decor
     def add_expr(self, values):
@@ -117,10 +118,9 @@ class FormulaEvaluator(lark.visitors.Interpreter):
             return updated_values
         if updated_values[1] == '+':
             return updated_values[0] + updated_values[2]
-        elif updated_values[1] == '-':
+        if updated_values[1] == '-':
             return updated_values[0] - updated_values[2]
-        else:
-            assert False, 'Unexpected operator: ' + values[1]
+        assert False, 'Unexpected operator: ' + values[1]
 
     @visit_children_decor
     def mul_expr(self, values):
@@ -133,14 +133,12 @@ class FormulaEvaluator(lark.visitors.Interpreter):
         if updated_values[1] == '*':
             res = updated_values[0] * updated_values[2]
             return abs(res) if res == 0 else res
-        elif updated_values[1] == '/':
+        if updated_values[1] == '/':
             if updated_values[2] == 0:
                 return cell_error.CellError(
                     cell_error.CellErrorType.DIVIDE_BY_ZERO, 'divide by zero')
-            else:
-                return updated_values[0] / updated_values[2]
-        else:
-            assert False, 'Unexpected operator: ' + updated_values[1]
+            return updated_values[0] / updated_values[2]
+        assert False, 'Unexpected operator: ' + updated_values[1]
 
     @visit_children_decor
     def unary_op(self, values):
@@ -152,8 +150,9 @@ class FormulaEvaluator(lark.visitors.Interpreter):
             return updated_values
         if updated_values[0] == "+":
             return updated_values[1]
-        elif updated_values[0] == "-":
+        if updated_values[0] == "-":
             return -1 * updated_values[1]
+        return None
 
     @visit_children_decor
     def concat_expr(self, values):
@@ -183,12 +182,15 @@ class FormulaEvaluator(lark.visitors.Interpreter):
 
         # check for invalid references or errors
         if sheet_name not in self.wb.spreadsheets:
-            return cell_error.CellError(cell_error.CellErrorType.BAD_REFERENCE, "sheet name not found")
+            return cell_error.CellError(
+                cell_error.CellErrorType.BAD_REFERENCE, "sheet name not found")
         sheet = self.wb.spreadsheets[sheet_name]
         if not sheet.check_valid_location(location):
             return cell_error.CellError(cell_error.CellErrorType.BAD_REFERENCE, "invalid location")
-        if self.calling_cell and self.calling_cell.sheet.name.lower() == sheet_name and self.calling_cell.location == location:
-            return cell_error.CellError(cell_error.CellErrorType.CIRCULAR_REFERENCE, "circular reference")
+        if self.calling_cell and self.calling_cell.sheet.name.lower() == sheet_name \
+                and self.calling_cell.location == location:
+            return cell_error.CellError(
+                cell_error.CellErrorType.CIRCULAR_REFERENCE, "circular reference")
 
         # no cell in this location yet
         if location not in sheet.cells:
@@ -200,11 +202,10 @@ class FormulaEvaluator(lark.visitors.Interpreter):
             return decimal.Decimal(0)
 
         # add calling_cell to the neighbors of Cell from values argument
-        else:
-            if self.calling_cell not in self.wb.adjacency_list[sheet.cells[location]]:
-                self.wb.adjacency_list[sheet.cells[location]].append(
-                    self.calling_cell)
-            self.calling_cell_relies_on.append(sheet.cells[location])
+        if self.calling_cell not in self.wb.adjacency_list[sheet.cells[location]]:
+            self.wb.adjacency_list[sheet.cells[location]].append(
+                self.calling_cell)
+        self.calling_cell_relies_on.append(sheet.cells[location])
         if not sheet.cells[location].value:  # cell exists at location but is empty
             return decimal.Decimal(0)
         return sheet.cells[location].value
@@ -253,7 +254,8 @@ class FormulaEvaluator(lark.visitors.Interpreter):
                     cell_error.CellErrorType.DIVIDE_BY_ZERO, "input error")
 
 
-def evaluate_expr(workbook, curr_cell, sheetname: str, contents: str) -> tuple[FormulaEvaluator, Any]:
+def evaluate_expr(workbook, curr_cell, sheetname: str, contents: str) \
+        -> tuple[FormulaEvaluator, Any]:
     """
     Evaluate a provided expression using the lark formula parser and evaluator.
 
