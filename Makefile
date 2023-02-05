@@ -1,3 +1,7 @@
+PYLINT_OPTS = --exit-zero --disable=C0103,C0116
+# C0103: invalid-name does not comform to snake_case
+# C0116: missing docstring
+
 .PHONY: format
 format:
 	autopep8 -i sheets/*.py
@@ -17,8 +21,8 @@ stresstest:
 
 .PHONY:
 lint:
-	pylint --ignore=formulas.lark --exit-zero sheets | tee logs/sheets_lint.txt
-	pylint --exit-zero tests | tee logs/tests_lint.txt
+	pylint --ignore=formulas.lark $(PYLINT_OPTS) sheets | tee logs/sheets_lint.txt
+	pylint $(PYLINT_OPTS) tests | tee logs/tests_lint.txt
 
 .PHONY: clean
 clean:

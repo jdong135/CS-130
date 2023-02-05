@@ -9,12 +9,7 @@ import decimal
 import cProfile
 import re
 import pstats
-
-PROJECT_ROOT = os.path.abspath(os.path.join(
-    os.path.dirname(__file__),
-    os.pardir)
-)
-sys.path.append(PROJECT_ROOT)
+import context
 from sheets import Workbook, lark_module, CellErrorType, CellError  # noqa
 
 

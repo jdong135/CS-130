@@ -4,16 +4,7 @@ to "from sheets import *" for better representation of user experience
 """
 
 import unittest
-import os
-import sys
-
-PROJECT_ROOT = os.path.abspath(os.path.join(
-    os.path.dirname(__file__),
-    os.pardir)
-)
-sys.path.append(PROJECT_ROOT)
-import sheets  # noqa
-
+from context import sheets
 
 class System_Tests(unittest.TestCase):
     def test_system1(self):
