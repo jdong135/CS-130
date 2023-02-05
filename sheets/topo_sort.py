@@ -1,10 +1,13 @@
+"""This module topologically sorts a graph of Cells."""
 import enum
 from typing import Tuple
 from sheets.cell import Cell
-from typing import Tuple
 
 
 class DFSState(enum.Enum):
+    """
+    Enum used to determine if topo sort is visiting a Cell for the first time.
+    """
     ENTER = 1
     LEAVE = 2
 
