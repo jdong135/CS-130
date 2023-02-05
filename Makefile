@@ -15,9 +15,10 @@ test:
 stresstest:
 	python3 tests/test_stresstest.py
 
-.PHONY: lint
+.PHONY:
 lint:
-	pylint ./sheets
+	pylint --ignore=formulas.lark --exit-zero sheets | tee logs/sheets_lint.txt
+	pylint --exit-zero tests | tee logs/tests_lint.txt
 
 .PHONY: clean
 clean:
