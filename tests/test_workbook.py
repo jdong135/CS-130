@@ -3,18 +3,12 @@ Unit tests for implementation of Workbook
 """
 
 import unittest
-import os
 import sys
 import string
 import random
 import decimal
 import io
-
-PROJECT_ROOT = os.path.abspath(os.path.join(
-    os.path.dirname(__file__),
-    os.pardir)
-)
-sys.path.append(PROJECT_ROOT)
+import context
 from sheets import Workbook, cell, cell_error  # noqa
 
 MAX_SHEETS_TEST = 100
