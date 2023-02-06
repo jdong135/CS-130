@@ -617,3 +617,91 @@ class Workbook:
         for location, c in self.spreadsheets[stored_name].cells.items():
             self.set_cell_contents(copy_name, location, c.contents)
         return copy_name, len(self.spreadsheets) - 1
+
+    def move_cells(self, sheet_name: str, start_location: str,
+                   end_location: str, to_location: str, to_sheet: Optional[str] = None) -> None:
+        # Move cells from one location to another, possibly moving them to
+        # another sheet.  All formulas in the area being moved will also have
+        # all relative and mixed cell-references updated by the relative
+        # distance each formula is being copied.
+        #
+        # Cells in the source area (that are not also in the target area) will
+        # become empty due to the move operation.
+        #
+        # The start_location and end_location specify the corners of an area of
+        # cells in the sheet to be moved.  The to_location specifies the
+        # top-left corner of the target area to move the cells to.
+        #
+        # Both corners are included in the area being moved; for example,
+        # copying cells A1-A3 to B1 would be done by passing
+        # start_location="A1", end_location="A3", and to_location="B1".
+        #
+        # The start_location value does not necessarily have to be the top left
+        # corner of the area to move, nor does the end_location value have to be
+        # the bottom right corner of the area; they are simply two corners of
+        # the area to move.
+        #
+        # This function works correctly even when the destination area overlaps
+        # the source area.
+        #
+        # The sheet name matches are case-insensitive; the text must match but
+        # the case does not have to.
+        #
+        # If to_sheet is None then the cells are being moved to another
+        # location within the source sheet.
+        #
+        # If any specified sheet name is not found, a KeyError is raised.
+        # If any cell location is invalid, a ValueError is raised.
+        #
+        # If the target area would extend outside the valid area of the
+        # spreadsheet (i.e. beyond cell ZZZZ9999), a ValueError is raised, and
+        # no changes are made to the spreadsheet.
+        #
+        # If a formula being moved contains a relative or mixed cell-reference
+        # that will become invalid after updating the cell-reference, then the
+        # cell-reference is replaced with a #REF! error-literal in the formula.
+        pass
+
+    def copy_cells(self, sheet_name: str, start_location: str,
+                   end_location: str, to_location: str, to_sheet: Optional[str] = None) -> None:
+        # Copy cells from one location to another, possibly copying them to
+        # another sheet.  All formulas in the area being copied will also have
+        # all relative and mixed cell-references updated by the relative
+        # distance each formula is being copied.
+        #
+        # Cells in the source area (that are not also in the target area) are
+        # left unchanged by the copy operation.
+        #
+        # The start_location and end_location specify the corners of an area of
+        # cells in the sheet to be copied.  The to_location specifies the
+        # top-left corner of the target area to copy the cells to.
+        #
+        # Both corners are included in the area being copied; for example,
+        # copying cells A1-A3 to B1 would be done by passing
+        # start_location="A1", end_location="A3", and to_location="B1".
+        #
+        # The start_location value does not necessarily have to be the top left
+        # corner of the area to copy, nor does the end_location value have to be
+        # the bottom right corner of the area; they are simply two corners of
+        # the area to copy.
+        #
+        # This function works correctly even when the destination area overlaps
+        # the source area.
+        #
+        # The sheet name matches are case-insensitive; the text must match but
+        # the case does not have to.
+        #
+        # If to_sheet is None then the cells are being copied to another
+        # location within the source sheet.
+        #
+        # If any specified sheet name is not found, a KeyError is raised.
+        # If any cell location is invalid, a ValueError is raised.
+        #
+        # If the target area would extend outside the valid area of the
+        # spreadsheet (i.e. beyond cell ZZZZ9999), a ValueError is raised, and
+        # no changes are made to the spreadsheet.
+        #
+        # If a formula being copied contains a relative or mixed cell-reference
+        # that will become invalid after updating the cell-reference, then the
+        # cell-reference is replaced with a #REF! error-literal in the formula.
+        pass
