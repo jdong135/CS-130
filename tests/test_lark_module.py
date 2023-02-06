@@ -7,7 +7,7 @@ import decimal
 from context import sheets
 
 
-class Lark_Module_Basic(unittest.TestCase):
+class LarkModuleTests(unittest.TestCase):
     """
     Basic isolated unit tests for lark_module.py
     """
@@ -325,6 +325,57 @@ class Lark_Module_Basic(unittest.TestCase):
             'sheet1', 'B1'), decimal.Decimal(10))
         self.assertEqual(wb.get_cell_value(
             'sheet1', 'D1'), decimal.Decimal(10))
+
+    def test_first_dollar_ref(self):
+        wb = sheets.Workbook()
+        wb.new_sheet()
+        wb.set_cell_contents("sheet1", "A1", "=1")
+        wb.set_cell_contents("sheet1", "A2", "=A1")
+        wb.set_cell_contents("sheet1", "A3", "=$A1")
+        self.assertEqual(wb.get_cell_value("sheet1", "A2"), wb.get_cell_value("sheet1", "A3"))
+
+    def test_second_dollar_ref(self):
+        wb = sheets.Workbook()
+        wb.new_sheet()
+        wb.set_cell_contents("sheet1", "A1", "=1")
+        wb.set_cell_contents("sheet1", "A2", "=A1")
+        wb.set_cell_contents("sheet1", "A3", "=A$1")
+        self.assertEqual(wb.get_cell_value("sheet1", "A2"), wb.get_cell_value("sheet1", "A3"))
+
+    def test_double_dollar_ref(self):
+        wb = sheets.Workbook()
+        wb.new_sheet()
+        wb.set_cell_contents("sheet1", "A1", "=1")
+        wb.set_cell_contents("sheet1", "A2", "=A1")
+        wb.set_cell_contents("sheet1", "A3", "=$A$1")
+        self.assertEqual(wb.get_cell_value("sheet1", "A2"), wb.get_cell_value("sheet1", "A3"))
+
+    def test_first_dollar_sheet_ref(self):
+        wb = sheets.Workbook()
+        wb.new_sheet()
+        wb.new_sheet()
+        wb.set_cell_contents("sheet1", "A1", "=1")
+        wb.set_cell_contents("sheet2", "A2", "=sheet1!A1")
+        wb.set_cell_contents("sheet2", "A3", "=sheet1!$A1")
+        self.assertEqual(wb.get_cell_value("sheet2", "A2"), wb.get_cell_value("sheet2", "A3"))
+
+    def test_second_dollar_sheet_ref(self):
+        wb = sheets.Workbook()
+        wb.new_sheet()
+        wb.new_sheet()
+        wb.set_cell_contents("sheet1", "A1", "=1")
+        wb.set_cell_contents("sheet2", "A2", "=sheet1!A1")
+        wb.set_cell_contents("sheet2", "A3", "=sheet1!A$1")
+        self.assertEqual(wb.get_cell_value("sheet2", "A2"), wb.get_cell_value("sheet2", "A3"))
+
+    def test_double_dollar_sheet_ref(self):
+        wb = sheets.Workbook()
+        wb.new_sheet()
+        wb.new_sheet()
+        wb.set_cell_contents("sheet1", "A1", "=1")
+        wb.set_cell_contents("sheet2", "A2", "=sheet1!A1")
+        wb.set_cell_contents("sheet2", "A3", "=sheet1!$A$1")
+        self.assertEqual(wb.get_cell_value("sheet2", "A2"), wb.get_cell_value("sheet2", "A3"))
 
 
 if __name__ == "__main__":

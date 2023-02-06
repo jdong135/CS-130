@@ -6,6 +6,13 @@ import lark
 from lark.visitors import visit_children_decor
 from sheets import cell_error, cell, string_conversions
 
+import logging
+logging.basicConfig(filename="logs/results.log",
+                    format='%(asctime)s %(message)s',
+                    filemode='w')
+logger = logging.getLogger()
+logger.setLevel(logging.DEBUG)
+
 
 class FormulaEvaluator(lark.visitors.Interpreter):
     """
@@ -181,10 +188,10 @@ class FormulaEvaluator(lark.visitors.Interpreter):
             sheet_name = self.__check_sheet_name(values[0].value)
             if isinstance(sheet_name, cell_error.CellError):
                 return sheet_name
-            location = values[1].value.upper()
+            location = values[1].value.upper().replace("$", "")
         else:  # = [col][row]
             sheet_name = self.sheet.name.lower()
-            location = values[0].value.upper()
+            location = values[0].value.upper().replace("$", "")
 
         # check for invalid references or errors
         if sheet_name not in self.wb.spreadsheets:
