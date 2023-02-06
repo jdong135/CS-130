@@ -1,20 +1,23 @@
+"""Workbook API. Contains spreadsheet functions accessible to public users."""
 from __future__ import annotations
-from typing import *
-from sheets import cell, topo_sort, cell_error, lark_module, sheet, string_conversions
+from typing import Tuple, List, Optional, Any, TextIO, Callable, Iterable
 import decimal
 import copy
 import json
 import re
+from sheets import cell, topo_sort, cell_error, lark_module, sheet, string_conversions
 
 ALLOWED_PUNC = set([".", "?", "!", ",", ":", ";", "@", "#",
                     "$", "%", "^", "&", "*", "(", ")", "-", "_"])
 
 
 class Workbook:
-    # A workbook containing zero or more named spreadsheets.
-    #
-    # Any and all operations on a workbook that may affect calculated cell
-    # values should cause the workbook's contents to be updated properly.
+    """
+    A workbook containing zero or more named spreadsheets.
+
+    Any and all operations on a workbook that may affect calculated cell
+    values should cause the workbook's contents to be updated properly.
+    """
 
     def __init__(self):
         # lower case name -> sheet object
@@ -26,7 +29,7 @@ class Workbook:
 
     def __check_valid_sheet_name(self, sheet_name: str):
         """
-        Check if a sheet name is valid. 
+        Check if a sheet name is valid.
 
         Args:
             sheet_name (str): Sheet name to check
@@ -45,42 +48,42 @@ class Workbook:
                     f"Invalid character in name: {ch} not allowed")
         if sheet_name[0] == " ":
             raise ValueError("Sheet name starts with white space")
-        elif sheet_name[-1] == " ":
+        if sheet_name[-1] == " ":
             raise ValueError("Sheet name ends with white space")
-        elif sheet_name.lower() in self.spreadsheets:
+        if sheet_name.lower() in self.spreadsheets:
             raise ValueError("Duplicate spreadsheet name")
 
-    def __update_extent(self, sheet: sheet.Sheet, location: str, deletingCell: bool):
+    def __update_extent(self, spreadsheet: sheet.Sheet, location: str, deleting_cell: bool):
         """
         Update the extent of a sheet if we are deleting a cell
         """
-        if deletingCell:
-            sheet_col, sheet_row = sheet.extent_col, sheet.extent_row
-            col, row = sheet.str_to_tuple(location)
+        if deleting_cell:
+            sheet_col, sheet_row = spreadsheet.extent_col, spreadsheet.extent_row
+            col, row = spreadsheet.str_to_tuple(location)
             max_col, max_row = 0, 0
             if col == sheet_col or row == sheet_row:
-                for c in sheet.cells:
-                    if sheet.cells[c].type != cell.CellType.EMPTY:
-                        c_col, c_row = sheet.str_to_tuple(
-                            sheet.cells[c].location)
+                for c in spreadsheet.cells:
+                    if spreadsheet.cells[c].type != cell.CellType.EMPTY:
+                        c_col, c_row = spreadsheet.str_to_tuple(
+                            spreadsheet.cells[c].location)
                         max_col = max(max_col, c_col)
                         max_row = max(max_row, c_row)
-                sheet.extent_col = max_col
-                sheet.extent_row = max_row
+                spreadsheet.extent_col = max_col
+                spreadsheet.extent_row = max_row
         else:
-            curr_col, curr_row = sheet.str_to_tuple(location)
-            sheet.extent_col = max(curr_col, sheet.extent_col)
-            sheet.extent_row = max(curr_row, sheet.extent_row)
+            curr_col, curr_row = spreadsheet.str_to_tuple(location)
+            spreadsheet.extent_col = max(curr_col, spreadsheet.extent_col)
+            spreadsheet.extent_row = max(curr_row, spreadsheet.extent_row)
 
     def __generate_notifications(self, cell_list: list[cell.Cell]):
         """
         Given a list of cells, create a corresponding list of tuples containing
         each cell's sheet name and location. Then, call each registered notify
-        function on the created list. 
+        function on the created list.
 
         Args:
-            cell_list (list): List of Cell objects to generate a list of 
-            notifications from. 
+            cell_list (list): List of Cell objects to generate a list of
+            notifications from.
         """
         if cell_list == []:
             return
@@ -108,28 +111,29 @@ class Workbook:
         relies_on = []
         if not cell_contents or len(cell_contents) == 0:
             val = None
-            type = cell.CellType.EMPTY
+            cell_type = cell.CellType.EMPTY
         elif string_conversions.str_to_error(cell_contents):  # type error
             val = string_conversions.str_to_error(cell_contents)
-            type = cell.CellType.ERROR
+            cell_type = cell.CellType.ERROR
         elif cell_contents[0] == "'":
             val = cell_contents[1:]
-            type = cell.CellType.STRING
+            cell_type = cell.CellType.STRING
         elif cell_contents[0] == "=":
-            eval, val = lark_module.evaluate_expr(
+            evaluator, val = lark_module.evaluate_expr(
                 self, calling_cell, calling_cell.sheet.name, cell_contents)
-            type = cell.CellType.FORMULA
-            if eval:
-                relies_on = eval.calling_cell_relies_on
+            cell_type = cell.CellType.FORMULA
+            if evaluator:
+                relies_on = evaluator.calling_cell_relies_on
         elif string_conversions.is_number(cell_contents):
             stripped = string_conversions.strip_zeros(cell_contents)
             val = decimal.Decimal(stripped)
-            type = cell.CellType.LITERAL_NUM
+            cell_type = cell.CellType.LITERAL_NUM
         else:
             val = cell_contents
-            type = cell.CellType.LITERAL_STRING
-        val_update = True if val != calling_cell.value or type != calling_cell.type else False
-        calling_cell.set_fields(value=val, type=type)
+            cell_type = cell.CellType.LITERAL_STRING
+        val_update = bool(
+            val != calling_cell.value or cell_type != calling_cell.type)
+        calling_cell.set_fields(value=val, type=cell_type)
         return relies_on, val_update
 
     def __get_cells_containing_sheetname(self, sheetname: str) -> list[cell.Cell]:
@@ -137,14 +141,17 @@ class Workbook:
         cells = []
         regex = f'.*{sheetname.lower()}!.*'
         regex2 = f".*'{sheetname.lower()}'!.*"
-        for name, sheet in self.spreadsheets.items():
-            for loc, c in sheet.cells.items():
-                if c.contents and (re.match(regex, c.contents.lower()) or re.match(regex2, c.contents.lower())):
+        for name, spreadsheet in self.spreadsheets.items():
+            for loc, c in spreadsheet.cells.items():
+                if c.contents and \
+                    (re.match(regex, c.contents.lower()) or
+                        re.match(regex2, c.contents.lower())):
                     try:
                         # If a cell is an error type, check if it is a parse error and don't
                         # add to our list of cells. Otherwise, if it is not a cell error type,
                         # get_type() will throw an attribute error.
-                        if self.get_cell_value(name, loc).get_type() == cell_error.CellErrorType.PARSE_ERROR:
+                        if self.get_cell_value(name, loc).get_type() == \
+                                cell_error.CellErrorType.PARSE_ERROR:
                             continue
                     except AttributeError:
                         pass
@@ -185,8 +192,8 @@ class Workbook:
         # A user should be able to mutate the return-value without affecting the
         # workbook's internal state.
         output = []
-        for sheet in self.spreadsheets:
-            output.append(self.spreadsheets[sheet].name)
+        for spreadsheet in self.spreadsheets:
+            output.append(self.spreadsheets[spreadsheet].name)
         return output
 
     def new_sheet(self, sheet_name: Optional[str] = None) -> Tuple[int, str]:
@@ -203,7 +210,7 @@ class Workbook:
         # otherwise invalid, a ValueError is raised.
         if sheet_name == "":
             raise ValueError("Sheet name is empty string")
-        elif sheet_name:
+        if sheet_name:
             self.__check_valid_sheet_name(sheet_name)
         else:  # handle null input
             i = 1
@@ -230,11 +237,11 @@ class Workbook:
         # If the specified sheet name is not found, a KeyError is raised.
         if sheet_name.lower() not in self.spreadsheets:
             raise KeyError("Specified sheet name not found")
-        sheet = self.spreadsheets[sheet_name.lower()]
+        spreadsheet = self.spreadsheets[sheet_name.lower()]
         del self.spreadsheets[sheet_name.lower()]
         changed_cells = []
-        for loc in sheet.cells:
-            c = sheet.cells[loc]
+        for loc in spreadsheet.cells:
+            c = spreadsheet.cells[loc]
             _, cell_dependents = topo_sort(c, self.adjacency_list)
             changed_cells.extend(cell_dependents[1:])
             for _, neighbors in self.adjacency_list.items():
@@ -255,9 +262,8 @@ class Workbook:
         # If the specified sheet name is not found, a KeyError is raised.
         if sheet_name.lower() not in self.spreadsheets:
             raise KeyError("Specified sheet name not found")
-        else:
-            sheet = self.spreadsheets[sheet_name.lower()]
-            return ((sheet.extent_col, sheet.extent_row))
+        spreadsheet = self.spreadsheets[sheet_name.lower()]
+        return ((spreadsheet.extent_col, spreadsheet.extent_row))
 
     def set_cell_contents(self, sheet_name: str, location: str,
                           contents: Optional[str]) -> None:
@@ -286,13 +292,14 @@ class Workbook:
         location = location.upper()
         if sheet_name.lower() not in self.spreadsheets:
             raise KeyError("Specified sheet name not found")
-        sheet = self.spreadsheets[sheet_name.lower()]
-        if not sheet.check_valid_location(location):
+        spreadsheet = self.spreadsheets[sheet_name.lower()]
+        if not spreadsheet.check_valid_location(location):
             raise ValueError(f"Cell location {location} is invalid")
         if contents:
             contents = contents.strip()
-        if location in sheet.cells:  # if cell already exists (modify contents)
-            existing_cell = sheet.cells[location]
+        # if cell already exists (modify contents)
+        if location in spreadsheet.cells:
+            existing_cell = spreadsheet.cells[location]
             existing_cell.contents = contents
             relies_on, val_updated = self.__set_cell_value_and_type(
                 existing_cell)
@@ -309,9 +316,9 @@ class Workbook:
                 # if existing cell doesn't have neighbors, no cell relies on it
                 # -> delete cell from spreadsheet
                 if not self.adjacency_list[existing_cell]:
-                    del sheet.cells[location]
+                    del spreadsheet.cells[location]
                     del self.adjacency_list[existing_cell]
-                    self.__update_extent(sheet, location, True)
+                    self.__update_extent(spreadsheet, location, True)
                     self.__generate_notifications([existing_cell])
                     return
             # updating cells that depend on existing cell
@@ -324,17 +331,17 @@ class Workbook:
                 for dependent in cell_dependents:
                     dependent.set_fields(value=cell_error.CellError(
                         cell_error.CellErrorType.CIRCULAR_REFERENCE, "circular reference"))
-            self.__update_extent(sheet, location, False)
+            self.__update_extent(spreadsheet, location, False)
             # include the existing cell iff its value is updated
             self.__generate_notifications(
                 cell_dependents if val_updated else cell_dependents[1:])
         else:  # if cell does not exist (create contents)
-            new_cell = cell.Cell(sheet, location, contents, None, None)
+            new_cell = cell.Cell(spreadsheet, location, contents, None, None)
             self.__set_cell_value_and_type(new_cell)
             if new_cell.type != cell.CellType.EMPTY:
                 self.adjacency_list[new_cell] = []
-                sheet.cells[location] = new_cell
-            self.__update_extent(sheet, location, False)
+                spreadsheet.cells[location] = new_cell
+            self.__update_extent(spreadsheet, location, False)
             self.__generate_notifications([new_cell])
 
     def get_cell_contents(self, sheet_name: str, location: str) -> Optional[str]:
@@ -356,13 +363,12 @@ class Workbook:
         location = location.upper()
         if sheet_name.lower() not in self.spreadsheets:
             raise KeyError("Specified sheet name not found")
-        sheet = self.spreadsheets[sheet_name.lower()]
-        if not sheet.check_valid_location(location):
+        spreadsheet = self.spreadsheets[sheet_name.lower()]
+        if not spreadsheet.check_valid_location(location):
             raise ValueError(f"Cell location {location} is invalid")
-        if location in sheet.cells:
-            return sheet.cells[location].contents
-        else:
-            return None
+        if location in spreadsheet.cells:
+            return spreadsheet.cells[location].contents
+        return None
 
     def get_cell_value(self, sheet_name: str, location: str) -> Any:
         # Return the evaluated value of the specified cell on the specified
@@ -387,13 +393,12 @@ class Workbook:
         location = location.upper()
         if sheet_name.lower() not in self.spreadsheets:
             raise KeyError("Specified sheet name not found")
-        sheet = self.spreadsheets[sheet_name.lower()]
-        if not sheet.check_valid_location(location):
+        spreadsheet = self.spreadsheets[sheet_name.lower()]
+        if not spreadsheet.check_valid_location(location):
             raise ValueError(f"Cell location {location} is invalid")
-        if location in sheet.cells:
-            return sheet.cells[location].value
-        else:
-            return None
+        if location in spreadsheet.cells:
+            return spreadsheet.cells[location].value
+        return None
 
     @staticmethod
     def load_workbook(fp: TextIO) -> Workbook:
@@ -430,30 +435,30 @@ class Workbook:
         if list(data.keys())[0] != "sheets":
             raise KeyError("Key should be named \"sheets\".")
         sheets = data["sheets"]
-        if type(sheets) != list:
+        if not isinstance(sheets, list):
             raise TypeError("\"sheets\" value should be of type list")
 
-        for sheet in sheets:
-            if type(sheet) != dict:
+        for spreadsheet in sheets:
+            if not isinstance(spreadsheet, dict):
                 raise TypeError("Sheet object is not of type dictionary.")
-            if len(sheet.keys()) != 2:
+            if len(spreadsheet.keys()) != 2:
                 raise KeyError(
                     "Sheet dictionary does not have exactly two keys.")
 
-            if "name" not in sheet.keys() or "cell-contents" not in sheet.keys():
+            if "name" not in spreadsheet.keys() or "cell-contents" not in spreadsheet.keys():
                 raise KeyError(
                     "Keys of sheet dictionray must be named \"name\" and \"cell-contents\"")
-            sheet_name = sheet["name"]
-            if type(sheet_name) != str:
+            sheet_name = spreadsheet["name"]
+            if not isinstance(sheet_name, str):
                 raise TypeError("Sheet name is not of type string.")
             wb.new_sheet(sheet_name)
 
-            cell_contents = sheet["cell-contents"]
-            if type(cell_contents) != dict:
+            cell_contents = spreadsheet["cell-contents"]
+            if not isinstance(cell_contents, dict):
                 raise TypeError(
                     f"Cell Contents of sheet \"{sheet_name}\" is not of type dict.")
             for location, contents in cell_contents.items():
-                if type(location) != str or type(contents) != str:
+                if not isinstance(location, str) or not isinstance(contents, str):
                     raise TypeError(
                         "Cell location and contents must be of type string.")
                 wb.set_cell_contents(sheet_name, location, contents)
@@ -468,10 +473,10 @@ class Workbook:
         # If an IO write error occurs (unlikely but possible), let any raised
         # exception propagate through.
         data = {"sheets": []}
-        for _, sheet in self.spreadsheets.items():
-            name = sheet.name
+        for _, spreadsheet in self.spreadsheets.items():
+            name = spreadsheet.name
             cur_sheet = {'name': name, 'cell-contents': {}}
-            for location, c in sheet.cells.items():
+            for location, c in spreadsheet.cells.items():
                 cur_sheet['cell-contents'][location] = c.contents
             data["sheets"].append(cur_sheet)
         try:
@@ -479,8 +484,9 @@ class Workbook:
         except IOError as e:
             print(f"{e}, IO write error in save_workbook().")
 
-    def notify_cells_changed(self,
-                             notify_function: Callable[[Workbook, Iterable[Tuple[str, str]]], None]) -> None:
+    def notify_cells_changed(self, notify_function:
+                             Callable[[Workbook, Iterable[Tuple[str, str]]],
+                                      None]) -> None:
         # Request that all changes to cell values in the workbook are reported
         # to the specified notify_function.  The values passed to the notify
         # function are the workbook, and an iterable of 2-tuples of strings,
@@ -594,7 +600,7 @@ class Workbook:
         #
         # If the specified sheet name is not found, a KeyError is raised.
         copy_name = None
-        for stored_name in self.spreadsheets.keys():
+        for stored_name in self.spreadsheets:
             if stored_name.lower() == sheet_name.lower():
                 copy_name = stored_name
                 break
@@ -603,7 +609,7 @@ class Workbook:
         i = 1
         while True:
             copy_name = sheet_name + "_" + str(i)
-            if copy_name.lower() not in self.spreadsheets.keys():
+            if copy_name.lower() not in self.spreadsheets:
                 break
             i += 1
             copy_name = copy_name[:-2]

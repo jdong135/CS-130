@@ -57,14 +57,14 @@ def strip_zeros(string: str) -> str:
     return string.rstrip('0').rstrip('.') if '.' in string else string
 
 
-def strip_evaluation(eval):
+def strip_evaluation(evaluation):
     """
     given evaluation from lark, return value
     """
-    if isinstance(eval, str) and is_number(eval):
-        contents = strip_zeros(eval)
+    if isinstance(evaluation, str) and is_number(evaluation):
+        contents = strip_zeros(evaluation)
         return decimal.Decimal(contents)
-    if isinstance(eval, decimal.Decimal):
-        stripped = strip_zeros(str(eval))
+    if isinstance(evaluation, decimal.Decimal):
+        stripped = strip_zeros(str(evaluation))
         return decimal.Decimal(stripped)
-    return eval
+    return evaluation

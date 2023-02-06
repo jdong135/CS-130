@@ -1,7 +1,10 @@
+"""Representation of individual cell in spreadsheet."""
+
 import enum
 
 
 class CellType(enum.Enum):
+    """All possible types for a cell"""
     EMPTY = 1
     FORMULA = 2
     STRING = 3
@@ -11,10 +14,16 @@ class CellType(enum.Enum):
 
 
 class Cell:
+    """
+    Cells are uniquely identified by the sheet they're in and their location.
+    """
+
     def __eq__(self, obj):
+        """Override equality for user defined class"""
         return isinstance(obj, Cell) and obj.__dict__ == self.__dict__
 
     def __hash__(self):
+        """Hash based off of the cell's sheet's id and the cell's location"""
         return hash((str(self.sheet.uuid), self.location))
 
     def __init__(self, sheet, location: str, contents: str, value: str, type: CellType):

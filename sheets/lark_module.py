@@ -1,3 +1,4 @@
+"""Module containing functionality to parse spreadsheet formulas."""
 import decimal
 import re
 from typing import Any, Union
@@ -7,6 +8,11 @@ from sheets import cell_error, cell, string_conversions
 
 
 class FormulaEvaluator(lark.visitors.Interpreter):
+    """
+    This class evaluates cell contents that begin with "=".
+    It also tracks which cells the calling cell relies on.
+    """
+
     def __init__(self, workbook, sheet, calling_cell):
         self.sub_evaluator = None
         self.wb = workbook
@@ -273,12 +279,12 @@ def evaluate_expr(workbook, curr_cell, sheetname: str, contents: str) \
     except KeyError:
         return None, cell_error.CellError(
             cell_error.CellErrorType.BAD_REFERENCE, "bad reference")
-    eval = FormulaEvaluator(workbook, sheet, curr_cell)
+    evaluator = FormulaEvaluator(workbook, sheet, curr_cell)
     parser = lark.Lark.open('sheets/formulas.lark', start='formula')
     try:
         tree = parser.parse(contents)
     except:
-        return eval, cell_error.CellError(
+        return evaluator, cell_error.CellError(
             cell_error.CellErrorType.PARSE_ERROR, "parse error")
-    value = eval.visit(tree)
-    return eval, value
+    value = evaluator.visit(tree)
+    return evaluator, value
