@@ -22,7 +22,7 @@ stresstest:
 
 .PHONY:
 lint:
-	# pylint --ignore=formulas.lark $(PYLINT_OPTS_SHEETS) sheets | tee logs/sheets_lint.txt
+	pylint --ignore=formulas.lark $(PYLINT_OPTS_SHEETS) sheets | tee logs/sheets_lint.txt
 	pylint $(PYLINT_OPTS_TESTS) tests | tee logs/tests_lint.txt
 
 .PHONY: clean
