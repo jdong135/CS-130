@@ -1,8 +1,15 @@
+"""Class that stores Cell objects that are all in the same spreadsheet."""
 from typing import Tuple
 import uuid
 
 
 class Sheet:
+    """
+    Sheet class contains mapping of locations to Cell objects.
+    Each sheet gets a unique ID for hashing purposes to check equality.
+    Sheets track the extent of rows and columns.
+    """
+
     def __eq__(self, obj):
         return isinstance(obj, Sheet) and obj.__dict__ == self.__dict__
 

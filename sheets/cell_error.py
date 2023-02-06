@@ -1,5 +1,6 @@
+"""Module containing all possible cell errors & functionality to parse them"""
 import enum
-from typing import *
+from typing import Optional
 
 
 class CellErrorType(enum.Enum):
