@@ -6,6 +6,7 @@ import lark
 from lark.visitors import visit_children_decor
 from lark.exceptions import UnexpectedInput
 from sheets import cell_error, cell, string_conversions
+from functools import lru_cache
 
 
 class FormulaEvaluator(lark.visitors.Interpreter):
@@ -263,6 +264,12 @@ class FormulaEvaluator(lark.visitors.Interpreter):
                     cell_error.CellErrorType.DIVIDE_BY_ZERO, "input error")
 
 
+@lru_cache
+def open_grammar():
+    parser = lark.Lark.open('sheets/formulas.lark', start='formula')
+    return parser
+
+
 def evaluate_expr(workbook, curr_cell, sheetname: str, contents: str) \
         -> tuple[FormulaEvaluator, Any]:
     """
@@ -283,7 +290,7 @@ def evaluate_expr(workbook, curr_cell, sheetname: str, contents: str) \
         return None, cell_error.CellError(
             cell_error.CellErrorType.BAD_REFERENCE, "bad reference")
     evaluator = FormulaEvaluator(workbook, sheet, curr_cell)
-    parser = lark.Lark.open('sheets/formulas.lark', start='formula')
+    parser = open_grammar()
     try:
         tree = parser.parse(contents)
     except UnexpectedInput:
