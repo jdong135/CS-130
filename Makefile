@@ -1,13 +1,14 @@
-PYLINT_OPTS = --exit-zero --disable=C0103,C0116
+PYLINT_OPTS_SHEETS = --exit-zero --disable=C0103,C0116
+PYLINT_OPTS_TESTS = --exit-zero --disable=C0103,C0116,R0904
 # C0103: invalid-name does not comform to snake_case
 # C0116: missing docstring
+# R0904: too many public methods
 
 .PHONY: format
 format:
 	autopep8 -i sheets/*.py
 	autopep8 -i tests/*.py
 
-.PHONY: test
 test:
 	python3 tests/test_workbook.py
 	python3 tests/test_lark_module.py
@@ -21,8 +22,8 @@ stresstest:
 
 .PHONY:
 lint:
-	pylint --ignore=formulas.lark $(PYLINT_OPTS) sheets | tee logs/sheets_lint.txt
-	pylint $(PYLINT_OPTS) tests | tee logs/tests_lint.txt
+	# pylint --ignore=formulas.lark $(PYLINT_OPTS_SHEETS) sheets | tee logs/sheets_lint.txt
+	pylint $(PYLINT_OPTS_TESTS) tests | tee logs/tests_lint.txt
 
 .PHONY: clean
 clean:

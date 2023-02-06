@@ -1,14 +1,9 @@
-import os
-import sys
+"""
+Tests of functionality for error-prone segments of code
+"""
+
 import decimal
-
-PROJECT_ROOT = os.path.abspath(os.path.join(
-    os.path.dirname(__file__),
-    os.pardir)
-)
-sys.path.append(PROJECT_ROOT)
-
-import sheets  # noqa
+from context import sheets
 
 # Should print the version number of your sheets library,
 # which should be 1.0 for the first project.

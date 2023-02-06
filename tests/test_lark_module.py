@@ -8,6 +8,10 @@ from context import sheets
 
 
 class Lark_Module_Basic(unittest.TestCase):
+    """
+    Basic isolated unit tests for lark_module.py
+    """
+
     def test_single_dec(self):
         wb = sheets.Workbook()
         wb.new_sheet()
@@ -17,7 +21,8 @@ class Lark_Module_Basic(unittest.TestCase):
     def test_single_str(self):
         wb = sheets.Workbook()
         wb.new_sheet()
-        _, value = sheets.lark_module.evaluate_expr(wb, None, "sheet1", "=\"str\"")
+        _, value = sheets.lark_module.evaluate_expr(
+            wb, None, "sheet1", "=\"str\"")
         self.assertEqual(value, "str")
 
     def test_basic1(self):
@@ -167,7 +172,7 @@ class Lark_Module_Basic(unittest.TestCase):
         value = wb.get_cell_value('sheet1', 'A3')
         self.assertEqual(value, decimal.Decimal('651.9'))
 
-    def test_string_arithmetic7(self):
+    def test_string_arithmetic8(self):
         wb = sheets.Workbook()
         wb.new_sheet()
         wb.set_cell_contents("sheet1", "A1", "'  123")
@@ -231,8 +236,6 @@ class Lark_Module_Basic(unittest.TestCase):
         assert isinstance(value, sheets.cell_error.CellError)
         assert value.get_type() == sheets.cell_error.CellErrorType.DIVIDE_BY_ZERO
 
-
-class NewTest(unittest.TestCase):
     def test_add(self):
         wb = sheets.Workbook()
         wb.new_sheet()

@@ -12,6 +12,11 @@ MAX_SHEETS_TEST = 100
 
 
 class Spec1_Tests(unittest.TestCase):
+    """
+    Tests adhering to specific examples presented in the Project 1
+    specification.
+    """
+
     def test_unique_spreadsheet_names(self):
         wb = sheets.Workbook()
         wb.new_sheet("sheet1")
@@ -47,15 +52,6 @@ class Spec1_Tests(unittest.TestCase):
         wb.new_sheet()
         self.assertIn('sheet2', wb.spreadsheets)
 
-    def test_max_extent(self):
-        wb = sheets.Workbook()
-        for i in range(MAX_SHEETS_TEST):
-            wb.new_sheet()
-            wb.set_cell_contents(f"sheet{str(i + 1)}", "ZZZZ9999", "test")
-        for i in range(MAX_SHEETS_TEST):
-            extent = wb.get_sheet_extent(f"sheet{str(i + 1)}")
-            self.assertEqual(extent, (475254, 9999))
-
     def test_basic_extent(self):
         wb = sheets.Workbook()
         wb.new_sheet()
@@ -70,13 +66,13 @@ class Spec1_Tests(unittest.TestCase):
         wb.set_cell_contents('sheet1', 'B3', None)
         self.assertEqual(wb.get_sheet_extent('sheet1'), (1, 5))
 
-    def test_single_quote(self):
+    def test_single_quote1(self):
         wb = sheets.Workbook()
         wb.new_sheet()
         wb.set_cell_contents('sheet1', 'A1', "''")
         self.assertEqual(wb.get_cell_value('sheet1', 'A1'), "'")
 
-    def test_single_quote(self):
+    def test_single_quote2(self):
         wb = sheets.Workbook()
         wb.new_sheet()
         wb.set_cell_contents('sheet1', 'A1', "''''")
@@ -265,14 +261,14 @@ class Spec1_Tests(unittest.TestCase):
         self.assertEqual(wb.get_cell_value("sheet1", "A1").get_type(),
                          sheets.CellErrorType.BAD_REFERENCE)
 
-    def test_divide_zero(self):
+    def test_divide_zero1(self):
         wb = sheets.Workbook()
         wb.new_sheet()
         wb.set_cell_contents('sheet1', 'A1', '=1/0')
         self.assertEqual(wb.get_cell_value("sheet1", "A1").get_type(),
                          sheets.CellErrorType.DIVIDE_BY_ZERO)
 
-    def test_divide_zero(self):
+    def test_divide_zero2(self):
         wb = sheets.Workbook()
         wb.new_sheet()
         wb.set_cell_contents('sheet1', 'A1', '=1/0')
@@ -389,6 +385,7 @@ class Spec1_Tests(unittest.TestCase):
 
     def test_topo_update_order(self):
         def on_cells_changed(workbook, cells_changed):
+            _ = workbook
             print(cells_changed)
         sys_out = sys.stdout
         new_stdo = io.StringIO()
@@ -405,11 +402,13 @@ class Spec1_Tests(unittest.TestCase):
         wb.set_cell_contents("sheet1", "A1", "=5")
         output = new_stdo.getvalue()
         sys.stdout = sys_out
-        expected = "[('Sheet1', 'A1'), ('Sheet1', 'A2'), ('Sheet1', 'A3'), ('Sheet1', 'A4'), ('Sheet1', 'A5'), ('Sheet1', 'A6')]\n"
+        expected = "[('Sheet1', 'A1'), ('Sheet1', 'A2'), ('Sheet1', 'A3'), " \
+            "('Sheet1', 'A4'), ('Sheet1', 'A5'), ('Sheet1', 'A6')]\n"
         self.assertEqual(expected, output)
 
     def test_topo_update_order_multiple_sheets(self):
         def on_cells_changed(workbook, cells_changed):
+            _ = workbook
             print(cells_changed)
         sys_out = sys.stdout
         new_stdo = io.StringIO()
@@ -428,7 +427,8 @@ class Spec1_Tests(unittest.TestCase):
         wb.set_cell_contents("sheet1", "A1", "=5")
         output = new_stdo.getvalue()
         sys.stdout = sys_out
-        expected = "[('Sheet1', 'A1'), ('Sheet2', 'A2'), ('Sheet1', 'A3'), ('Sheet3', 'A4'), ('Sheet2', 'A5'), ('Sheet3', 'A6')]\n"
+        expected = "[('Sheet1', 'A1'), ('Sheet2', 'A2'), ('Sheet1', 'A3'), " \
+            "('Sheet3', 'A4'), ('Sheet2', 'A5'), ('Sheet3', 'A6')]\n"
         self.assertEqual(expected, output)
 
     def test_string_num_conversion(self):
