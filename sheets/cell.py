@@ -1,6 +1,7 @@
 """Representation of individual cell in spreadsheet."""
 
 import enum
+import uuid
 
 
 class CellType(enum.Enum):
@@ -24,7 +25,7 @@ class Cell:
 
     def __hash__(self):
         """Hash based off of the cell's sheet's id and the cell's location"""
-        return hash((str(self.sheet.uuid), self.location))
+        return hash((str(self.sheet.uuid), str(self.uuid)))
 
     def __init__(self, sheet, location: str, contents: str, value: str, type: CellType):
         """
@@ -43,6 +44,7 @@ class Cell:
         self.contents = contents
         self.value = value
         self.type = type
+        self.uuid = uuid.uuid1()
 
     def set_fields(self, **kwargs) -> None:
         """

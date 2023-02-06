@@ -149,9 +149,8 @@ class WorkbookSetCellContents(unittest.TestCase):
         wb = sheets.Workbook()
         wb.new_sheet("sheet1")
         wb.set_cell_contents("sheet1", "A1", "'test")
-        c = sheets.cell.Cell(wb.spreadsheets['sheet1'], "A1", "'test", "test",
-                             sheets.cell.CellType.STRING)
-        self.assertEqual(wb.spreadsheets["sheet1"].cells["A1"], c)
+        self.assertEqual(wb.get_cell_contents('sheet1', 'A1'), "'test")
+        self.assertEqual(wb.get_cell_value('sheet1', 'A1'), "test")
 
     def test_decimal1(self):
         wb = sheets.Workbook()
