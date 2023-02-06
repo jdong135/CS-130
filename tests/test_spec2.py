@@ -118,16 +118,16 @@ class Spec2_Tests(unittest.TestCase):
                   encoding="utf8") as f:
             wb = sheets.Workbook.load_workbook(f)
             value = wb.get_cell_value('sheet2', 'A1')
-            assert isinstance(value, sheets.CellError)
-            assert value.get_type() == sheets.CellErrorType.BAD_REFERENCE
+            self.assertTrue(isinstance(value, sheets.CellError))
+            self.assertTrue(value.get_type() == sheets.CellErrorType.BAD_REFERENCE)
 
     def test_bad_json_parse_error(self):
         with open("test-data/mockwb_bad_json_parse_error.json", "r",
                   encoding="utf8") as f:
             wb = sheets.Workbook.load_workbook(f)
             value = wb.get_cell_value('sheet1', 'C1')
-            assert isinstance(value, sheets.CellError)
-            assert value.get_type() == sheets.CellErrorType.PARSE_ERROR
+            self.assertTrue(isinstance(value, sheets.CellError))
+            self.assertTrue(value.get_type() == sheets.CellErrorType.PARSE_ERROR)
 
     def test_copy_sheet(self):
         wb = sheets.Workbook()

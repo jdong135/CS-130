@@ -130,8 +130,8 @@ class Spec1_Tests(unittest.TestCase):
         wb.new_sheet()
         wb.set_cell_contents('sheet1', 'A1', "=2 * \"abc\"")
         value = wb.get_cell_value('sheet1', 'A1')
-        assert isinstance(value, sheets.CellError)
-        assert value.get_type() == sheets.CellErrorType.TYPE_ERROR
+        self.assertTrue(isinstance(value, sheets.CellError))
+        self.assertTrue(value.get_type() == sheets.CellErrorType.TYPE_ERROR)
 
     def test_sheetname_access1(self):
         wb = sheets.Workbook()
@@ -171,8 +171,8 @@ class Spec1_Tests(unittest.TestCase):
         wb.new_sheet('*(sheet2')
         wb.set_cell_contents('sheet1', 'A1', '=*(sheEt2!A1')
         value = wb.get_cell_value('sheet1', 'A1')
-        assert isinstance(value, sheets.CellError)
-        assert value.get_type() == sheets.CellErrorType.PARSE_ERROR
+        self.assertTrue(isinstance(value, sheets.CellError))
+        self.assertTrue(value.get_type() == sheets.CellErrorType.PARSE_ERROR)
 
     def test_parse_str_as_num(self):
         wb = sheets.Workbook()
@@ -221,8 +221,8 @@ class Spec1_Tests(unittest.TestCase):
         wb.new_sheet()
         wb.set_cell_contents('sheet1', 'A1', '=2fva3')
         value = wb.get_cell_value('sheet1', 'A1')
-        assert isinstance(value, sheets.CellError)
-        assert value.get_type() == sheets.CellErrorType.PARSE_ERROR
+        self.assertTrue(isinstance(value, sheets.CellError))
+        self.assertTrue(value.get_type() == sheets.CellErrorType.PARSE_ERROR)
 
     def test_circular_reference_L(self):
         wb = sheets.Workbook()
@@ -281,8 +281,8 @@ class Spec1_Tests(unittest.TestCase):
         wb.set_cell_contents('sheet1', 'E1', '#div/0!')
         wb.set_cell_contents('sheet1', 'E2', '=e1+5')
         value = wb.get_cell_value('sheet1', 'E2')
-        assert isinstance(value, sheets.CellError)
-        assert value.get_type() == sheets.CellErrorType.DIVIDE_BY_ZERO
+        self.assertTrue(isinstance(value, sheets.CellError))
+        self.assertTrue(value.get_type() == sheets.CellErrorType.DIVIDE_BY_ZERO)
 
     def test_error_contents_awr(self):
         wb = sheets.Workbook()
@@ -290,8 +290,8 @@ class Spec1_Tests(unittest.TestCase):
         wb.set_cell_contents('sheet1', 'E1', '=#div/0!')
         wb.set_cell_contents('sheet1', 'E2', '=e1+5')
         value = wb.get_cell_value('sheet1', 'E2')
-        assert isinstance(value, sheets.CellError)
-        assert value.get_type() == sheets.CellErrorType.DIVIDE_BY_ZERO
+        self.assertTrue(isinstance(value, sheets.CellError))
+        self.assertTrue(value.get_type() == sheets.CellErrorType.DIVIDE_BY_ZERO)
 
     def test_update_bad_ref_missing_sheet(self):
         wb = sheets.Workbook()
