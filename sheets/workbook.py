@@ -63,7 +63,7 @@ class Workbook:
             max_col, max_row = 0, 0
             if col == sheet_col or row == sheet_row:
                 for c in spreadsheet.cells:
-                    if spreadsheet.cells[c].type != cell.CellType.EMPTY:
+                    if spreadsheet.cells[c].cell_type != cell.CellType.EMPTY:
                         c_col, c_row = spreadsheet.str_to_tuple(
                             spreadsheet.cells[c].location)
                         max_col = max(max_col, c_col)
@@ -132,8 +132,8 @@ class Workbook:
             val = cell_contents
             cell_type = cell.CellType.LITERAL_STRING
         val_update = bool(
-            val != calling_cell.value or cell_type != calling_cell.type)
-        calling_cell.set_fields(value=val, type=cell_type)
+            val != calling_cell.value or cell_type != calling_cell.cell_type)
+        calling_cell.set_fields(value=val, cell_type=cell_type)
         return relies_on, val_update
 
     def __get_cells_containing_sheetname(self, sheetname: str) -> list[cell.Cell]:
@@ -307,7 +307,7 @@ class Workbook:
             for c, neighbors in self.adjacency_list.items():
                 if existing_cell in neighbors and c not in relies_on:
                     neighbors.remove(existing_cell)
-            if existing_cell.type == cell.CellType.EMPTY:
+            if existing_cell.cell_type == cell.CellType.EMPTY:
                 # existing cell is now empty so it does not depend on other cells
                 # -> remove it as a neighbor of other cells
                 for _, neighbors in self.adjacency_list.items():
@@ -338,7 +338,7 @@ class Workbook:
         else:  # if cell does not exist (create contents)
             new_cell = cell.Cell(spreadsheet, location, contents, None, None)
             self.__set_cell_value_and_type(new_cell)
-            if new_cell.type != cell.CellType.EMPTY:
+            if new_cell.cell_type != cell.CellType.EMPTY:
                 self.adjacency_list[new_cell] = []
                 spreadsheet.cells[location] = new_cell
             self.__update_extent(spreadsheet, location, False)

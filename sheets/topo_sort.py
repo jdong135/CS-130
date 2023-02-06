@@ -29,8 +29,8 @@ def topo_sort(cell: Cell, graph) -> Tuple[bool, list[Cell]]:
     visited = set()
     circular = False
     while call_stack:
-        v, cell_type = call_stack.pop()
-        if cell_type == DFSState.ENTER:
+        v, cell_state = call_stack.pop()
+        if cell_state == DFSState.ENTER:
             visited.add((v.sheet, v.location))
             call_stack.append((v, DFSState.LEAVE))
             for w in graph[v]:

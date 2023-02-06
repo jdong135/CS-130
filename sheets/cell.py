@@ -27,7 +27,7 @@ class Cell:
         """Hash based off of the cell's sheet's id and the cell's location"""
         return hash((str(self.sheet.uuid), str(self.uuid)))
 
-    def __init__(self, sheet, location: str, contents: str, value: str, type: CellType):
+    def __init__(self, sheet, location: str, contents: str, value: str, cell_type: CellType):
         """
         Initialize a cell object
 
@@ -37,13 +37,13 @@ class Cell:
             row (int): row of the cell - ranges from 1-9999
             contents (str): user input into the cell before evaluation
             value (str): evaluation of contents into an actual value
-            type (CellType): what classification the cell is
+            cell_type (CellType): what classification the cell is
         """
         self.sheet = sheet
         self.location = location
         self.contents = contents
         self.value = value
-        self.type = type
+        self.cell_type = cell_type
         self.uuid = uuid.uuid1()
 
     def set_fields(self, **kwargs) -> None:
