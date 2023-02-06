@@ -377,6 +377,14 @@ class LarkModuleTests(unittest.TestCase):
         wb.set_cell_contents("sheet2", "A3", "=sheet1!$A$1")
         self.assertEqual(wb.get_cell_value("sheet2", "A2"), wb.get_cell_value("sheet2", "A3"))
 
+    def test_invalid_dollar_ref(self):
+        wb = sheets.Workbook()
+        wb.new_sheet()
+        wb.set_cell_contents("sheet1", "A1", "=$A$2$")
+        value = wb.get_cell_value('sheet1', 'A1')
+        self.assertTrue(isinstance(value, sheets.cell_error.CellError))
+        self.assertTrue(value.get_type() == sheets.cell_error.CellErrorType.PARSE_ERROR)
+
 
 if __name__ == "__main__":
     unittest.main()

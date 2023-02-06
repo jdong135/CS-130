@@ -13,7 +13,7 @@ def store_stdout() -> Tuple[io.StringIO, TextIO]:
     and create a variable containing the original sys.stdout.
 
     Returns:
-        Tuple[io.StringIO, io.TextIO]: A tuple containing the StringIO in which
+        Tuple[io.StringIO, TextIO]: A tuple containing the StringIO in which
         all proceeding console outputs will be redirected into and a TextIO 
         variable that contains the file analgous to Python's interpreter's 
         standard output stream. 

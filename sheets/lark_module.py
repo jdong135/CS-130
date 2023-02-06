@@ -4,14 +4,8 @@ import re
 from typing import Any, Union
 import lark
 from lark.visitors import visit_children_decor
+from lark.exceptions import UnexpectedInput
 from sheets import cell_error, cell, string_conversions
-
-import logging
-logging.basicConfig(filename="logs/results.log",
-                    format='%(asctime)s %(message)s',
-                    filemode='w')
-logger = logging.getLogger()
-logger.setLevel(logging.DEBUG)
 
 
 class FormulaEvaluator(lark.visitors.Interpreter):
@@ -220,8 +214,10 @@ class FormulaEvaluator(lark.visitors.Interpreter):
                 self.calling_cell)
         self.calling_cell_relies_on.append(sheet.cells[location])
         if not sheet.cells[location].value:  # cell exists at location but is empty
-            return decimal.Decimal(0)
-        return sheet.cells[location].value
+            ret_val = decimal.Decimal(0)
+        else:
+            ret_val = sheet.cells[location].value
+        return ret_val
 
     def parens(self, tree):
         self.sub_evaluator = FormulaEvaluator(
@@ -290,7 +286,7 @@ def evaluate_expr(workbook, curr_cell, sheetname: str, contents: str) \
     parser = lark.Lark.open('sheets/formulas.lark', start='formula')
     try:
         tree = parser.parse(contents)
-    except:
+    except UnexpectedInput:
         return evaluator, cell_error.CellError(
             cell_error.CellErrorType.PARSE_ERROR, "parse error")
     value = evaluator.visit(tree)
