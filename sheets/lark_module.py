@@ -5,7 +5,7 @@ from typing import Any, Union
 import lark
 from lark.visitors import visit_children_decor
 from lark.exceptions import UnexpectedInput
-from sheets import cell_error, cell, string_conversions
+from sheets import cell_error, cell, string_conversions, unitialized_value
 from functools import lru_cache
 
 
@@ -68,6 +68,8 @@ class FormulaEvaluator(lark.visitors.Interpreter):
             value = values[i]
             if isinstance(value, decimal.Decimal):
                 res[i] = value
+            elif isinstance(value, unitialized_value.UninitializedValue):
+                continue
             elif value and string_conversions.is_number(value):
                 res[i] = decimal.Decimal(value)
             elif isinstance(value, str):
@@ -167,9 +169,13 @@ class FormulaEvaluator(lark.visitors.Interpreter):
         potential_error = self.__check_for_error(values, 0, 1)
         if potential_error:
             return potential_error
-        if not values[1]:
+        if isinstance(values[1], decimal.Decimal) and values[1] == decimal.Decimal(0):
+            values[1] = "0"
+        elif not values[1] or isinstance(values[1], unitialized_value.UninitializedValue):
             values[1] = ""
-        if not values[0]:
+        if isinstance(values[0], decimal.Decimal) and values[0] == decimal.Decimal(0):
+            values[0] = "0"
+        elif not values[0] or isinstance(values[0], unitialized_value.UninitializedValue):
             values[0] = ""
         res = str(values[0]) + str(values[1])
         if string_conversions.is_number(res):
@@ -207,7 +213,7 @@ class FormulaEvaluator(lark.visitors.Interpreter):
             sheet.cells[location] = new_empty_cell
             self.wb.adjacency_list[new_empty_cell] = [self.calling_cell]
             self.calling_cell_relies_on.append(new_empty_cell)
-            return decimal.Decimal(0)
+            return unitialized_value.UninitializedValue()
 
         # add calling_cell to the neighbors of Cell from values argument
         if self.calling_cell not in self.wb.adjacency_list[sheet.cells[location]]:
@@ -215,7 +221,7 @@ class FormulaEvaluator(lark.visitors.Interpreter):
                 self.calling_cell)
         self.calling_cell_relies_on.append(sheet.cells[location])
         if not sheet.cells[location].value:  # cell exists at location but is empty
-            ret_val = decimal.Decimal(0)
+            ret_val = unitialized_value.UninitializedValue()
         else:
             ret_val = sheet.cells[location].value
         return ret_val

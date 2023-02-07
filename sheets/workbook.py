@@ -5,8 +5,7 @@ import decimal
 import copy
 import json
 import re
-from sheets import cell, topo_sort, cell_error, lark_module, sheet, string_conversions
-
+from sheets import cell, topo_sort, cell_error, lark_module, sheet, string_conversions, unitialized_value
 ALLOWED_PUNC = set([".", "?", "!", ",", ":", ";", "@", "#",
                     "$", "%", "^", "&", "*", "(", ")", "-", "_"])
 
@@ -131,8 +130,13 @@ class Workbook:
         else:
             val = cell_contents
             cell_type = cell.CellType.LITERAL_STRING
-        val_update = bool(
-            val != calling_cell.value or cell_type != calling_cell.cell_type)
+        type_change = False
+        if calling_cell.cell_type == cell.CellType.EMPTY:
+            if not isinstance(val, unitialized_value.UninitializedValue):
+                type_change = True
+        elif calling_cell.cell_type != cell_type:
+            type_change = True
+        val_update = bool(val != calling_cell.value or type_change)
         calling_cell.set_fields(value=val, cell_type=cell_type)
         return relies_on, val_update
 
@@ -397,6 +401,8 @@ class Workbook:
         if not spreadsheet.check_valid_location(location):
             raise ValueError(f"Cell location {location} is invalid")
         if location in spreadsheet.cells:
+            if isinstance(spreadsheet.cells[location].value, unitialized_value.UninitializedValue):
+                return decimal.Decimal(0)
             return spreadsheet.cells[location].value
         return None
 
