@@ -282,7 +282,8 @@ class Spec1_Tests(unittest.TestCase):
         wb.set_cell_contents('sheet1', 'E2', '=e1+5')
         value = wb.get_cell_value('sheet1', 'E2')
         self.assertTrue(isinstance(value, sheets.CellError))
-        self.assertTrue(value.get_type() == sheets.CellErrorType.DIVIDE_BY_ZERO)
+        self.assertTrue(value.get_type() ==
+                        sheets.CellErrorType.DIVIDE_BY_ZERO)
 
     def test_error_contents_awr(self):
         wb = sheets.Workbook()
@@ -291,7 +292,8 @@ class Spec1_Tests(unittest.TestCase):
         wb.set_cell_contents('sheet1', 'E2', '=e1+5')
         value = wb.get_cell_value('sheet1', 'E2')
         self.assertTrue(isinstance(value, sheets.CellError))
-        self.assertTrue(value.get_type() == sheets.CellErrorType.DIVIDE_BY_ZERO)
+        self.assertTrue(value.get_type() ==
+                        sheets.CellErrorType.DIVIDE_BY_ZERO)
 
     def test_update_bad_ref_missing_sheet(self):
         wb = sheets.Workbook()
@@ -454,6 +456,25 @@ class Spec1_Tests(unittest.TestCase):
         wb.set_cell_contents("sheet1", "A1", '=""')
         self.assertEqual(wb.get_cell_value("sheet1", "A1"), "")
         self.assertNotEqual(wb.get_cell_value("sheet1", "A1"), None)
+
+    def test_subtraction_concat_string(self):
+        wb = sheets.Workbook()
+        wb.new_sheet()
+        wb.set_cell_contents("sheet1", "A1", '=(1-1) & " is zero"')
+        self.assertEqual(wb.get_cell_value("sheet1", "A1"), "0 is zero")
+
+    def test_decimal_concat_string(self):
+        wb = sheets.Workbook()
+        wb.new_sheet()
+        wb.set_cell_contents("sheet1", "A1", '=1.0 & " is one"')
+        self.assertEqual(wb.get_cell_value("sheet1", "A1"), "1 is one")
+
+    def test_negative_decimal(self):
+        wb = sheets.Workbook()
+        wb.new_sheet()
+        wb.set_cell_contents("sheet1", "A1", '0.1')
+        self.assertEqual(wb.get_cell_value(
+            "sheet1", "A1"), decimal.Decimal("-0.1"))
 
 
 if __name__ == "__main__":
