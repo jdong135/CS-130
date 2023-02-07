@@ -1,4 +1,16 @@
+"""
+Implementation of UnitializedValue object. 
+"""
+
+
 class UninitializedValue():
+    """
+    Placeholder value for any cell with an unitialized value. This removes
+    prevents us from needing to equate `None` contents with 0, since we have
+    a unique value object to represent this. This enables us to distinguish
+    between cells that evaluate to a value of 0 and cells with `None` contents.
+    """
+
     def __init__(self):
         return
 

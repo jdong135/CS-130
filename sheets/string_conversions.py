@@ -42,7 +42,8 @@ def is_number(string: str) -> bool:
     """
     string = string.strip()
     if string[0] == "-":
-        return string[1:].isnumeric() or (string[1:].replace('.', '', 1).isdigit() and string[1:].count('.') < 2)
+        return string[1:].isnumeric() or (
+            string[1:].replace('.', '', 1).isdigit() and string[1:].count('.') < 2)
     return string.isnumeric() or (string.replace('.', '', 1).isdigit() and string.count('.') < 2)
 
 

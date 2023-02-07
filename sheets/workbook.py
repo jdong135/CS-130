@@ -1,11 +1,13 @@
 """Workbook API. Contains spreadsheet functions accessible to public users."""
 from __future__ import annotations
-from typing import Tuple, List, Optional, Any, TextIO, Callable, Iterable
+from typing import Tuple, List, Optional, Any, TextIO, Callable, Iterable, Dict
 import decimal
 import copy
 import json
 import re
-from sheets import cell, topo_sort, cell_error, lark_module, sheet, string_conversions, unitialized_value
+from sheets import cell, topo_sort, cell_error, lark_module, sheet, \
+    string_conversions, unitialized_value
+
 ALLOWED_PUNC = set([".", "?", "!", ",", ":", ";", "@", "#",
                     "$", "%", "^", "&", "*", "(", ")", "-", "_"])
 
@@ -20,11 +22,11 @@ class Workbook:
 
     def __init__(self):
         # lower case name -> sheet object
-        self.spreadsheets = {}
+        self.spreadsheets: Dict[str, sheet.Sheet] = {}
         # Cell: [neighbor Cells]; neighbors are cells that depend on Cell
-        self.adjacency_list = {}
+        self.adjacency_list: Dict[cell.Cell, List[cell.Cell]] = {}
         # notify functions = set of user-inputted notify functions
-        self.notify_functions = []
+        self.notify_functions: List[Callable] = []
 
     def __check_valid_sheet_name(self, sheet_name: str):
         """
@@ -108,6 +110,7 @@ class Workbook:
         """
         cell_contents = calling_cell.contents
         relies_on = []
+        # determine the new type of our cell and set its value accordingly
         if not cell_contents or len(cell_contents) == 0:
             val = None
             cell_type = cell.CellType.EMPTY
@@ -130,9 +133,10 @@ class Workbook:
         else:
             val = cell_contents
             cell_type = cell.CellType.LITERAL_STRING
+        # determine if updating the value actually updates it or changes its type
         type_change = False
         if calling_cell.cell_type == cell.CellType.EMPTY:
-            if not isinstance(val, unitialized_value.UninitializedValue):
+            if val != unitialized_value.UninitializedValue:
                 type_change = True
         elif calling_cell.cell_type != cell_type:
             type_change = True
@@ -196,7 +200,7 @@ class Workbook:
         # A user should be able to mutate the return-value without affecting the
         # workbook's internal state.
         output = []
-        for spreadsheet in self.spreadsheets:
+        for _, spreadsheet in self.spreadsheets.items():
             output.append(self.spreadsheets[spreadsheet].name)
         return output
 
@@ -606,6 +610,7 @@ class Workbook:
         #
         # If the specified sheet name is not found, a KeyError is raised.
         copy_name = None
+        stored_name = None
         for stored_name in self.spreadsheets:
             if stored_name.lower() == sheet_name.lower():
                 copy_name = stored_name

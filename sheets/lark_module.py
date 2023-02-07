@@ -2,11 +2,11 @@
 import decimal
 import re
 from typing import Any, Union
+from functools import lru_cache
 import lark
 from lark.visitors import visit_children_decor
 from lark.exceptions import UnexpectedInput
 from sheets import cell_error, cell, string_conversions, unitialized_value
-from functools import lru_cache
 
 
 class FormulaEvaluator(lark.visitors.Interpreter):
