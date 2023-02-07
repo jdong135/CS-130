@@ -379,9 +379,9 @@ class Spec1_Tests(unittest.TestCase):
         wb = sheets.Workbook()
         wb.new_sheet()
         wb.set_cell_contents("sheet1", "A1", "=1.50 & \"50\"")
-        self.assertEqual(wb.get_cell_value("sheet1", "A1"), "1.505")
+        self.assertEqual(wb.get_cell_value("sheet1", "A1"), "1.55")
         wb.set_cell_contents("sheet1", "A2", "=1.50 & \"050\"")
-        self.assertEqual(wb.get_cell_value("sheet1", "A2"), "1.5005")
+        self.assertEqual(wb.get_cell_value("sheet1", "A2"), "1.505")
         wb.set_cell_contents("sheet1", "A1", "=\"1.0\" & 0")
         self.assertEqual(wb.get_cell_value("sheet1", "A1"), "1")
 

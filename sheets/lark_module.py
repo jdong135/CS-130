@@ -233,7 +233,7 @@ class FormulaEvaluator(lark.visitors.Interpreter):
             return "NaN"
         if number == decimal.Decimal('Infinity'):
             return "Infinity"
-        return decimal.Decimal(tree.children[0])
+        return decimal.Decimal(string_conversions.strip_zeros(tree.children[0]))
 
     def string(self, tree):
         value = tree.children[0].value[1:-1]
