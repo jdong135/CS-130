@@ -1,6 +1,6 @@
 """This module topologically sorts a graph of Cells."""
 import enum
-from typing import Tuple
+from typing import Tuple, Dict, List
 from sheets.cell import Cell
 
 
@@ -12,12 +12,13 @@ class DFSState(enum.Enum):
     LEAVE = 2
 
 
-def topo_sort(cell: Cell, graph) -> Tuple[bool, list[Cell]]:
+def topo_sort(cell: Cell, graph: Dict[Cell, List[Cell]]) -> Tuple[bool, List[Cell]]:
     """
     Perform a topological sort on all neighbors of the specified starting cell.
 
     Args:
         v (Cell): Cell to start the topological sort on.
+        graph (Dict): Representation of a graph through an adjacency list. 
 
     Returns:
         Tuple[bool, list[Cell]]: Boolean indicating if the cell is part of a 
