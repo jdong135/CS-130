@@ -654,7 +654,7 @@ class Workbook:
         bottom_right_row = max(start_row, end_row)
         return top_left_col, top_left_row, bottom_right_col, bottom_right_row
 
-    def __get_overlap_map(self, sheet: sheet.Sheet, original_corners: Tuple[int, int, int, int], destination_corners: Tuple[int, int, int, int]) -> Dict[str, str]:
+    def __get_overlap_map(self, sheet: sheet.Sheet, original_corners: Tuple[int, int, int, int], destination_corners: Tuple[int, int, int, int]) -> Dict[str, Tuple[str, cell.CellType]]:
         """Get mapping of cells in overlapping region to their original contents.
         Used in move_cells and copy_cells.
 
@@ -663,7 +663,7 @@ class Workbook:
             destination_corners (Tuple[int, int, int, int]):(top left col, top left row, bottom right col, bottom right row)
 
         Returns:
-            Dict[str, str]: Mapping of location to contents
+            Dict[str, Tuple[str, cell.CellType]]: Mapping of location to contents
         """
         mapping = {}
         for i in range(destination_corners[0], destination_corners[2] + 1):
@@ -671,7 +671,8 @@ class Workbook:
                 if original_corners[0] <= i <= original_corners[2] and original_corners[1] <= j <= original_corners[3]:
                     loc = string_conversions.num_to_col(i) + str(j)
                     contents = self.get_cell_contents(sheet.name, loc)
-                    mapping[loc] = contents
+                    cell_type = sheet.cells[loc].cell_type
+                    mapping[loc] = (contents, cell_type)
         return mapping
 
     def move_cells(self, sheet_name: str, start_location: str,
@@ -753,22 +754,28 @@ class Workbook:
                 end_cell_loc = end_cell_col + str(j + delta_row)
                 # If end cell location in overlap region, get its original contents
                 if start_cell_loc in overlap_map:
-                    contents = overlap_map[start_cell_loc]
+                    contents = overlap_map[start_cell_loc][0]
                 else:
                     contents = self.get_cell_contents(
                         sheet_name, start_cell_loc)
                 # If cell is formula, we need to update its relative location for cell references
-                if start_cell_loc in spreadsheet.cells and spreadsheet.cells[start_cell_loc].cell_type == cell.CellType.FORMULA:
+                # It's possible that a cell in the overlap region is overwritten from formula to string
+                # so we need to check its original cell type
+                overwritten_formula = start_cell_loc in overlap_map and overlap_map[
+                    start_cell_loc][1] == cell.CellType.FORMULA
+                originally_formula = start_cell_loc in spreadsheet.cells and spreadsheet.cells[
+                    start_cell_loc].cell_type == cell.CellType.FORMULA
+                if overwritten_formula or originally_formula:
                     # Since cell type is not error, we don't worry about invalid cell refs
                     locations = re.findall(
                         '\$?[A-Za-z]+\$?[1-9][0-9]*', contents)
                     for loc in locations:
+                        loc = loc.upper()
                         col, row = string_conversions.str_to_tuple(loc)
                         new_col = string_conversions.num_to_col(
                             col + delta_col)
                         new_loc = new_col + str(row + delta_row)
                         contents = re.sub(loc, new_loc, contents)
-                    # logger.info(contents)
                     self.set_cell_contents(to_sheet, end_cell_loc, contents)
                 # Cells that aren't formulas can copy the original location's contents
                 else:
