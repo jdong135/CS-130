@@ -783,12 +783,19 @@ class Workbook:
                             new_loc += string_conversions.num_to_col(col)
                         else:
                             new_loc += col
+                        logger.info(f"{new_loc}")
                         if row[0] != "$":
                             row = delta_row + int(row)
                             new_loc += str(row)
                         else:
                             new_loc += row
-                        contents = re.sub(loc, new_loc, contents)
+                        logger.info(
+                            f"old loc: {loc}, new_loc: {new_loc}, old contents: {contents}")
+                        # Note that re.escape ensures we can properly search for $ in loc
+                        # Normally, you'd have to escape $A$1 like \$A\$1
+                        contents = re.sub(
+                            re.escape(loc), new_loc, contents, flags=re.IGNORECASE)
+                        logger.info(f"new contents: {contents}")
                     self.set_cell_contents(to_sheet, end_cell_loc, contents)
                 # Cells that aren't formulas can copy the original location's contents
                 else:
