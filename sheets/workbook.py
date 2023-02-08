@@ -7,7 +7,12 @@ import json
 import re
 from sheets import cell, topo_sort, cell_error, lark_module, sheet, \
     string_conversions, unitialized_value
-
+import logging
+logging.basicConfig(filename="logs/lark_module.log",
+                    format='%(asctime)s %(message)s',
+                    filemode='w')
+logger = logging.getLogger()
+logger.setLevel(logging.DEBUG)
 ALLOWED_PUNC = set([".", "?", "!", ",", ":", ";", "@", "#",
                     "$", "%", "^", "&", "*", "(", ")", "-", "_"])
 
@@ -649,6 +654,25 @@ class Workbook:
         bottom_right_row = max(start_row, end_row)
         return top_left_col, top_left_row, bottom_right_col, bottom_right_row
 
+    def __get_overlap_map(self, sheet: sheet.Sheet, original_corners: Tuple[int, int, int, int], destination_corners: Tuple[int, int, int, int]) -> Dict[str, str]:
+        """Get mapping of cells in overlapping region to their original contents.
+        Used in move_cells and copy_cells.
+
+        Args:
+            original_corners (Tuple[int, int, int, int]): (top left col, top left row, bottom right col, bottom right row)
+            destination_corners (Tuple[int, int, int, int]):(top left col, top left row, bottom right col, bottom right row)
+
+        Returns:
+            Dict[str, str]: Mapping of location to contents
+        """
+        mapping = {}
+        for i in range(destination_corners[0], destination_corners[2] + 1):
+            for j in range(destination_corners[1], destination_corners[3] + 1):
+                if original_corners[0] <= i <= original_corners[2] and original_corners[1] <= j <= original_corners[3]:
+                    loc = string_conversions.num_to_col(i) + str(j)
+                    contents = self.get_cell_contents(sheet.name, loc)
+                    mapping[loc] = contents
+        return mapping
 
     def move_cells(self, sheet_name: str, start_location: str,
                    end_location: str, to_location: str, to_sheet: Optional[str] = None) -> None:
@@ -693,17 +717,34 @@ class Workbook:
         # that will become invalid after updating the cell-reference, then the
         # cell-reference is replaced with a #REF! error-literal in the formula.
         if sheet_name.lower() not in self.spreadsheets:
-            raise ValueError(f"{sheet_name} is invalid")
+            raise KeyError(f"{sheet_name} is invalid")
         spreadsheet = self.spreadsheets[sheet_name.lower()]
         for location in [start_location, end_location, to_location]:
             if not spreadsheet.check_valid_location(location):
                 raise ValueError(f"Cell location {location} is invalid")
+        if not to_sheet:
+            to_sheet = sheet_name
+        start_location = start_location.upper()
+        end_location = end_location.upper()
+        to_location = to_location.upper()
+        end_top_left_col, end_top_left_row = string_conversions.str_to_tuple(
+            to_location)
         top_left_col, top_left_row, bottom_right_col, bottom_right_row = \
             self.__get_selection_corners(start_location, end_location)
         # get the required change in column and row
         to_col, to_row = string_conversions.str_to_tuple(to_location)
         delta_col = to_col - top_left_col
         delta_row = to_row - top_left_row
+        # obtain mapping of overlapped cells to their original content
+        end_bottom_right_col = bottom_right_col + delta_col
+        end_bottom_right_row = bottom_right_row + delta_row
+        original_corners = (top_left_col, top_left_row,
+                            bottom_right_col, bottom_right_row)
+        destination_corners = (
+            end_top_left_col, end_top_left_row, end_bottom_right_col, end_bottom_right_row)
+        overlap_map = self.__get_overlap_map(
+            spreadsheet, original_corners, destination_corners)
+        logger.info(overlap_map)
         # move each cell in our selection zone
         for i in range(top_left_col, bottom_right_col + 1):
             start_cell_col = string_conversions.num_to_col(i)
@@ -711,12 +752,19 @@ class Workbook:
             for j in range(top_left_row, bottom_right_row + 1):
                 start_cell_loc = start_cell_col + str(j)
                 end_cell_loc = end_cell_col + str(j + delta_row)
-
-                if spreadsheet.cells[start_cell_loc].cell_type == cell.CellType.FORMULA:
+                # If end cell location in overlap region, get its original contents
+                if start_cell_loc in overlap_map:
+                    contents = overlap_map[start_cell_loc]
+                else:
+                    contents = self.get_cell_contents(
+                        sheet_name, start_cell_loc)
+                if start_cell_loc in self.adjacency_list and spreadsheet.cells[start_cell_loc].cell_type == cell.CellType.FORMULA:
                     pass
                 else:
-                    self.set_cell_contents(sheet_name, end_cell_loc, self.get_cell_contents(sheet_name, start_cell_loc))
-        
+                    self.set_cell_contents(
+                        to_sheet, end_cell_loc, contents)
+                if start_cell_loc not in overlap_map:
+                    self.set_cell_contents(sheet_name, start_cell_loc, None)
 
     def copy_cells(self, sheet_name: str, start_location: str,
                    end_location: str, to_location: str, to_sheet: Optional[str] = None) -> None:
