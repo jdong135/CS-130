@@ -789,13 +789,12 @@ class Workbook:
                             new_loc += str(row)
                         else:
                             new_loc += row
-                        logger.info(
-                            f"old loc: {loc}, new_loc: {new_loc}, old contents: {contents}")
+                        if not spreadsheet.check_valid_location(new_loc):
+                            new_loc = "#REF!"
                         # Note that re.escape ensures we can properly search for $ in loc
                         # Normally, you'd have to escape $A$1 like \$A\$1
                         contents = re.sub(
                             re.escape(loc), new_loc, contents, flags=re.IGNORECASE)
-                        logger.info(f"new contents: {contents}")
                     self.set_cell_contents(to_sheet, end_cell_loc, contents)
                 # Cells that aren't formulas can copy the original location's contents
                 else:

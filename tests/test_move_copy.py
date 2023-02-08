@@ -490,6 +490,23 @@ class WorkbookMoveCells(unittest.TestCase):
         self.assertEqual(wb.get_cell_value(
             "Sheet1", "D2").get_type(), sheets.cell_error.CellErrorType.DIVIDE_BY_ZERO)
 
+    def test_invalid_cell_ref(self):
+        wb = sheets.Workbook()
+        wb.new_sheet()
+        wb.set_cell_contents("sheet1", "A1", "2.2")
+        wb.set_cell_contents("sheet1", "B1", "5.3")
+        wb.set_cell_contents("sheet1", "C1", "=A1 * B1")
+        wb.set_cell_contents("sheet1", "A2", "4.5")
+        wb.set_cell_contents("sheet1", "B2", "3.1")
+        wb.set_cell_contents("sheet1", "C2", "=A2 * B2")
+        wb.move_cells("sheet1", "C1", "C2", "B1")
+        self.assertEqual(wb.get_cell_contents("Sheet1", "B1"), "=#REF! * A1")
+        self.assertEqual(wb.get_cell_contents("Sheet1", "B2"), "=#REF! * A2")
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "B1").get_type(), sheets.cell_error.CellErrorType.BAD_REFERENCE)
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "B2").get_type(), sheets.cell_error.CellErrorType.BAD_REFERENCE)
+
 
 if __name__ == "__main__":
     unittest.main()

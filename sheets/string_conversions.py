@@ -20,6 +20,8 @@ def str_to_tuple(location: str) -> Tuple[int, int]:
         Tuple[int, int]: numeric coordinates on the sheet equivalent to 
         input location. 
     """
+    # If location has absolute references, we can't parse through them
+    location = location.replace("$", "")
     chars = list(location)
     rows = 0
     cols = 0
