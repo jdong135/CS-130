@@ -1,6 +1,7 @@
 """Class that stores Cell objects that are all in the same spreadsheet."""
-from typing import Tuple
 import uuid
+from sheets import string_conversions, cell
+from typing import Dict
 
 
 class Sheet:
@@ -28,34 +29,8 @@ class Sheet:
         self.name = name
         self.extent_row = 0
         self.extent_col = 0
-        self.cells = {}  # {'A1': Cell} UPPERCASE location to cell
-        self.uuid = uuid.uuid1()
-
-    def str_to_tuple(self, location: str) -> Tuple[int, int]:
-        """
-        Take in a string location ranging from A1 to ZZZZ9999 and return the 
-        integer coordinates of the location.
-
-        Args:
-            location (str): string location on the sheet.
-
-        Returns:
-            Tuple[int, int]: numeric coordinates on the sheet equivalent to 
-            input location. 
-        """
-        chars = list(location)
-        rows = 0
-        cols = 0
-        rowCnt = 0
-        colCnt = 0
-        for i in range(len(chars) - 1, -1, -1):
-            if chars[i].isnumeric():
-                rows += (10 ** rowCnt) * int(chars[i])
-                rowCnt += 1
-            else:
-                cols += (26 ** colCnt) * (ord(chars[i]) - ord('A') + 1)
-                colCnt += 1
-        return (cols, rows)
+        self.cells: Dict[str, cell.Cell] = {}  # {'A1': Cell} UPPERCASE location to cell
+        self.uuid: uuid.UUID = uuid.uuid1()
 
     def check_valid_location(self, location: str) -> bool:
         """
@@ -67,7 +42,7 @@ class Sheet:
         Returns:
             bool: if the input location is in-bounds.
         """
-        col, row = self.str_to_tuple(location)
+        col, row = string_conversions.str_to_tuple(location)
         if col > 475254 or row > 9999:
             return False
         if len(location.strip()) != len(location):

@@ -60,19 +60,19 @@ class Workbook:
         """
         if deleting_cell:
             sheet_col, sheet_row = spreadsheet.extent_col, spreadsheet.extent_row
-            col, row = spreadsheet.str_to_tuple(location)
+            col, row = string_conversions.str_to_tuple(location)
             max_col, max_row = 0, 0
             if col == sheet_col or row == sheet_row:
                 for c in spreadsheet.cells:
                     if spreadsheet.cells[c].cell_type != cell.CellType.EMPTY:
-                        c_col, c_row = spreadsheet.str_to_tuple(
+                        c_col, c_row = string_conversions.str_to_tuple(
                             spreadsheet.cells[c].location)
                         max_col = max(max_col, c_col)
                         max_row = max(max_row, c_row)
                 spreadsheet.extent_col = max_col
                 spreadsheet.extent_row = max_row
         else:
-            curr_col, curr_row = spreadsheet.str_to_tuple(location)
+            curr_col, curr_row = string_conversions.str_to_tuple(location)
             spreadsheet.extent_col = max(curr_col, spreadsheet.extent_col)
             spreadsheet.extent_row = max(curr_row, spreadsheet.extent_row)
 
@@ -200,7 +200,7 @@ class Workbook:
         # A user should be able to mutate the return-value without affecting the
         # workbook's internal state.
         output = []
-        for _, spreadsheet in self.spreadsheets.items():
+        for spreadsheet in self.spreadsheets:
             output.append(self.spreadsheets[spreadsheet].name)
         return output
 
@@ -629,6 +629,27 @@ class Workbook:
             self.set_cell_contents(copy_name, location, c.contents)
         return copy_name, len(self.spreadsheets) - 1
 
+    def __get_selection_corners(self, start_location: str, end_location: str):
+        """
+        Given to corners of our selection, return the locations of the top left and bottom
+        right of our selection regardless of the input location
+
+        Args:
+            start_location (str): Start of our selection
+            end_location (str): End of our selection
+
+        Returns:
+            ???
+        """
+        start_col, start_row = string_conversions.str_to_tuple(start_location)
+        end_col, end_row = string_conversions.str_to_tuple(end_location)
+        top_left_col = min(start_col, end_col)
+        top_left_row = min(start_row, end_row)
+        bottom_right_col = max(start_col, end_col)
+        bottom_right_row = max(start_row, end_row)
+        return top_left_col, top_left_row, bottom_right_col, bottom_right_row
+
+
     def move_cells(self, sheet_name: str, start_location: str,
                    end_location: str, to_location: str, to_sheet: Optional[str] = None) -> None:
         # Move cells from one location to another, possibly moving them to
@@ -671,7 +692,31 @@ class Workbook:
         # If a formula being moved contains a relative or mixed cell-reference
         # that will become invalid after updating the cell-reference, then the
         # cell-reference is replaced with a #REF! error-literal in the formula.
-        pass
+        if sheet_name.lower() not in self.spreadsheets:
+            raise ValueError(f"{sheet_name} is invalid")
+        spreadsheet = self.spreadsheets[sheet_name.lower()]
+        for location in [start_location, end_location, to_location]:
+            if not spreadsheet.check_valid_location(location):
+                raise ValueError(f"Cell location {location} is invalid")
+        top_left_col, top_left_row, bottom_right_col, bottom_right_row = \
+            self.__get_selection_corners(start_location, end_location)
+        # get the required change in column and row
+        to_col, to_row = string_conversions.str_to_tuple(to_location)
+        delta_col = to_col - top_left_col
+        delta_row = to_row - top_left_row
+        # move each cell in our selection zone
+        for i in range(top_left_col, bottom_right_col + 1):
+            start_cell_col = string_conversions.num_to_col(i)
+            end_cell_col = string_conversions.num_to_col(i + delta_col)
+            for j in range(top_left_row, bottom_right_row + 1):
+                start_cell_loc = start_cell_col + str(j)
+                end_cell_loc = end_cell_col + str(j + delta_row)
+
+                if spreadsheet.cells[start_cell_loc].cell_type == cell.CellType.FORMULA:
+                    pass
+                else:
+                    self.set_cell_contents(sheet_name, end_cell_loc, self.get_cell_contents(sheet_name, start_cell_loc))
+        
 
     def copy_cells(self, sheet_name: str, start_location: str,
                    end_location: str, to_location: str, to_sheet: Optional[str] = None) -> None:

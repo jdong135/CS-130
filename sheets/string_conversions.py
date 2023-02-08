@@ -2,7 +2,52 @@
 errors, and numbers. Also contains method to strip zeros from string num. """
 import decimal
 from sheets import cell_error
+from typing import Tuple
 
+
+ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+
+def str_to_tuple(location: str) -> Tuple[int, int]:
+    """
+    Take in a string location ranging from A1 to ZZZZ9999 and return the 
+    integer coordinates of the location.
+
+    Args:
+        location (str): string location on the sheet.
+
+    Returns:
+        Tuple[int, int]: numeric coordinates on the sheet equivalent to 
+        input location. 
+    """
+    chars = list(location)
+    rows = 0
+    cols = 0
+    rowCnt = 0
+    colCnt = 0
+    for i in range(len(chars) - 1, -1, -1):
+        if chars[i].isnumeric():
+            rows += (10 ** rowCnt) * int(chars[i])
+            rowCnt += 1
+        else:
+            cols += (26 ** colCnt) * (ord(chars[i]) - ord('A') + 1)
+            colCnt += 1
+    return (cols, rows)
+
+def num_to_col(col: int) -> str:
+    """
+    Convert an integer representation of a row to its corresponding string
+    
+    Args:
+        col (int): Location to convert to string
+
+    Returns:
+        str: String representation of input location
+    """
+    res = []
+    while col > 0:
+        col, remainder = divmod(col - 1, 26)
+        res.append(ALPHABET[remainder])
+    return "".join(reversed(res))
 
 def str_to_error(str_error: str) -> cell_error.CellError:
     """
