@@ -771,10 +771,23 @@ class Workbook:
                         '\$?[A-Za-z]+\$?[1-9][0-9]*', contents)
                     for loc in locations:
                         loc = loc.upper()
-                        col, row = string_conversions.str_to_tuple(loc)
-                        new_col = string_conversions.num_to_col(
-                            col + delta_col)
-                        new_loc = new_col + str(row + delta_row)
+                        # If $ precedes col or row, do not update relative location
+                        # In the regex, () defines the two groups
+                        match = re.match("(\$?[A-Za-z]+)(\$?[1-9][0-9]*)", loc)
+                        col = match.group(1)
+                        row = match.group(2)
+                        new_loc = ""
+                        if col[0] != "$":
+                            col = string_conversions.col_to_num(
+                                col) + delta_col
+                            new_loc += string_conversions.num_to_col(col)
+                        else:
+                            new_loc += col
+                        if row[0] != "$":
+                            row = delta_row + int(row)
+                            new_loc += str(row)
+                        else:
+                            new_loc += row
                         contents = re.sub(loc, new_loc, contents)
                     self.set_cell_contents(to_sheet, end_cell_loc, contents)
                 # Cells that aren't formulas can copy the original location's contents

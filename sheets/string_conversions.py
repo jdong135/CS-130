@@ -7,6 +7,7 @@ from typing import Tuple
 
 ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
+
 def str_to_tuple(location: str) -> Tuple[int, int]:
     """
     Take in a string location ranging from A1 to ZZZZ9999 and return the 
@@ -33,10 +34,32 @@ def str_to_tuple(location: str) -> Tuple[int, int]:
             colCnt += 1
     return (cols, rows)
 
+
+def col_to_num(location: str) -> Tuple[int, int]:
+    """
+    Take in a string column ranging from A to ZZZZ and return the 
+    integer equivalent of the location.
+
+    Args:
+        location (str): string location on the sheet.
+
+    Returns:
+        (int): numeric coordinates on the sheet equivalent to 
+        input location. 
+    """
+    chars = list(location)
+    cols = 0
+    colCnt = 0
+    for i in range(len(chars) - 1, -1, -1):
+        cols += (26 ** colCnt) * (ord(chars[i]) - ord('A') + 1)
+        colCnt += 1
+    return cols
+
+
 def num_to_col(col: int) -> str:
     """
     Convert an integer representation of a row to its corresponding string
-    
+
     Args:
         col (int): Location to convert to string
 
@@ -48,6 +71,7 @@ def num_to_col(col: int) -> str:
         col, remainder = divmod(col - 1, 26)
         res.append(ALPHABET[remainder])
     return "".join(reversed(res))
+
 
 def str_to_error(str_error: str) -> cell_error.CellError:
     """
