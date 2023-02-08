@@ -1,0 +1,444 @@
+import unittest
+import string
+import random
+import decimal
+from context import sheets
+from utils import store_stdout, restore_stdout
+
+class WorkbookMoveCells(unittest.TestCase):
+    """
+    Unit tests for Workbook.move_cells
+    """
+    def test_basic_move1(self):
+        """
+        Basic Move to the right using top left and bottom right corners.
+        """
+        wb = sheets.Workbook()
+        wb.new_sheet()
+        wb.set_cell_contents("sheet1", "A1", "'topleft")
+        wb.set_cell_contents("sheet1", "B1", "'topmid")
+        wb.set_cell_contents("sheet1", "C1", "'topright")
+        wb.set_cell_contents("sheet1", "A2", "'botleft")
+        wb.set_cell_contents("sheet1", "B2", "'botmid")
+        wb.set_cell_contents("sheet1", "C2", "'botright")
+        wb.move_cells("sheet1", "A1", "C2", "D1")
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "D1"), "topleft")
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "E1"), "topmid")
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "F1"), "topright")
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "D2"), "botleft")
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "E2"), "botmid")
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "F2"), "botright")
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "A1"), None)
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "B1"), None)
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "C1"), None)
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "A2"), None)
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "B2"), None)
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "C2"), None)
+
+    def test_basic_move2(self):
+        """
+        Basic Move to the right using bottom right and top left corners.
+        """
+        wb = sheets.Workbook()
+        wb.new_sheet()
+        wb.set_cell_contents("sheet1", "A1", "'topleft")
+        wb.set_cell_contents("sheet1", "B1", "'topmid")
+        wb.set_cell_contents("sheet1", "C1", "'topright")
+        wb.set_cell_contents("sheet1", "A2", "'botleft")
+        wb.set_cell_contents("sheet1", "B2", "'botmid")
+        wb.set_cell_contents("sheet1", "C2", "'botright")
+        wb.move_cells("sheet1", "C2", "A1", "D1")
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "D1"), "topleft")
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "E1"), "topmid")
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "F1"), "topright")
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "D2"), "botleft")
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "E2"), "botmid")
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "F2"), "botright")
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "A1"), None)
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "B1"), None)
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "C1"), None)
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "A2"), None)
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "B2"), None)
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "C2"), None)
+        
+    def test_basic_move3(self):
+        """
+        Basic Move right using top right and bottom left corners.
+        """
+        wb = sheets.Workbook()
+        wb.new_sheet()
+        wb.set_cell_contents("sheet1", "A1", "'topleft")
+        wb.set_cell_contents("sheet1", "B1", "'topmid")
+        wb.set_cell_contents("sheet1", "C1", "'topright")
+        wb.set_cell_contents("sheet1", "A2", "'botleft")
+        wb.set_cell_contents("sheet1", "B2", "'botmid")
+        wb.set_cell_contents("sheet1", "C2", "'botright")
+        wb.move_cells("sheet1", "C1", "A2", "D1")
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "D1"), "topleft")
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "E1"), "topmid")
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "F1"), "topright")
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "D2"), "botleft")
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "E2"), "botmid")
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "F2"), "botright")
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "A1"), None)
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "B1"), None)
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "C1"), None)
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "A2"), None)
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "B2"), None)
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "C2"), None)
+        
+    def test_basic_move4(self):
+        """
+        Basic Move right using bottom left and top right corners.
+        """
+        wb = sheets.Workbook()
+        wb.new_sheet()
+        wb.set_cell_contents("sheet1", "A1", "'topleft")
+        wb.set_cell_contents("sheet1", "B1", "'topmid")
+        wb.set_cell_contents("sheet1", "C1", "'topright")
+        wb.set_cell_contents("sheet1", "A2", "'botleft")
+        wb.set_cell_contents("sheet1", "B2", "'botmid")
+        wb.set_cell_contents("sheet1", "C2", "'botright")
+        wb.move_cells("sheet1", "A2", "C1", "D1")
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "D1"), "topleft")
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "E1"), "topmid")
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "F1"), "topright")
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "D2"), "botleft")
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "E2"), "botmid")
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "F2"), "botright")
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "A1"), None)
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "B1"), None)
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "C1"), None)
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "A2"), None)
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "B2"), None)
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "C2"), None)
+    
+    def test_basic_move5(self):
+        """
+        Basic Move down using top left and bottom right corners.
+        """
+        wb = sheets.Workbook()
+        wb.new_sheet()
+        wb.set_cell_contents("sheet1", "A1", "'topleft")
+        wb.set_cell_contents("sheet1", "B1", "'topmid")
+        wb.set_cell_contents("sheet1", "C1", "'topright")
+        wb.set_cell_contents("sheet1", "A2", "'botleft")
+        wb.set_cell_contents("sheet1", "B2", "'botmid")
+        wb.set_cell_contents("sheet1", "C2", "'botright")
+        wb.move_cells("sheet1", "A1", "C2", "A3")
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "A3"), "topleft")
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "B3"), "topmid")
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "C3"), "topright")
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "A4"), "botleft")
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "B4"), "botmid")
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "C4"), "botright")
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "A1"), None)
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "B1"), None)
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "C1"), None)
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "A2"), None)
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "B2"), None)
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "C2"), None)
+        
+    def test_basic_move6(self):
+        """
+        Basic Move down using bottom right and top left corners.
+        """
+        wb = sheets.Workbook()
+        wb.new_sheet()
+        wb.set_cell_contents("sheet1", "A1", "'topleft")
+        wb.set_cell_contents("sheet1", "B1", "'topmid")
+        wb.set_cell_contents("sheet1", "C1", "'topright")
+        wb.set_cell_contents("sheet1", "A2", "'botleft")
+        wb.set_cell_contents("sheet1", "B2", "'botmid")
+        wb.set_cell_contents("sheet1", "C2", "'botright")
+        wb.move_cells("sheet1", "C2", "A1", "A3")
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "A3"), "topleft")
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "B3"), "topmid")
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "C3"), "topright")
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "A4"), "botleft")
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "B4"), "botmid")
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "C4"), "botright")
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "A1"), None)
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "B1"), None)
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "C1"), None)
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "A2"), None)
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "B2"), None)
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "C2"), None)
+        
+    def test_basic_move7(self):
+        """
+        Basic Move down using bottom left and top right corners.
+        """
+        wb = sheets.Workbook()
+        wb.new_sheet()
+        wb.set_cell_contents("sheet1", "A1", "'topleft")
+        wb.set_cell_contents("sheet1", "B1", "'topmid")
+        wb.set_cell_contents("sheet1", "C1", "'topright")
+        wb.set_cell_contents("sheet1", "A2", "'botleft")
+        wb.set_cell_contents("sheet1", "B2", "'botmid")
+        wb.set_cell_contents("sheet1", "C2", "'botright")
+        wb.move_cells("sheet1", "A2", "C1", "A3")
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "A3"), "topleft")
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "B3"), "topmid")
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "C3"), "topright")
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "A4"), "botleft")
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "B4"), "botmid")
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "C4"), "botright")
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "A1"), None)
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "B1"), None)
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "C1"), None)
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "A2"), None)
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "B2"), None)
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "C2"), None)
+    
+    def test_basic_move8(self):
+        """
+        Basic Move down using top right and bottom left corners.
+        """
+        wb = sheets.Workbook()
+        wb.new_sheet()
+        wb.set_cell_contents("sheet1", "A1", "'topleft")
+        wb.set_cell_contents("sheet1", "B1", "'topmid")
+        wb.set_cell_contents("sheet1", "C1", "'topright")
+        wb.set_cell_contents("sheet1", "A2", "'botleft")
+        wb.set_cell_contents("sheet1", "B2", "'botmid")
+        wb.set_cell_contents("sheet1", "C2", "'botright")
+        wb.move_cells("sheet1", "C1", "A2", "A3")
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "A3"), "topleft")
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "B3"), "topmid")
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "C3"), "topright")
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "A4"), "botleft")
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "B4"), "botmid")
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "C4"), "botright")
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "A1"), None)
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "B1"), None)
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "C1"), None)
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "A2"), None)
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "B2"), None)
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "C2"), None)
+    
+    def test_basic_case_insensitive(self):
+        wb = sheets.Workbook()
+        wb.new_sheet()
+        wb.set_cell_contents("sheet1", "A1", "'topleft")
+        wb.set_cell_contents("sheet1", "B1", "'topmid")
+        wb.set_cell_contents("sheet1", "C1", "'topright")
+        wb.set_cell_contents("sheet1", "A2", "'botleft")
+        wb.set_cell_contents("sheet1", "B2", "'botmid")
+        wb.set_cell_contents("sheet1", "C2", "'botright")
+        wb.move_cells("sHeET1", "A1", "C2", "A3")
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "A3"), "topleft")
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "B3"), "topmid")
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "C3"), "topright")
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "A4"), "botleft")
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "B4"), "botmid")
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "C4"), "botright")
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "A1"), None)
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "B1"), None)
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "C1"), None)
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "A2"), None)
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "B2"), None)
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "C2"), None)
+        
+    def test_basic_move_to_diff_sheet(self):
+        wb = sheets.Workbook()
+        wb.new_sheet()
+        wb.new_sheet()
+        wb.set_cell_contents("sheet1", "A1", "'topleft")
+        wb.set_cell_contents("sheet1", "B1", "'topmid")
+        wb.set_cell_contents("sheet1", "C1", "'topright")
+        wb.set_cell_contents("sheet1", "A2", "'botleft")
+        wb.set_cell_contents("sheet1", "B2", "'botmid")
+        wb.set_cell_contents("sheet1", "C2", "'botright")
+        wb.move_cells("sheet1", "C1", "A2", "A3", "sheet2")
+        self.assertEqual(wb.get_cell_value(
+            "Sheet2", "A3"), "topleft")
+        self.assertEqual(wb.get_cell_value(
+            "Sheet2", "B3"), "topmid")
+        self.assertEqual(wb.get_cell_value(
+            "Sheet2", "C3"), "topright")
+        self.assertEqual(wb.get_cell_value(
+            "Sheet2", "A4"), "botleft")
+        self.assertEqual(wb.get_cell_value(
+            "Sheet2", "B4"), "botmid")
+        self.assertEqual(wb.get_cell_value(
+            "Sheet2", "C4"), "botright")
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "A1"), None)
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "B1"), None)
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "C1"), None)
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "A2"), None)
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "B2"), None)
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "C2"), None)
+        
+    def test_basic_sheet_name_not_found(self):
+        wb = sheets.Workbook()
+        wb.new_sheet()
+        with self.assertRaises(KeyError):
+            wb.move_cells("sheet3", "A1", "C2", "A3")
+        
+    def test_basic_cell_invalid(self):
+        wb = sheets.Workbook()
+        wb.new_sheet()
+        wb.set_cell_contents("sheet1", "A1", "'topleft")
+        wb.set_cell_contents("sheet1", "B1", "'topmid")
+        wb.set_cell_contents("sheet1", "C1", "'topright")
+        wb.set_cell_contents("sheet1", "A2", "'botleft")
+        wb.set_cell_contents("sheet1", "B2", "'botmid")
+        wb.set_cell_contents("sheet1", "C2", "'botright")
+        with self.assertRaises(ValueError):
+            wb.move_cells("sheet1", "A1", "C2", "ZZZZZ99999")
+        
+    def test_basic_overlap(self):
+        wb = sheets.Workbook()
+        wb.new_sheet()
+        wb.set_cell_contents("sheet1", "A1", "'topleft")
+        wb.set_cell_contents("sheet1", "B1", "'topmid")
+        wb.set_cell_contents("sheet1", "C1", "'topright")
+        wb.set_cell_contents("sheet1", "A2", "'botleft")
+        wb.set_cell_contents("sheet1", "B2", "'botmid")
+        wb.set_cell_contents("sheet1", "C2", "'botright")
+        wb.move_cells("sheet1", "A2", "C1", "B2")
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "B2"), "topleft")
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "C2"), "topmid")
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "D2"), "topright")
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "B3"), "botleft")
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "C3"), "botmid")
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "D3"), "botright")
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "A1"), None)
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "B1"), None)
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "C1"), None)
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "A2"), None)
+
+    
+
+        
+
+
+
+
+if __name__ == "__main__":
+    unittest.main()
