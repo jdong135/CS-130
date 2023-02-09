@@ -433,11 +433,168 @@ class WorkbookMoveCells(unittest.TestCase):
         self.assertEqual(wb.get_cell_value(
             "Sheet1", "A2"), None)
 
+    def test_basic_complete_overlap(self):
+        wb = sheets.Workbook()
+        wb.new_sheet()
+        wb.set_cell_contents("sheet1", "A1", "'topleft")
+        wb.set_cell_contents("sheet1", "B1", "'topmid")
+        wb.set_cell_contents("sheet1", "C1", "'topright")
+        wb.set_cell_contents("sheet1", "A2", "'botleft")
+        wb.set_cell_contents("sheet1", "B2", "'botmid")
+        wb.set_cell_contents("sheet1", "C2", "'botright")
+        wb.move_cells("sheet1", "A2", "C1", "A1")
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "A1"), "topleft")
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "B1"), "topmid")
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "C1"), "topright")
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "A2"), "botleft")
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "B2"), "botmid")
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "C2"), "botright")
+
+    def test_formula_move1(self):
+        wb = sheets.Workbook()
+        wb.new_sheet()
+        wb.set_cell_contents("sheet1", "A1", "'123")
+        wb.set_cell_contents("sheet1", "B1", "2")
+        wb.set_cell_contents("sheet1", "C1", "'topright")
+        wb.set_cell_contents("sheet1", "A2", "'botleft")
+        wb.set_cell_contents("sheet1", "B2", "'botmid")
+        wb.set_cell_contents("sheet1", "C2", "= A1 * B1")
+        wb.move_cells("sheet1", "A1", "C2", "D1")
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "D1"), "123")
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "E1"), decimal.Decimal(2))
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "F1"), "topright")
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "D2"), "botleft")
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "E2"), "botmid")
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "F2"), decimal.Decimal(246))
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "A1"), None)
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "B1"), None)
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "C1"), None)
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "A2"), None)
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "B2"), None)
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "C2"), None)
     
+    def test_formula_move2(self):
+        wb = sheets.Workbook()
+        wb.new_sheet()
+        wb.set_cell_contents("sheet1", "A1", "'123")
+        wb.set_cell_contents("sheet1", "B1", "2")
+        wb.set_cell_contents("sheet1", "C1", "'topright")
+        wb.set_cell_contents("sheet1", "A2", "'botleft")
+        wb.set_cell_contents("sheet1", "B2", "'botmid")
+        wb.set_cell_contents("sheet1", "C2", "= A1 * B1")
+        wb.move_cells("sheet1", "C2", "A1", "D1")
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "D1"), "123")
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "E1"), decimal.Decimal(2))
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "F1"), "topright")
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "D2"), "botleft")
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "E2"), "botmid")
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "F2"), decimal.Decimal(246))
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "A1"), None)
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "B1"), None)
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "C1"), None)
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "A2"), None)
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "B2"), None)
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "C2"), None)
 
-        
+    def test_formula_move3(self):
+        wb = sheets.Workbook()
+        wb.new_sheet()
+        wb.set_cell_contents("sheet1", "A1", "'123")
+        wb.set_cell_contents("sheet1", "B1", "2")
+        wb.set_cell_contents("sheet1", "C1", "'topright")
+        wb.set_cell_contents("sheet1", "A2", "'botleft")
+        wb.set_cell_contents("sheet1", "B2", "'botmid")
+        wb.set_cell_contents("sheet1", "C2", "= A1 * B1")
+        wb.move_cells("sheet1", "A2", "C1", "D1")
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "D1"), "123")
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "E1"), decimal.Decimal(2))
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "F1"), "topright")
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "D2"), "botleft")
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "E2"), "botmid")
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "F2"), decimal.Decimal(246))
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "A1"), None)
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "B1"), None)
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "C1"), None)
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "A2"), None)
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "B2"), None)
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "C2"), None)
 
-
+    def test_formula_move4(self):
+        wb = sheets.Workbook()
+        wb.new_sheet()
+        wb.set_cell_contents("sheet1", "A1", "'123")
+        wb.set_cell_contents("sheet1", "B1", "2")
+        wb.set_cell_contents("sheet1", "C1", "'topright")
+        wb.set_cell_contents("sheet1", "A2", "'botleft")
+        wb.set_cell_contents("sheet1", "B2", "'botmid")
+        wb.set_cell_contents("sheet1", "C2", "= A1 * B1")
+        wb.move_cells("sheet1", "C1", "A2", "D1")
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "D1"), "123")
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "E1"), decimal.Decimal(2))
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "F1"), "topright")
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "D2"), "botleft")
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "E2"), "botmid")
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "F2"), decimal.Decimal(246))
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "A1"), None)
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "B1"), None)
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "C1"), None)
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "A2"), None)
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "B2"), None)
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "C2"), None)
 
 
 if __name__ == "__main__":
