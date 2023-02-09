@@ -2,6 +2,7 @@
 import uuid
 from sheets import string_conversions, cell
 from typing import Dict
+import re
 
 
 class Sheet:
@@ -29,7 +30,8 @@ class Sheet:
         self.name = name
         self.extent_row = 0
         self.extent_col = 0
-        self.cells: Dict[str, cell.Cell] = {}  # {'A1': Cell} UPPERCASE location to cell
+        # {'A1': Cell} UPPERCASE location to cell
+        self.cells: Dict[str, cell.Cell] = {}
         self.uuid: uuid.UUID = uuid.uuid1()
 
     def check_valid_location(self, location: str) -> bool:
@@ -42,6 +44,9 @@ class Sheet:
         Returns:
             bool: if the input location is in-bounds.
         """
+        # Ensure a letter and number is specified
+        if not re.match('\$?[A-Za-z]+\$?[1-9][0-9]*', location):
+            return False
         col, row = string_conversions.str_to_tuple(location)
         if col > 475254 or row > 9999:
             return False
