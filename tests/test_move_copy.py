@@ -492,18 +492,6 @@ class WorkbookMoveCells(unittest.TestCase):
             "Sheet1", "B2"), None)
         self.assertEqual(wb.get_cell_value(
             "Sheet1", "C2"), None)
-        
-    def test_formula_overwritten_by_string(self):
-        wb = sheets.Workbook()
-        wb.new_sheet()
-        wb.set_cell_contents("sheet1", "A1", "1")
-        wb.set_cell_contents("sheet1", "B1", "=A1")
-        wb.move_cells("sheet1", "A1", "B1", "B1")
-        self.assertEqual(wb.get_cell_value(
-            "Sheet1", "B1"), decimal.Decimal(1))
-        self.assertEqual(wb.get_cell_value(
-            "Sheet1", "C1"), decimal.Decimal(1))
-        self.assertEqual(wb.get_cell_contents("Sheet1", "C1"), "=B1")
 
     def test_formula_move2(self):
         wb = sheets.Workbook()
@@ -540,17 +528,6 @@ class WorkbookMoveCells(unittest.TestCase):
         self.assertEqual(wb.get_cell_value(
             "Sheet1", "C2"), None)
         
-    def test_absolute_row_addition(self):
-        wb = sheets.Workbook()
-        wb.new_sheet()
-        wb.set_cell_contents("sheet1", "A1", "1")
-        wb.set_cell_contents("sheet1", "B1", "2")
-        wb.set_cell_contents("sheet1", "C1", "=A1 + B$1")
-        wb.move_cells("sheet1", "A1", "C1", "B2")
-        self.assertEqual(wb.get_cell_contents("Sheet1", "D2"), "=B2 + C$1")
-        self.assertEqual(wb.get_cell_value(
-            "Sheet1", "D2"), decimal.Decimal(1))
-
     def test_formula_move3(self):
         wb = sheets.Workbook()
         wb.new_sheet()
@@ -620,6 +597,29 @@ class WorkbookMoveCells(unittest.TestCase):
             "Sheet1", "B2"), None)
         self.assertEqual(wb.get_cell_value(
             "Sheet1", "C2"), None)
+    
+    def test_formula_overwritten_by_string(self):
+        wb = sheets.Workbook()
+        wb.new_sheet()
+        wb.set_cell_contents("sheet1", "A1", "1")
+        wb.set_cell_contents("sheet1", "B1", "=A1")
+        wb.move_cells("sheet1", "A1", "B1", "B1")
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "B1"), decimal.Decimal(1))
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "C1"), decimal.Decimal(1))
+        self.assertEqual(wb.get_cell_contents("Sheet1", "C1"), "=B1")
+
+    def test_absolute_row_addition(self):
+        wb = sheets.Workbook()
+        wb.new_sheet()
+        wb.set_cell_contents("sheet1", "A1", "1")
+        wb.set_cell_contents("sheet1", "B1", "2")
+        wb.set_cell_contents("sheet1", "C1", "=A1 + B$1")
+        wb.move_cells("sheet1", "A1", "C1", "B2")
+        self.assertEqual(wb.get_cell_contents("Sheet1", "D2"), "=B2 + C$1")
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "D2"), decimal.Decimal(1))
         
     def test_absolute_col_addition(self):
         wb = sheets.Workbook()
@@ -632,6 +632,38 @@ class WorkbookMoveCells(unittest.TestCase):
             "Sheet1", "C2"), decimal.Decimal(3))
 
     def test_absolute_row_col_addition(self):
+        wb = sheets.Workbook()
+        wb.new_sheet()
+        wb.set_cell_contents("sheet1", "A1", "10")
+        wb.set_cell_contents("sheet1", "B1", "4")
+        wb.set_cell_contents("sheet1", "C1", "=A1 + $B$1")
+        wb.move_cells("sheet1", "A1", "C1", "B2")
+        self.assertEqual(wb.get_cell_contents("Sheet1", "D2"), "=B2 + $B$1")
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "D2"), decimal.Decimal(10))
+    
+    def test_absolute_row_addition2(self):
+        wb = sheets.Workbook()
+        wb.new_sheet()
+        wb.set_cell_contents("sheet1", "A1", "1")
+        wb.set_cell_contents("sheet1", "B1", "2")
+        wb.set_cell_contents("sheet1", "C1", "=A1 + B$1")
+        wb.move_cells("sheet1", "A1", "C1", "B2")
+        self.assertEqual(wb.get_cell_contents("Sheet1", "D2"), "=B2 + C$1")
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "D2"), decimal.Decimal(1))
+        
+    def test_absolute_col_addition2(self):
+        wb = sheets.Workbook()
+        wb.new_sheet()
+        wb.set_cell_contents("sheet1", "A1", "1")
+        wb.set_cell_contents("sheet1", "B1", "=3 + $A1")
+        wb.move_cells("sheet1", "A1", "B1", "B2")
+        self.assertEqual(wb.get_cell_contents("Sheet1", "C2"), "=3 + $A2")
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "C2"), decimal.Decimal(3))
+
+    def test_absolute_row_col_addition2(self):
         wb = sheets.Workbook()
         wb.new_sheet()
         wb.set_cell_contents("sheet1", "A1", "10")
