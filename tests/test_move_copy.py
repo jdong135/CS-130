@@ -702,6 +702,23 @@ class WorkbookMoveCells(unittest.TestCase):
         self.assertEqual(wb.get_cell_value(
             "Sheet1", "B2").get_type(), sheets.cell_error.CellErrorType.BAD_REFERENCE)
 
+    def test_parse_error_move(self):
+        wb = sheets.Workbook()
+        wb.new_sheet()
+        wb.set_cell_contents("sheet1", "A1", "=5Q sheet1!B1 Z")
+        wb.set_cell_contents("sheet1", "A2", "=7N- B2 k")
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "A1").get_type(), sheets.cell_error.CellErrorType.PARSE_ERROR)
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "A2").get_type(), sheets.cell_error.CellErrorType.PARSE_ERROR)
+        wb.move_cells("sheet1", "A1", "A2", "C1")
+        self.assertEqual(wb.get_cell_contents("Sheet1", "C1"), "=5Q sheet1!B1 Z")
+        self.assertEqual(wb.get_cell_contents("Sheet1", "C2"), "=7N- B2 k")
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "C1").get_type(), sheets.cell_error.CellErrorType.PARSE_ERROR)
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "C2").get_type(), sheets.cell_error.CellErrorType.PARSE_ERROR)
+
 
 if __name__ == "__main__":
     unittest.main()
