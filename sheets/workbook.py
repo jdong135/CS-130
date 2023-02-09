@@ -7,8 +7,9 @@ import json
 import re
 from sheets import cell, topo_sort, cell_error, lark_module, sheet, \
     string_conversions, unitialized_value
+
 import logging
-logging.basicConfig(filename="logs/lark_module.log",
+logging.basicConfig(filename="logs/results.log",
                     format='%(asctime)s %(message)s',
                     filemode='w')
 logger = logging.getLogger()
@@ -31,7 +32,7 @@ class Workbook:
         # Cell: [neighbor Cells]; neighbors are cells that depend on Cell
         self.adjacency_list: Dict[cell.Cell, List[cell.Cell]] = {}
         # notify functions = set of user-inputted notify functions
-        self.notify_functions: List[Callable] = []
+        self.notify_functions: List[Callable[[Workbook, Iterable[Tuple[str, str]]], None]] = []
 
     def __check_valid_sheet_name(self, sheet_name: str):
         """
@@ -634,7 +635,8 @@ class Workbook:
             self.set_cell_contents(copy_name, location, c.contents)
         return copy_name, len(self.spreadsheets) - 1
 
-    def __get_selection_corners(self, start_location: str, end_location: str):
+    def __get_selection_corners(self, start_location: str, 
+        end_location: str) -> Tuple[int, int, int, int]:
         """
         Given to corners of our selection, return the locations of the top left and bottom
         right of our selection regardless of the input location
@@ -644,7 +646,8 @@ class Workbook:
             end_location (str): End of our selection
 
         Returns:
-            ???
+            Tuple[int, int, int, int]: integers representing the top left column, top left row, 
+            bottom right column, and bottom right row
         """
         start_col, start_row = string_conversions.str_to_tuple(start_location)
         end_col, end_row = string_conversions.str_to_tuple(end_location)
@@ -654,16 +657,20 @@ class Workbook:
         bottom_right_row = max(start_row, end_row)
         return top_left_col, top_left_row, bottom_right_col, bottom_right_row
 
-    def __get_overlap_map(self, sheet: sheet.Sheet, original_corners: Tuple[int, int, int, int], destination_corners: Tuple[int, int, int, int]) -> Dict[str, Tuple[str, cell.CellType]]:
+    def __get_overlap_map(self, sheet: sheet.Sheet, original_corners: Tuple[int, int, int, int], 
+                          destination_corners: Tuple[int, int, int, int]
+                          ) -> Dict[str, Tuple[str, cell.CellType]]:
         """Get mapping of cells in overlapping region to their original contents.
         Used in move_cells and copy_cells.
 
         Args:
-            original_corners (Tuple[int, int, int, int]): (top left col, top left row, bottom right col, bottom right row)
-            destination_corners (Tuple[int, int, int, int]):(top left col, top left row, bottom right col, bottom right row)
+            original_corners (Tuple[int, int, int, int]): 
+            (top left col, top left row, bottom right col, bottom right row)
+            destination_corners (Tuple[int, int, int, int]):
+            (top left col, top left row, bottom right col, bottom right row)
 
         Returns:
-            Dict[str, Tuple[str, cell.CellType]]: Mapping of location to contents
+            Dict[str, Tuple[str, cell.CellType]]: Mapping of location to contents and cell type
         """
         mapping = {}
         for i in range(destination_corners[0], destination_corners[2] + 1):
@@ -677,7 +684,8 @@ class Workbook:
         return mapping
 
     def __copy_cell_block(self, spreadsheet: sheet.Sheet, start_location: str,
-                   end_location: str, to_location: str, to_sheet: str, deleting: bool) -> None:
+                          end_location: str, to_location: str, to_sheet: str, 
+                          deleting: bool) -> None:
         """
         Copy a block of cells from one location to another
 
@@ -732,6 +740,15 @@ class Workbook:
                     spreadsheet.cells[
                     start_cell_loc].cell_type == cell.CellType.FORMULA
                 if overwritten_formula or originally_formula:
+                    # If a cell is an error type, check if it is a parse error and don't
+                    # update its contents. Otherwise, if it is not a cell error type,
+                    # get_type() will throw an attribute error.
+                    try:
+                        if self.get_cell_value(spreadsheet.name, start_cell_loc).get_type() == cell_error.CellErrorType.PARSE_ERROR:
+                            self.set_cell_contents(to_sheet, end_cell_loc, contents)
+                            continue
+                    except AttributeError:
+                        pass
                     # Since cell type is not error, we don't worry about invalid cell refs
                     locations = re.findall(
                         '\$?[A-Za-z]+\$?[1-9][0-9]*', contents)
