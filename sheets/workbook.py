@@ -32,7 +32,8 @@ class Workbook:
         # Cell: [neighbor Cells]; neighbors are cells that depend on Cell
         self.adjacency_list: Dict[cell.Cell, List[cell.Cell]] = {}
         # notify functions = set of user-inputted notify functions
-        self.notify_functions: List[Callable[[Workbook, Iterable[Tuple[str, str]]], None]] = []
+        self.notify_functions: List[Callable[[
+            Workbook, Iterable[Tuple[str, str]]], None]] = []
 
     def __check_valid_sheet_name(self, sheet_name: str):
         """
@@ -635,8 +636,8 @@ class Workbook:
             self.set_cell_contents(copy_name, location, c.contents)
         return copy_name, len(self.spreadsheets) - 1
 
-    def __get_selection_corners(self, start_location: str, 
-        end_location: str) -> Tuple[int, int, int, int]:
+    def __get_selection_corners(self, start_location: str,
+                                end_location: str) -> Tuple[int, int, int, int]:
         """
         Given to corners of our selection, return the locations of the top left and bottom
         right of our selection regardless of the input location
@@ -657,7 +658,7 @@ class Workbook:
         bottom_right_row = max(start_row, end_row)
         return top_left_col, top_left_row, bottom_right_col, bottom_right_row
 
-    def __get_overlap_map(self, sheet: sheet.Sheet, original_corners: Tuple[int, int, int, int], 
+    def __get_overlap_map(self, sheet: sheet.Sheet, original_corners: Tuple[int, int, int, int],
                           destination_corners: Tuple[int, int, int, int]
                           ) -> Dict[str, Tuple[str, cell.CellType]]:
         """Get mapping of cells in overlapping region to their original contents.
@@ -676,7 +677,7 @@ class Workbook:
         for i in range(destination_corners[0], destination_corners[2] + 1):
             for j in range(destination_corners[1], destination_corners[3] + 1):
                 if original_corners[0] <= i <= original_corners[2] and \
-                    original_corners[1] <= j <= original_corners[3]:
+                        original_corners[1] <= j <= original_corners[3]:
                     loc = string_conversions.num_to_col(i) + str(j)
                     contents = self.get_cell_contents(sheet.name, loc)
                     cell_type = sheet.cells[loc].cell_type
@@ -684,7 +685,7 @@ class Workbook:
         return mapping
 
     def __copy_cell_block(self, spreadsheet: sheet.Sheet, start_location: str,
-                          end_location: str, to_location: str, to_sheet: str, 
+                          end_location: str, to_location: str, to_sheet: str,
                           deleting: bool) -> None:
         """
         Copy a block of cells from one location to another
@@ -738,20 +739,26 @@ class Workbook:
                     start_cell_loc][1] == cell.CellType.FORMULA
                 originally_formula = start_cell_loc in spreadsheet.cells and \
                     spreadsheet.cells[
-                    start_cell_loc].cell_type == cell.CellType.FORMULA
+                        start_cell_loc].cell_type == cell.CellType.FORMULA
                 if overwritten_formula or originally_formula:
                     # If a cell is an error type, check if it is a parse error and don't
                     # update its contents. Otherwise, if it is not a cell error type,
                     # get_type() will throw an attribute error.
                     try:
                         if self.get_cell_value(spreadsheet.name, start_cell_loc).get_type() == cell_error.CellErrorType.PARSE_ERROR:
-                            self.set_cell_contents(to_sheet, end_cell_loc, contents)
+                            self.set_cell_contents(
+                                to_sheet, end_cell_loc, contents)
                             continue
                     except AttributeError:
                         pass
                     # Since cell type is not error, we don't worry about invalid cell refs
-                    locations = re.findall(
-                        '\$?[A-Za-z]+\$?[1-9][0-9]*', contents)
+                    # Locations can be specified as A1, sheet1!A1, or 'sheet1'!A1
+                    # sheetname: \'[^']*\'! OR [A-Za-z_][A-Za-z0-9_]*!
+                    sheetname_pattern = "\'[^']*\'!|[A-Za-z_][A-Za-z0-9_]*!"
+                    cell_pattern = "\$?[A-Za-z]+\$?[1-9][0-9]*"
+                    # ?: Specifies we don't want to keep the matched sheetname
+                    pattern = f"(?:{sheetname_pattern})?({cell_pattern})"
+                    locations = re.findall(pattern, contents)
                     for loc in locations:
                         loc = loc.upper()
                         # If $ precedes col or row, do not update relative location
@@ -783,10 +790,11 @@ class Workbook:
                 else:
                     self.set_cell_contents(
                         to_sheet, end_cell_loc, contents)
-                if deleting: 
+                if deleting:
                     # Delete cells that don't overlap with the new location
                     if start_cell_loc not in overlap_map:
-                        self.set_cell_contents(spreadsheet.name, start_cell_loc, None)
+                        self.set_cell_contents(
+                            spreadsheet.name, start_cell_loc, None)
 
     def move_cells(self, sheet_name: str, start_location: str,
                    end_location: str, to_location: str, to_sheet: Optional[str] = None) -> None:
@@ -838,8 +846,8 @@ class Workbook:
                 raise ValueError(f"Cell location {location} is invalid")
         if not to_sheet:
             to_sheet = sheet_name
-        self.__copy_cell_block(spreadsheet, start_location, 
-            end_location, to_location, to_sheet, True)
+        self.__copy_cell_block(spreadsheet, start_location,
+                               end_location, to_location, to_sheet, True)
 
     def copy_cells(self, sheet_name: str, start_location: str,
                    end_location: str, to_location: str, to_sheet: Optional[str] = None) -> None:
@@ -891,5 +899,5 @@ class Workbook:
                 raise ValueError(f"Cell location {location} is invalid")
         if not to_sheet:
             to_sheet = sheet_name
-        self.__copy_cell_block(spreadsheet, start_location, 
-            end_location, to_location, to_sheet, False)
+        self.__copy_cell_block(spreadsheet, start_location,
+                               end_location, to_location, to_sheet, False)
