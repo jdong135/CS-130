@@ -7,8 +7,9 @@ import json
 import re
 from sheets import cell, topo_sort, cell_error, lark_module, sheet, \
     string_conversions, unitialized_value
+
 import logging
-logging.basicConfig(filename="logs/lark_module.log",
+logging.basicConfig(filename="logs/results.log",
                     format='%(asctime)s %(message)s',
                     filemode='w')
 logger = logging.getLogger()
