@@ -9,7 +9,7 @@ from typing import Tuple, TextIO
 
 def store_stdout() -> Tuple[io.StringIO, TextIO]:
     """
-    Generate a 'dummy' copy of stdout that we can pass contents into
+    Generate a 'dummy' copy of stdout that we can stores console outputs
     and create a variable containing the original sys.stdout.
 
     Returns:
@@ -32,7 +32,7 @@ def restore_stdout(new_stdo: io.StringIO, sys_out: TextIO) -> str:
     Args:
         new_stdo (io.StringIO): Temporary variable storing all contents
         directed into stdout. 
-        sys_out (io.TextIO): The original file analgous to Python's standard
+        sys_out (TextIO): The original file analgous to Python's standard
         output stream. 
 
     Returns:

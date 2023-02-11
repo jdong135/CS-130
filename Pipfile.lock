@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "eb7b38569142a74e5415c316a16cc2f6bd944bbc7eeaa6660718ec373f815943"
+            "sha256": "84dc74fc4789428287e754e938c5cd454d926756d4bd8205457e09cb70b97ec4"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -82,12 +82,12 @@
             "version": "==7.1.0"
         },
         "cs130-sheets-cui": {
-            "file": "http://courses.cms.caltech.edu/cs130/projects/sheets_cui/cs130_sheets_cui-0.9.2-py3-none-any.whl",
+            "file": "http://courses.cms.caltech.edu/cs130/projects/sheets_cui/cs130_sheets_cui-0.9.3-py3-none-any.whl",
             "hashes": [
-                "sha256:9893b2bfd0f244179aae0f2610c873012c286f344fe434a39080433046068d5f"
+                "sha256:8f13644d93222445e147f9cf1c8de61b99b62c63a968e3c91364a2185143f755"
             ],
             "index": "pypi",
-            "version": "==0.9.2"
+            "version": "==0.9.3"
         },
         "dill": {
             "hashes": [
