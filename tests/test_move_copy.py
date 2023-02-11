@@ -4,7 +4,7 @@ import random
 import re
 import decimal
 from context import sheets
-from utils import store_stdout, restore_stdout, sort_notify_list
+from utils import store_stdout, restore_stdout, sort_notify_list, on_cells_changed
 
 
 class WorkbookMoveCells(unittest.TestCase):
@@ -352,6 +352,7 @@ class WorkbookMoveCells(unittest.TestCase):
             "Sheet1", "C2"), None)
 
     def test_basic_move_to_diff_sheet(self):
+        new_stdo, sys_out = store_stdout()
         wb = sheets.Workbook()
         wb.new_sheet()
         wb.new_sheet()
@@ -361,6 +362,7 @@ class WorkbookMoveCells(unittest.TestCase):
         wb.set_cell_contents("sheet1", "A2", "'botleft")
         wb.set_cell_contents("sheet1", "B2", "'botmid")
         wb.set_cell_contents("sheet1", "C2", "'botright")
+        wb.notify_cells_changed(on_cells_changed)
         wb.move_cells("sheet1", "C1", "A2", "A3", "sheet2")
         self.assertEqual(wb.get_cell_value(
             "Sheet2", "A3"), "topleft")
@@ -386,12 +388,21 @@ class WorkbookMoveCells(unittest.TestCase):
             "Sheet1", "B2"), None)
         self.assertEqual(wb.get_cell_value(
             "Sheet1", "C2"), None)
+        output = sort_notify_list(restore_stdout(new_stdo, sys_out))
+        expected = ["'Sheet1', 'A1'", "'Sheet1', 'A2'", "'Sheet1', 'B1'", "'Sheet1', 'B2'", 
+                    "'Sheet1', 'C1'", "'Sheet1', 'C2'", "'Sheet2', 'A3'", "'Sheet2', 'A4'", 
+                    "'Sheet2', 'B3'", "'Sheet2', 'B4'", "'Sheet2', 'C3'", "'Sheet2', 'C4'"]
+        self.assertEqual(expected, output)
 
     def test_basic_sheet_name_not_found(self):
+        new_stdo, sys_out = store_stdout()
         wb = sheets.Workbook()
         wb.new_sheet()
+        wb.notify_cells_changed(on_cells_changed)
         with self.assertRaises(KeyError):
             wb.move_cells("sheet3", "A1", "C2", "A3")
+        output = sort_notify_list(restore_stdout(new_stdo, sys_out))
+        self.assertEqual([], output)
 
     def test_basic_cell_invalid(self):
         wb = sheets.Workbook()
@@ -406,6 +417,7 @@ class WorkbookMoveCells(unittest.TestCase):
             wb.move_cells("sheet1", "A1", "C2", "ZZZZZ99999")
 
     def test_basic_overlap(self):
+        new_stdo, sys_out = store_stdout()
         wb = sheets.Workbook()
         wb.new_sheet()
         wb.set_cell_contents("sheet1", "A1", "'topleft")
@@ -414,6 +426,7 @@ class WorkbookMoveCells(unittest.TestCase):
         wb.set_cell_contents("sheet1", "A2", "'botleft")
         wb.set_cell_contents("sheet1", "B2", "'botmid")
         wb.set_cell_contents("sheet1", "C2", "'botright")
+        wb.notify_cells_changed(on_cells_changed)
         wb.move_cells("sheet1", "A2", "C1", "B2")
         self.assertEqual(wb.get_cell_value(
             "Sheet1", "B2"), "topleft")
@@ -435,8 +448,14 @@ class WorkbookMoveCells(unittest.TestCase):
             "Sheet1", "C1"), None)
         self.assertEqual(wb.get_cell_value(
             "Sheet1", "A2"), None)
+        output = sort_notify_list(restore_stdout(new_stdo, sys_out))
+        expected = ["'Sheet1', 'A1'", "'Sheet1', 'A2'", "'Sheet1', 'B1'", "'Sheet1', 'B2'", 
+                    "'Sheet1', 'B3'", "'Sheet1', 'C1'", "'Sheet1', 'C2'", "'Sheet1', 'C3'", 
+                    "'Sheet1', 'D2'", "'Sheet1', 'D3'"]
+        self.assertEqual(expected, output)
 
     def test_basic_complete_overlap(self):
+        new_stdo, sys_out = store_stdout()
         wb = sheets.Workbook()
         wb.new_sheet()
         wb.set_cell_contents("sheet1", "A1", "'topleft")
@@ -445,6 +464,7 @@ class WorkbookMoveCells(unittest.TestCase):
         wb.set_cell_contents("sheet1", "A2", "'botleft")
         wb.set_cell_contents("sheet1", "B2", "'botmid")
         wb.set_cell_contents("sheet1", "C2", "'botright")
+        wb.notify_cells_changed(on_cells_changed)
         wb.move_cells("sheet1", "A2", "C1", "A1")
         self.assertEqual(wb.get_cell_value(
             "Sheet1", "A1"), "topleft")
@@ -458,6 +478,8 @@ class WorkbookMoveCells(unittest.TestCase):
             "Sheet1", "B2"), "botmid")
         self.assertEqual(wb.get_cell_value(
             "Sheet1", "C2"), "botright")
+        output = sort_notify_list(restore_stdout(new_stdo, sys_out))
+        self.assertEqual([], output)
 
     def test_formula_move1(self):
         wb = sheets.Workbook()
@@ -730,10 +752,23 @@ class WorkbookMoveCells(unittest.TestCase):
         wb.move_cells("sheet1", "A1", "A1", "B1")
         self.assertEqual(wb.get_cell_contents("sheet1", "B1"), "=sheet2!B1")
 
+    def test_mixed_ref(self):
+        wb = sheets.Workbook()
+        wb.new_sheet()
+        wb.new_sheet()
+        wb.set_cell_contents("sheet1", "A1", "=Sheet2!A1 + Sheet1!A2 + A3")
+        wb.move_cells("sheet1", "A1", "A1", "B1")
+        self.assertEqual(wb.get_cell_contents("sheet1", "B1"), "=Sheet2!B1 + Sheet1!B2 + B3")
+
+    def test_ref_adjacent_char(self):
+        wb = sheets.Workbook()
+        wb.new_sheet()
+        wb.set_cell_contents("sheet1", "A1", "=1 + (A2) + (Sheet1!A3) + (Sheet2!A4)")
+        wb.move_cells("sheet1", "A1", "A1", "B1")
+        self.assertEqual(wb.get_cell_contents("sheet1", "B1"), "=1 + (B2) + (Sheet1!B3) " \
+            "+ (Sheet2!B4)")
+
     def test_basic_move_noitfy(self):
-        def on_cells_changed(workbook, cells_changed):
-            _ = workbook
-            print(cells_changed)
         new_stdo, sys_out = store_stdout()
         wb = sheets.Workbook()
         wb.new_sheet()
@@ -743,7 +778,7 @@ class WorkbookMoveCells(unittest.TestCase):
         wb.move_cells("sheet1", "A1", "A2", "B1")
         output = sort_notify_list(restore_stdout(new_stdo, sys_out))
         expected = ["'Sheet1', 'A1'", "'Sheet1', 'A2'", "'Sheet1', 'B1'", "'Sheet1', 'B2'"]
-        self.assertEqual(output, expected)
+        self.assertEqual(expected, output)
 
 
 if __name__ == "__main__":

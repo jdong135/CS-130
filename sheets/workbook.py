@@ -738,7 +738,6 @@ class Workbook:
                 else:
                     contents = self.get_cell_contents(
                         spreadsheet.name, start_cell_loc)
-                    affected_cells.add(spreadsheet.cells[start_cell_loc])
                 # If cell is formula, we need to update its relative location for cell references
                 # It's possible that a cell in the overlap region is overwritten from formula to string
                 # so we need to check its original cell type
@@ -755,7 +754,7 @@ class Workbook:
                         if self.get_cell_value(spreadsheet.name, start_cell_loc).get_type() == cell_error.CellErrorType.PARSE_ERROR:
                             self.set_cell_contents(
                                 to_sheet, end_cell_loc, contents)
-                            affected_cells.add(spreadsheet.cells[end_cell_loc])
+                            affected_cells.add(self.spreadsheets[to_sheet.lower()].cells[end_cell_loc])
                             continue
                     except AttributeError:
                         pass
@@ -798,6 +797,7 @@ class Workbook:
                 else:
                     self.set_cell_contents(
                         to_sheet, end_cell_loc, contents)
+                    affected_cells.add(self.spreadsheets[to_sheet.lower()].cells[end_cell_loc])
                 if deleting:
                     # Delete cells that don't overlap with the new location
                     if start_cell_loc not in overlap_map:
