@@ -1,10 +1,11 @@
 """Workbook API. Contains spreadsheet functions accessible to public users."""
 from __future__ import annotations
-from typing import Tuple, List, Optional, Any, TextIO, Callable, Iterable, Dict
+from typing import Tuple, List, Optional, Any, TextIO, Callable, Iterable, Dict, Set
 import decimal
 import copy
 import json
 import re
+from contextlib import contextmanager
 from sheets import cell, topo_sort, cell_error, lark_module, sheet, \
     string_conversions, unitialized_value
 
@@ -36,6 +37,15 @@ class Workbook:
             Workbook, Iterable[Tuple[str, str]]], None]] = []
         # Whether we should call __generate_notifications() in set_cell_contents()
         # Pertinent in move_cells() and copy_cells() where cells are updated multiple times
+        self.__call_notify = True
+
+    @contextmanager
+    def __disable_notify_calls(self):
+        """
+        Disable automatic calls to notify functions in set_cell_contents
+        """
+        self.__call_notify = False
+        yield
         self.__call_notify = True
 
     def __check_valid_sheet_name(self, sheet_name: str):
@@ -690,7 +700,7 @@ class Workbook:
 
     def __copy_cell_block(self, spreadsheet: sheet.Sheet, start_location: str,
                           end_location: str, to_location: str, to_sheet: str,
-                          deleting: bool) -> None:
+                          deleting: bool) -> Set[cell.Cell]:
         """
         Copy a block of cells from one location to another
 
@@ -702,8 +712,11 @@ class Workbook:
             to_location (str): Top-left corner of the region we intend to place our cells in
             to_sheet (str): Sheet to place our cell block in
             deleting (bool): Whether we are deleting our original block of cells after moving them
+
+        Returns:
+            Set[Cell]: iterable set of all cell objects whose values are changed by the copying
+            operation. 
         """
-        self.__call_notify = False
         affected_cells = set()
         start_location = start_location.upper()
         end_location = end_location.upper()
@@ -723,6 +736,10 @@ class Workbook:
                             bottom_right_col, bottom_right_row)
         destination_corners = (
             end_top_left_col, end_top_left_row, end_bottom_right_col, end_bottom_right_row)
+        # if our top left corner is equal to to_location, then we aren't actually moving any 
+        # cells and we can just return an empty set.
+        if string_conversions.num_to_col(top_left_col) + str(top_left_row) == to_location:
+            return affected_cells
         overlap_map = self.__get_overlap_map(
             spreadsheet, original_corners, destination_corners)
         # move each cell in our selection zone
@@ -754,7 +771,8 @@ class Workbook:
                         if self.get_cell_value(spreadsheet.name, start_cell_loc).get_type() == cell_error.CellErrorType.PARSE_ERROR:
                             self.set_cell_contents(
                                 to_sheet, end_cell_loc, contents)
-                            affected_cells.add(self.spreadsheets[to_sheet.lower()].cells[end_cell_loc])
+                            affected_cells.add(
+                                self.spreadsheets[to_sheet.lower()].cells[end_cell_loc])
                             continue
                     except AttributeError:
                         pass
@@ -801,15 +819,11 @@ class Workbook:
                 if deleting:
                     # Delete cells that don't overlap with the new location
                     if start_cell_loc not in overlap_map:
-                        logger.info(f"{start_cell_loc} contents: {self.get_cell_contents(spreadsheet.name, start_cell_loc)}")
-                        logger.info(f"{start_cell_loc} value: {self.get_cell_value(spreadsheet.name, start_cell_loc)}")
                         affected_cells.add(spreadsheet.cells[start_cell_loc])
                         self.set_cell_contents(
                             spreadsheet.name, start_cell_loc, None)
-        self.__call_notify = True
-        self.__generate_notifications(affected_cells)
+        return affected_cells
             
-
     def move_cells(self, sheet_name: str, start_location: str,
                    end_location: str, to_location: str, to_sheet: Optional[str] = None) -> None:
         # Move cells from one location to another, possibly moving them to
@@ -860,8 +874,10 @@ class Workbook:
                 raise ValueError(f"Cell location {location} is invalid")
         if not to_sheet:
             to_sheet = sheet_name
-        self.__copy_cell_block(spreadsheet, start_location,
-                               end_location, to_location, to_sheet, True)
+        with self.__disable_notify_calls():
+            affected_cells = self.__copy_cell_block(spreadsheet, start_location,
+                                end_location, to_location, to_sheet, True)
+        self.__generate_notifications(affected_cells)
 
     def copy_cells(self, sheet_name: str, start_location: str,
                    end_location: str, to_location: str, to_sheet: Optional[str] = None) -> None:
@@ -913,5 +929,8 @@ class Workbook:
                 raise ValueError(f"Cell location {location} is invalid")
         if not to_sheet:
             to_sheet = sheet_name
-        self.__copy_cell_block(spreadsheet, start_location,
-                               end_location, to_location, to_sheet, False)
+        with self.__disable_notify_calls():
+            affected_cells = self.__copy_cell_block(spreadsheet, start_location,
+                                end_location, to_location, to_sheet, False)
+        self.__generate_notifications(affected_cells)
+        
