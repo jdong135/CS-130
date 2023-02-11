@@ -1,9 +1,10 @@
 import unittest
 import string
 import random
+import re
 import decimal
 from context import sheets
-from utils import store_stdout, restore_stdout
+from utils import store_stdout, restore_stdout, sort_notify_list
 
 
 class WorkbookMoveCells(unittest.TestCase):
@@ -728,6 +729,21 @@ class WorkbookMoveCells(unittest.TestCase):
         wb.set_cell_contents("sheet1", "A1", "=sheet2!A1")
         wb.move_cells("sheet1", "A1", "A1", "B1")
         self.assertEqual(wb.get_cell_contents("sheet1", "B1"), "=sheet2!B1")
+
+    def test_basic_move_noitfy(self):
+        def on_cells_changed(workbook, cells_changed):
+            _ = workbook
+            print(cells_changed)
+        new_stdo, sys_out = store_stdout()
+        wb = sheets.Workbook()
+        wb.new_sheet()
+        wb.set_cell_contents("sheet1", "A1", "=5")
+        wb.set_cell_contents("sheet1", "A2", "=5 + A1")
+        wb.notify_cells_changed(on_cells_changed)
+        wb.move_cells("sheet1", "A1", "A2", "B1")
+        output = sort_notify_list(restore_stdout(new_stdo, sys_out))
+        expected = ["'Sheet1', 'A1'", "'Sheet1', 'A2'", "'Sheet1', 'B1'", "'Sheet1', 'B2'"]
+        self.assertEqual(output, expected)
 
 
 if __name__ == "__main__":

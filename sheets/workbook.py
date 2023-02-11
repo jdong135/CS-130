@@ -34,6 +34,9 @@ class Workbook:
         # notify functions = set of user-inputted notify functions
         self.notify_functions: List[Callable[[
             Workbook, Iterable[Tuple[str, str]]], None]] = []
+        # Whether we should call __generate_notifications() in set_cell_contents()
+        # Pertinent in move_cells() and copy_cells() where cells are updated multiple times
+        self.__call_notify = True
 
     def __check_valid_sheet_name(self, sheet_name: str):
         """
@@ -83,17 +86,15 @@ class Workbook:
             spreadsheet.extent_col = max(curr_col, spreadsheet.extent_col)
             spreadsheet.extent_row = max(curr_row, spreadsheet.extent_row)
 
-    def __generate_notifications(self, cell_list: list[cell.Cell]):
-        """
-        Given a list of cells, create a corresponding list of tuples containing
+    def __generate_notifications(self, cell_list: Iterable[cell.Cell]):
+        """Given a list of cells, create a corresponding list of tuples containing
         each cell's sheet name and location. Then, call each registered notify
         function on the created list.
 
         Args:
-            cell_list (list): List of Cell objects to generate a list of
-            notifications from.
+            cell_list (Iterable[Cell]): Collection of cell obejcts to call ntoify functions on.
         """
-        if cell_list == []:
+        if cell_list == [] or len(cell_list) == 0:
             return
         changed_cells = []
         for c in cell_list:
@@ -334,7 +335,8 @@ class Workbook:
                     del spreadsheet.cells[location]
                     del self.adjacency_list[existing_cell]
                     self.__update_extent(spreadsheet, location, True)
-                    self.__generate_notifications([existing_cell])
+                    if self.__call_notify:
+                        self.__generate_notifications([existing_cell])
                     return
             # updating cells that depend on existing cell
             circular, cell_dependents = topo_sort(
@@ -348,8 +350,9 @@ class Workbook:
                         cell_error.CellErrorType.CIRCULAR_REFERENCE, "circular reference"))
             self.__update_extent(spreadsheet, location, False)
             # include the existing cell iff its value is updated
-            self.__generate_notifications(
-                cell_dependents if val_updated else cell_dependents[1:])
+            if self.__call_notify:
+                self.__generate_notifications(
+                    cell_dependents if val_updated else cell_dependents[1:])
         else:  # if cell does not exist (create contents)
             new_cell = cell.Cell(spreadsheet, location, contents, None, None)
             self.__set_cell_value_and_type(new_cell)
@@ -357,7 +360,8 @@ class Workbook:
                 self.adjacency_list[new_cell] = []
                 spreadsheet.cells[location] = new_cell
             self.__update_extent(spreadsheet, location, False)
-            self.__generate_notifications([new_cell])
+            if self.__call_notify:
+                self.__generate_notifications([new_cell])
 
     def get_cell_contents(self, sheet_name: str, location: str) -> Optional[str]:
         # Return the contents of the specified cell on the specified sheet.
@@ -699,6 +703,8 @@ class Workbook:
             to_sheet (str): Sheet to place our cell block in
             deleting (bool): Whether we are deleting our original block of cells after moving them
         """
+        self.__call_notify = False
+        affected_cells = set()
         start_location = start_location.upper()
         end_location = end_location.upper()
         to_location = to_location.upper()
@@ -732,6 +738,7 @@ class Workbook:
                 else:
                     contents = self.get_cell_contents(
                         spreadsheet.name, start_cell_loc)
+                    affected_cells.add(spreadsheet.cells[start_cell_loc])
                 # If cell is formula, we need to update its relative location for cell references
                 # It's possible that a cell in the overlap region is overwritten from formula to string
                 # so we need to check its original cell type
@@ -748,6 +755,7 @@ class Workbook:
                         if self.get_cell_value(spreadsheet.name, start_cell_loc).get_type() == cell_error.CellErrorType.PARSE_ERROR:
                             self.set_cell_contents(
                                 to_sheet, end_cell_loc, contents)
+                            affected_cells.add(spreadsheet.cells[end_cell_loc])
                             continue
                     except AttributeError:
                         pass
@@ -773,7 +781,6 @@ class Workbook:
                             new_loc += string_conversions.num_to_col(col)
                         else:
                             new_loc += col
-                        logger.info(f"{new_loc}")
                         if row[0] != "$":
                             row = delta_row + int(row)
                             new_loc += str(row)
@@ -786,6 +793,7 @@ class Workbook:
                         contents = re.sub(
                             re.escape(loc), new_loc, contents, flags=re.IGNORECASE)
                     self.set_cell_contents(to_sheet, end_cell_loc, contents)
+                    affected_cells.add(self.spreadsheets[to_sheet.lower()].cells[end_cell_loc])
                 # Cells that aren't formulas can copy the original location's contents
                 else:
                     self.set_cell_contents(
@@ -793,8 +801,14 @@ class Workbook:
                 if deleting:
                     # Delete cells that don't overlap with the new location
                     if start_cell_loc not in overlap_map:
+                        logger.info(f"{start_cell_loc} contents: {self.get_cell_contents(spreadsheet.name, start_cell_loc)}")
+                        logger.info(f"{start_cell_loc} value: {self.get_cell_value(spreadsheet.name, start_cell_loc)}")
+                        affected_cells.add(spreadsheet.cells[start_cell_loc])
                         self.set_cell_contents(
                             spreadsheet.name, start_cell_loc, None)
+        self.__call_notify = True
+        self.__generate_notifications(affected_cells)
+            
 
     def move_cells(self, sheet_name: str, start_location: str,
                    end_location: str, to_location: str, to_sheet: Optional[str] = None) -> None:
