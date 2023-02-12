@@ -321,8 +321,7 @@ class Workbook:
         spreadsheet = self.spreadsheets[sheet_name.lower()]
         if not spreadsheet.check_valid_location(location):
             raise ValueError(f"Cell location {location} is invalid")
-        if contents:
-            contents = contents.strip()
+        if contents: contents = contents.strip()
         # if cell already exists (modify contents)
         if location in spreadsheet.cells:
             existing_cell = spreadsheet.cells[location]
@@ -345,8 +344,7 @@ class Workbook:
                     del spreadsheet.cells[location]
                     del self.adjacency_list[existing_cell]
                     self.__update_extent(spreadsheet, location, True)
-                    if self.__call_notify:
-                        self.__generate_notifications([existing_cell])
+                    if self.__call_notify: self.__generate_notifications([existing_cell])
                     return
             # updating cells that depend on existing cell
             circular, cell_dependents = topo_sort(
@@ -370,8 +368,7 @@ class Workbook:
                 self.adjacency_list[new_cell] = []
                 spreadsheet.cells[location] = new_cell
             self.__update_extent(spreadsheet, location, False)
-            if self.__call_notify:
-                self.__generate_notifications([new_cell])
+            if self.__call_notify: self.__generate_notifications([new_cell])
 
     def get_cell_contents(self, sheet_name: str, location: str) -> Optional[str]:
         # Return the contents of the specified cell on the specified sheet.

@@ -622,16 +622,21 @@ class WorkbookMoveCells(unittest.TestCase):
             "Sheet1", "C2"), None)
     
     def test_formula_overwritten_by_string(self):
+        new_stdo, sys_out = store_stdout()
         wb = sheets.Workbook()
         wb.new_sheet()
         wb.set_cell_contents("sheet1", "A1", "1")
         wb.set_cell_contents("sheet1", "B1", "=A1")
+        wb.notify_cells_changed(on_cells_changed)
         wb.move_cells("sheet1", "A1", "B1", "B1")
         self.assertEqual(wb.get_cell_value(
             "Sheet1", "B1"), decimal.Decimal(1))
         self.assertEqual(wb.get_cell_value(
             "Sheet1", "C1"), decimal.Decimal(1))
         self.assertEqual(wb.get_cell_contents("Sheet1", "C1"), "=B1")
+        output = sort_notify_list(restore_stdout(new_stdo, sys_out))
+        expected = ["'Sheet1', 'A1'", "'Sheet1', 'B1'", "'Sheet1', 'C1'"]
+        self.assertEqual(expected, output)
 
     def test_absolute_row_addition(self):
         wb = sheets.Workbook()
