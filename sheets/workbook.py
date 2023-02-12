@@ -199,6 +199,180 @@ class Workbook:
                     f"{name}", f"{name[1:-2]}!", new_contents, flags=re.IGNORECASE)
         return new_contents
 
+    def __get_selection_corners(self, start_location: str,
+                                end_location: str) -> Tuple[int, int, int, int]:
+        """
+        Given to corners of our selection, return the locations of the top left and bottom
+        right of our selection regardless of the input location
+
+        Args:
+            start_location (str): Start of our selection
+            end_location (str): End of our selection
+
+        Returns:
+            Tuple[int, int, int, int]: integers representing the top left column, top left row, 
+            bottom right column, and bottom right row
+        """
+        start_col, start_row = string_conversions.str_to_tuple(start_location)
+        end_col, end_row = string_conversions.str_to_tuple(end_location)
+        top_left_col = min(start_col, end_col)
+        top_left_row = min(start_row, end_row)
+        bottom_right_col = max(start_col, end_col)
+        bottom_right_row = max(start_row, end_row)
+        return top_left_col, top_left_row, bottom_right_col, bottom_right_row
+
+    def __get_overlap_map(self, sheet: sheet.Sheet, original_corners: Tuple[int, int, int, int],
+                          destination_corners: Tuple[int, int, int, int]
+                          ) -> Dict[str, Tuple[str, cell.CellType]]:
+        """Get mapping of cells in overlapping region to their original contents.
+        Used in move_cells and copy_cells.
+
+        Args:
+            original_corners (Tuple[int, int, int, int]): 
+            (top left col, top left row, bottom right col, bottom right row)
+            destination_corners (Tuple[int, int, int, int]):
+            (top left col, top left row, bottom right col, bottom right row)
+
+        Returns:
+            Dict[str, Tuple[str, cell.CellType]]: Mapping of location to contents and cell type
+        """
+        mapping = {}
+        for i in range(destination_corners[0], destination_corners[2] + 1):
+            for j in range(destination_corners[1], destination_corners[3] + 1):
+                if original_corners[0] <= i <= original_corners[2] and \
+                        original_corners[1] <= j <= original_corners[3]:
+                    loc = string_conversions.num_to_col(i) + str(j)
+                    contents = self.get_cell_contents(sheet.name, loc)
+                    cell_type = sheet.cells[loc].cell_type
+                    mapping[loc] = (contents, cell_type)
+        return mapping
+
+    def __copy_cell_block(self, spreadsheet: sheet.Sheet, start_location: str,
+                          end_location: str, to_location: str, to_sheet: str,
+                          deleting: bool) -> Set[cell.Cell]:
+        """
+        Copy a block of cells from one location to another
+
+        Args:
+            spreadsheet (Sheet): Sheet object our copied cells are located in
+            sheet_name (str): Name of the sheet our starting cells are in
+            start_location (str): One corner of our selection block
+            end_location (str): Opposite corner of our selection block
+            to_location (str): Top-left corner of the region we intend to place our cells in
+            to_sheet (str): Sheet to place our cell block in
+            deleting (bool): Whether we are deleting our original block of cells after moving them
+
+        Returns:
+            Set[Cell]: iterable set of all cell objects whose values are changed by the copying
+            operation. 
+        """
+        affected_cells = set()
+        start_location = start_location.upper()
+        end_location = end_location.upper()
+        to_location = to_location.upper()
+        end_top_left_col, end_top_left_row = string_conversions.str_to_tuple(
+            to_location)
+        top_left_col, top_left_row, bottom_right_col, bottom_right_row = \
+            self.__get_selection_corners(start_location, end_location)
+        # get the required change in column and row
+        to_col, to_row = string_conversions.str_to_tuple(to_location)
+        delta_col = to_col - top_left_col
+        delta_row = to_row - top_left_row
+        # obtain mapping of overlapped cells to their original content
+        end_bottom_right_col = bottom_right_col + delta_col
+        end_bottom_right_row = bottom_right_row + delta_row
+        original_corners = (top_left_col, top_left_row,
+                            bottom_right_col, bottom_right_row)
+        destination_corners = (
+            end_top_left_col, end_top_left_row, end_bottom_right_col, end_bottom_right_row)
+        # if our top left corner is equal to to_location, then we aren't actually moving any 
+        # cells and we can just return an empty set.
+        if string_conversions.num_to_col(top_left_col) + str(top_left_row) == to_location:
+            return affected_cells
+        overlap_map = self.__get_overlap_map(
+            spreadsheet, original_corners, destination_corners)
+        # move each cell in our selection zone
+        for i in range(top_left_col, bottom_right_col + 1):
+            start_cell_col = string_conversions.num_to_col(i)
+            end_cell_col = string_conversions.num_to_col(i + delta_col)
+            for j in range(top_left_row, bottom_right_row + 1):
+                start_cell_loc = start_cell_col + str(j)
+                end_cell_loc = end_cell_col + str(j + delta_row)
+                # If end cell location in overlap region, get its original contents
+                if start_cell_loc in overlap_map:
+                    contents = overlap_map[start_cell_loc][0]
+                else:
+                    contents = self.get_cell_contents(
+                        spreadsheet.name, start_cell_loc)
+                # If cell is formula, we need to update its relative location for cell references
+                # It's possible that a cell in the overlap region is overwritten from formula to string
+                # so we need to check its original cell type
+                overwritten_formula = start_cell_loc in overlap_map and overlap_map[
+                    start_cell_loc][1] == cell.CellType.FORMULA
+                originally_formula = start_cell_loc in spreadsheet.cells and \
+                    spreadsheet.cells[
+                        start_cell_loc].cell_type == cell.CellType.FORMULA
+                if overwritten_formula or originally_formula:
+                    # If a cell is an error type, check if it is a parse error and don't
+                    # update its contents. Otherwise, if it is not a cell error type,
+                    # get_type() will throw an attribute error.
+                    try:
+                        if self.get_cell_value(spreadsheet.name, start_cell_loc).get_type() == cell_error.CellErrorType.PARSE_ERROR:
+                            self.set_cell_contents(
+                                to_sheet, end_cell_loc, contents)
+                            affected_cells.add(
+                                self.spreadsheets[to_sheet.lower()].cells[end_cell_loc])
+                            continue
+                    except AttributeError:
+                        pass
+                    # Since cell type is not error, we don't worry about invalid cell refs
+                    # Locations can be specified as A1, sheet1!A1, or 'sheet1'!A1
+                    # sheetname: \'[^']*\'! OR [A-Za-z_][A-Za-z0-9_]*!
+                    sheetname_pattern = r"\'[^']*\'!|[A-Za-z_][A-Za-z0-9_]*!"
+                    cell_pattern = r"\$?[A-Za-z]+\$?[1-9][0-9]*"
+                    # ?: Specifies we don't want to keep the matched sheetname
+                    pattern = f"(?:{sheetname_pattern})?({cell_pattern})"
+                    locations = re.findall(pattern, contents)
+                    for loc in locations:
+                        loc = loc.upper()
+                        # If $ precedes col or row, do not update relative location
+                        # In the regex, () defines the two groups
+                        match = re.match(r"(\$?[A-Za-z]+)(\$?[1-9][0-9]*)", loc)
+                        col = match.group(1)
+                        row = match.group(2)
+                        new_loc = ""
+                        if col[0] != "$":
+                            col = string_conversions.col_to_num(
+                                col) + delta_col
+                            new_loc += string_conversions.num_to_col(col)
+                        else:
+                            new_loc += col
+                        if row[0] != "$":
+                            row = delta_row + int(row)
+                            new_loc += str(row)
+                        else:
+                            new_loc += row
+                        if not spreadsheet.check_valid_location(new_loc):
+                            new_loc = "#REF!"
+                        # Note that re.escape ensures we can properly search for $ in loc
+                        # Normally, you'd have to escape $A$1 like \$A\$1
+                        contents = re.sub(
+                            re.escape(loc), new_loc, contents, flags=re.IGNORECASE)
+                    self.set_cell_contents(to_sheet, end_cell_loc, contents)
+                    affected_cells.add(self.spreadsheets[to_sheet.lower()].cells[end_cell_loc])
+                # Cells that aren't formulas can copy the original location's contents
+                else:
+                    self.set_cell_contents(
+                        to_sheet, end_cell_loc, contents)
+                    affected_cells.add(self.spreadsheets[to_sheet.lower()].cells[end_cell_loc])
+                if deleting:
+                    # Delete cells that don't overlap with the new location
+                    if start_cell_loc not in overlap_map:
+                        affected_cells.add(spreadsheet.cells[start_cell_loc])
+                        self.set_cell_contents(
+                            spreadsheet.name, start_cell_loc, None)
+        return affected_cells
+
     def num_sheets(self) -> int:
         """
         Return current number of spreadsheets
@@ -647,180 +821,6 @@ class Workbook:
             self.set_cell_contents(copy_name, location, c.contents)
         return copy_name, len(self.spreadsheets) - 1
 
-    def __get_selection_corners(self, start_location: str,
-                                end_location: str) -> Tuple[int, int, int, int]:
-        """
-        Given to corners of our selection, return the locations of the top left and bottom
-        right of our selection regardless of the input location
-
-        Args:
-            start_location (str): Start of our selection
-            end_location (str): End of our selection
-
-        Returns:
-            Tuple[int, int, int, int]: integers representing the top left column, top left row, 
-            bottom right column, and bottom right row
-        """
-        start_col, start_row = string_conversions.str_to_tuple(start_location)
-        end_col, end_row = string_conversions.str_to_tuple(end_location)
-        top_left_col = min(start_col, end_col)
-        top_left_row = min(start_row, end_row)
-        bottom_right_col = max(start_col, end_col)
-        bottom_right_row = max(start_row, end_row)
-        return top_left_col, top_left_row, bottom_right_col, bottom_right_row
-
-    def __get_overlap_map(self, sheet: sheet.Sheet, original_corners: Tuple[int, int, int, int],
-                          destination_corners: Tuple[int, int, int, int]
-                          ) -> Dict[str, Tuple[str, cell.CellType]]:
-        """Get mapping of cells in overlapping region to their original contents.
-        Used in move_cells and copy_cells.
-
-        Args:
-            original_corners (Tuple[int, int, int, int]): 
-            (top left col, top left row, bottom right col, bottom right row)
-            destination_corners (Tuple[int, int, int, int]):
-            (top left col, top left row, bottom right col, bottom right row)
-
-        Returns:
-            Dict[str, Tuple[str, cell.CellType]]: Mapping of location to contents and cell type
-        """
-        mapping = {}
-        for i in range(destination_corners[0], destination_corners[2] + 1):
-            for j in range(destination_corners[1], destination_corners[3] + 1):
-                if original_corners[0] <= i <= original_corners[2] and \
-                        original_corners[1] <= j <= original_corners[3]:
-                    loc = string_conversions.num_to_col(i) + str(j)
-                    contents = self.get_cell_contents(sheet.name, loc)
-                    cell_type = sheet.cells[loc].cell_type
-                    mapping[loc] = (contents, cell_type)
-        return mapping
-
-    def __copy_cell_block(self, spreadsheet: sheet.Sheet, start_location: str,
-                          end_location: str, to_location: str, to_sheet: str,
-                          deleting: bool) -> Set[cell.Cell]:
-        """
-        Copy a block of cells from one location to another
-
-        Args:
-            spreadsheet (Sheet): Sheet object our copied cells are located in
-            sheet_name (str): Name of the sheet our starting cells are in
-            start_location (str): One corner of our selection block
-            end_location (str): Opposite corner of our selection block
-            to_location (str): Top-left corner of the region we intend to place our cells in
-            to_sheet (str): Sheet to place our cell block in
-            deleting (bool): Whether we are deleting our original block of cells after moving them
-
-        Returns:
-            Set[Cell]: iterable set of all cell objects whose values are changed by the copying
-            operation. 
-        """
-        affected_cells = set()
-        start_location = start_location.upper()
-        end_location = end_location.upper()
-        to_location = to_location.upper()
-        end_top_left_col, end_top_left_row = string_conversions.str_to_tuple(
-            to_location)
-        top_left_col, top_left_row, bottom_right_col, bottom_right_row = \
-            self.__get_selection_corners(start_location, end_location)
-        # get the required change in column and row
-        to_col, to_row = string_conversions.str_to_tuple(to_location)
-        delta_col = to_col - top_left_col
-        delta_row = to_row - top_left_row
-        # obtain mapping of overlapped cells to their original content
-        end_bottom_right_col = bottom_right_col + delta_col
-        end_bottom_right_row = bottom_right_row + delta_row
-        original_corners = (top_left_col, top_left_row,
-                            bottom_right_col, bottom_right_row)
-        destination_corners = (
-            end_top_left_col, end_top_left_row, end_bottom_right_col, end_bottom_right_row)
-        # if our top left corner is equal to to_location, then we aren't actually moving any 
-        # cells and we can just return an empty set.
-        if string_conversions.num_to_col(top_left_col) + str(top_left_row) == to_location:
-            return affected_cells
-        overlap_map = self.__get_overlap_map(
-            spreadsheet, original_corners, destination_corners)
-        # move each cell in our selection zone
-        for i in range(top_left_col, bottom_right_col + 1):
-            start_cell_col = string_conversions.num_to_col(i)
-            end_cell_col = string_conversions.num_to_col(i + delta_col)
-            for j in range(top_left_row, bottom_right_row + 1):
-                start_cell_loc = start_cell_col + str(j)
-                end_cell_loc = end_cell_col + str(j + delta_row)
-                # If end cell location in overlap region, get its original contents
-                if start_cell_loc in overlap_map:
-                    contents = overlap_map[start_cell_loc][0]
-                else:
-                    contents = self.get_cell_contents(
-                        spreadsheet.name, start_cell_loc)
-                # If cell is formula, we need to update its relative location for cell references
-                # It's possible that a cell in the overlap region is overwritten from formula to string
-                # so we need to check its original cell type
-                overwritten_formula = start_cell_loc in overlap_map and overlap_map[
-                    start_cell_loc][1] == cell.CellType.FORMULA
-                originally_formula = start_cell_loc in spreadsheet.cells and \
-                    spreadsheet.cells[
-                        start_cell_loc].cell_type == cell.CellType.FORMULA
-                if overwritten_formula or originally_formula:
-                    # If a cell is an error type, check if it is a parse error and don't
-                    # update its contents. Otherwise, if it is not a cell error type,
-                    # get_type() will throw an attribute error.
-                    try:
-                        if self.get_cell_value(spreadsheet.name, start_cell_loc).get_type() == cell_error.CellErrorType.PARSE_ERROR:
-                            self.set_cell_contents(
-                                to_sheet, end_cell_loc, contents)
-                            affected_cells.add(
-                                self.spreadsheets[to_sheet.lower()].cells[end_cell_loc])
-                            continue
-                    except AttributeError:
-                        pass
-                    # Since cell type is not error, we don't worry about invalid cell refs
-                    # Locations can be specified as A1, sheet1!A1, or 'sheet1'!A1
-                    # sheetname: \'[^']*\'! OR [A-Za-z_][A-Za-z0-9_]*!
-                    sheetname_pattern = "\'[^']*\'!|[A-Za-z_][A-Za-z0-9_]*!"
-                    cell_pattern = "\$?[A-Za-z]+\$?[1-9][0-9]*"
-                    # ?: Specifies we don't want to keep the matched sheetname
-                    pattern = f"(?:{sheetname_pattern})?({cell_pattern})"
-                    locations = re.findall(pattern, contents)
-                    for loc in locations:
-                        loc = loc.upper()
-                        # If $ precedes col or row, do not update relative location
-                        # In the regex, () defines the two groups
-                        match = re.match("(\$?[A-Za-z]+)(\$?[1-9][0-9]*)", loc)
-                        col = match.group(1)
-                        row = match.group(2)
-                        new_loc = ""
-                        if col[0] != "$":
-                            col = string_conversions.col_to_num(
-                                col) + delta_col
-                            new_loc += string_conversions.num_to_col(col)
-                        else:
-                            new_loc += col
-                        if row[0] != "$":
-                            row = delta_row + int(row)
-                            new_loc += str(row)
-                        else:
-                            new_loc += row
-                        if not spreadsheet.check_valid_location(new_loc):
-                            new_loc = "#REF!"
-                        # Note that re.escape ensures we can properly search for $ in loc
-                        # Normally, you'd have to escape $A$1 like \$A\$1
-                        contents = re.sub(
-                            re.escape(loc), new_loc, contents, flags=re.IGNORECASE)
-                    self.set_cell_contents(to_sheet, end_cell_loc, contents)
-                    affected_cells.add(self.spreadsheets[to_sheet.lower()].cells[end_cell_loc])
-                # Cells that aren't formulas can copy the original location's contents
-                else:
-                    self.set_cell_contents(
-                        to_sheet, end_cell_loc, contents)
-                    affected_cells.add(self.spreadsheets[to_sheet.lower()].cells[end_cell_loc])
-                if deleting:
-                    # Delete cells that don't overlap with the new location
-                    if start_cell_loc not in overlap_map:
-                        affected_cells.add(spreadsheet.cells[start_cell_loc])
-                        self.set_cell_contents(
-                            spreadsheet.name, start_cell_loc, None)
-        return affected_cells
-            
     def move_cells(self, sheet_name: str, start_location: str,
                    end_location: str, to_location: str, to_sheet: Optional[str] = None) -> None:
         # Move cells from one location to another, possibly moving them to
