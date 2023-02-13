@@ -59,3 +59,7 @@ def sort_notify_list(notify_list: str) -> List[str]:
     matches = re.findall('\((.*?)\)', notify_list)
     matches.sort()
     return matches
+
+def on_cells_changed(workbook, cells_changed):
+    _ = workbook
+    print(cells_changed)
