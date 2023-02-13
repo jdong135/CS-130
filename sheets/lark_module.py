@@ -269,12 +269,14 @@ class FormulaEvaluator(lark.visitors.Interpreter):
                 return cell_error.CellError(
                     cell_error.CellErrorType.DIVIDE_BY_ZERO, "input error")
 
-
 @lru_cache
-def open_grammar():
+def open_grammar() -> lark.Lark:
     parser = lark.Lark.open('sheets/formulas.lark', start='formula')
     return parser
 
+@lru_cache
+def get_tree(parser: lark.Lark, contents: str) -> lark.ParseTree:
+    return parser.parse(contents)
 
 def evaluate_expr(workbook, curr_cell, sheetname: str, contents: str) \
         -> tuple[FormulaEvaluator, Any]:
@@ -298,7 +300,7 @@ def evaluate_expr(workbook, curr_cell, sheetname: str, contents: str) \
     evaluator = FormulaEvaluator(workbook, sheet, curr_cell)
     parser = open_grammar()
     try:
-        tree = parser.parse(contents)
+        tree = get_tree(parser, contents)
     except UnexpectedInput:
         return evaluator, cell_error.CellError(
             cell_error.CellErrorType.PARSE_ERROR, "parse error")
