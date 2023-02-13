@@ -178,8 +178,6 @@ class FormulaEvaluator(lark.visitors.Interpreter):
         elif not values[0] or isinstance(values[0], unitialized_value.UninitializedValue):
             values[0] = ""
         res = str(values[0]) + str(values[1])
-        if string_conversions.is_number(res):
-            return string_conversions.strip_zeros(res)
         return res
 
     @visit_children_decor
