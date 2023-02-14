@@ -56,7 +56,7 @@ def sort_notify_list(notify_list: str) -> List[str]:
     Returns:
         List[str]: Sorted substrings of notify_list 
     """
-    matches = re.findall('\((.*?)\)', notify_list)
+    matches = re.findall(r"\((.*?)\)", notify_list)
     matches.sort()
     return matches
 

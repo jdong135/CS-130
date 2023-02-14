@@ -5,16 +5,11 @@ import decimal
 import copy
 import json
 import re
-from contextlib import contextmanager
+from contextlib import contextmanager, suppress
 from sheets import cell, topo_sort, cell_error, lark_module, sheet, \
     string_conversions, unitialized_value
 
-import logging
-logging.basicConfig(filename="logs/results.log",
-                    format='%(asctime)s %(message)s',
-                    filemode='w')
-logger = logging.getLogger()
-logger.setLevel(logging.DEBUG)
+
 ALLOWED_PUNC = set([".", "?", "!", ",", ":", ";", "@", "#",
                     "$", "%", "^", "&", "*", "(", ")", "-", "_"])
 
@@ -110,10 +105,8 @@ class Workbook:
         for c in cell_list:
             changed_cells.append((c.sheet.name, c.location))
         for notify_function in self.notify_functions:
-            try:
+            with suppress(Exception):
                 notify_function(copy.deepcopy(self), changed_cells)
-            except:
-                continue
 
     def __set_cell_value_and_type(self, calling_cell: cell.Cell) -> Tuple[list, bool]:
         """
@@ -184,7 +177,8 @@ class Workbook:
                     cells.append(c)
         return cells
 
-    def __get_cell_contents_after_rename(self, c: cell.Cell, sheet_name: str, new_sheet_name: str):
+    def __get_cell_contents_after_rename(self, c: cell.Cell, sheet_name: str,
+                                         new_sheet_name: str) -> str:
         # ensure names with spaces are wrapped in quotes
         if ' ' in new_sheet_name:
             new_sheet_name = f"'{new_sheet_name}'"
@@ -221,7 +215,8 @@ class Workbook:
         bottom_right_row = max(start_row, end_row)
         return top_left_col, top_left_row, bottom_right_col, bottom_right_row
 
-    def __get_overlap_map(self, sheet: sheet.Sheet, original_corners: Tuple[int, int, int, int],
+    def __get_overlap_map(self, spreadsheet: sheet.Sheet,
+                          original_corners: Tuple[int, int, int, int],
                           destination_corners: Tuple[int, int, int, int]
                           ) -> Dict[str, Tuple[str, cell.CellType]]:
         """Get mapping of cells in overlapping region to their original contents.
@@ -242,8 +237,8 @@ class Workbook:
                 if original_corners[0] <= i <= original_corners[2] and \
                         original_corners[1] <= j <= original_corners[3]:
                     loc = string_conversions.num_to_col(i) + str(j)
-                    contents = self.get_cell_contents(sheet.name, loc)
-                    cell_type = sheet.cells[loc].cell_type
+                    contents = self.get_cell_contents(spreadsheet.name, loc)
+                    cell_type = spreadsheet.cells[loc].cell_type
                     mapping[loc] = (contents, cell_type)
         return mapping
 
@@ -285,7 +280,7 @@ class Workbook:
                             bottom_right_col, bottom_right_row)
         destination_corners = (
             end_top_left_col, end_top_left_row, end_bottom_right_col, end_bottom_right_row)
-        # if our top left corner is equal to to_location, then we aren't actually moving any 
+        # if our top left corner is equal to to_location, then we aren't actually moving any
         # cells and we can just return an empty set.
         if string_conversions.num_to_col(top_left_col) + str(top_left_row) == to_location:
             return affected_cells
@@ -305,8 +300,8 @@ class Workbook:
                     contents = self.get_cell_contents(
                         spreadsheet.name, start_cell_loc)
                 # If cell is formula, we need to update its relative location for cell references
-                # It's possible that a cell in the overlap region is overwritten from formula to string
-                # so we need to check its original cell type
+                # It's possible that a cell in the overlap region is overwritten from formula to
+                # string so we need to check its original cell type
                 overwritten_formula = start_cell_loc in overlap_map and overlap_map[
                     start_cell_loc][1] == cell.CellType.FORMULA
                 originally_formula = start_cell_loc in spreadsheet.cells and \
@@ -317,7 +312,8 @@ class Workbook:
                     # update its contents. Otherwise, if it is not a cell error type,
                     # get_type() will throw an attribute error.
                     try:
-                        if self.get_cell_value(spreadsheet.name, start_cell_loc).get_type() == cell_error.CellErrorType.PARSE_ERROR:
+                        if self.get_cell_value(spreadsheet.name, start_cell_loc).get_type() == \
+                            cell_error.CellErrorType.PARSE_ERROR:
                             self.set_cell_contents(
                                 to_sheet, end_cell_loc, contents)
                             affected_cells.add(
@@ -495,7 +491,8 @@ class Workbook:
         spreadsheet = self.spreadsheets[sheet_name.lower()]
         if not spreadsheet.check_valid_location(location):
             raise ValueError(f"Cell location {location} is invalid")
-        if contents: contents = contents.strip()
+        if contents:
+            contents = contents.strip()
         # if cell already exists (modify contents)
         if location in spreadsheet.cells:
             existing_cell = spreadsheet.cells[location]
@@ -518,7 +515,8 @@ class Workbook:
                     del spreadsheet.cells[location]
                     del self.adjacency_list[existing_cell]
                     self.__update_extent(spreadsheet, location, True)
-                    if self.__call_notify: self.__generate_notifications([existing_cell])
+                    if self.__call_notify:
+                        self.__generate_notifications([existing_cell])
                     return
             # updating cells that depend on existing cell
             circular, cell_dependents = topo_sort(
@@ -542,7 +540,8 @@ class Workbook:
                 self.adjacency_list[new_cell] = []
                 spreadsheet.cells[location] = new_cell
             self.__update_extent(spreadsheet, location, False)
-            if self.__call_notify: self.__generate_notifications([new_cell])
+            if self.__call_notify:
+                self.__generate_notifications([new_cell])
 
     def get_cell_contents(self, sheet_name: str, location: str) -> Optional[str]:
         # Return the contents of the specified cell on the specified sheet.

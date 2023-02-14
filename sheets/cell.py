@@ -2,7 +2,6 @@
 
 import enum
 import uuid
-from sheets.sheet import Sheet
 
 
 class CellType(enum.Enum):
@@ -28,7 +27,7 @@ class Cell:
         """Hash based off of the cell's sheet's id and the cell's location"""
         return hash((str(self.sheet.uuid), str(self.uuid)))
 
-    def __init__(self, sheet: Sheet, location: str, contents: str, value: str, cell_type: CellType):
+    def __init__(self, sheet, location: str, contents: str, value: str, cell_type: CellType):
         """
         Initialize a cell object
 

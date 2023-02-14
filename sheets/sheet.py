@@ -1,8 +1,8 @@
 """Class that stores Cell objects that are all in the same spreadsheet."""
 import uuid
-from sheets import string_conversions, cell
 from typing import Dict
 import re
+from sheets import string_conversions, cell
 
 
 class Sheet:
@@ -45,7 +45,7 @@ class Sheet:
             bool: if the input location is in-bounds.
         """
         # Ensure a letter and number is specified
-        if not re.match('\$?[A-Za-z]+\$?[1-9][0-9]*', location):
+        if not re.match(r"\$?[A-Za-z]+\$?[1-9][0-9]*", location):
             return False
         col, row = string_conversions.str_to_tuple(location)
         if col > 475254 or row > 9999:

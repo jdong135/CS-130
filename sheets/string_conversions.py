@@ -1,8 +1,10 @@
-"""Module containing functions involving converting strings between ints,
-errors, and numbers. Also contains method to strip zeros from string num. """
+"""
+Module containing functions involving converting strings between ints,
+errors, and numbers. Also contains method to strip zeros from string num. 
+"""
 import decimal
-from sheets import cell_error
 from typing import Tuple
+from sheets import cell_error
 
 
 ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
@@ -85,20 +87,21 @@ def str_to_error(str_error: str) -> cell_error.CellError:
     Returns:
         cell_error.CellError: Cell Error object generated from the corresponding string form. 
     """
+    err = None
     match str_error.upper():
         case "#ERROR!":
-            return cell_error.CellError(cell_error.CellErrorType.PARSE_ERROR, "input error")
+            err = cell_error.CellError(cell_error.CellErrorType.PARSE_ERROR, "input error")
         case "#CIRCREF!":
-            return cell_error.CellError(cell_error.CellErrorType.CIRCULAR_REFERENCE, "input error")
+            err = cell_error.CellError(cell_error.CellErrorType.CIRCULAR_REFERENCE, "input error")
         case "#REF!":
-            return cell_error.CellError(cell_error.CellErrorType.BAD_REFERENCE, "input error")
+            err = cell_error.CellError(cell_error.CellErrorType.BAD_REFERENCE, "input error")
         case "#NAME?":
-            return cell_error.CellError(cell_error.CellErrorType.BAD_NAME, "input error")
+            err = cell_error.CellError(cell_error.CellErrorType.BAD_NAME, "input error")
         case "#VALUE!":
-            return cell_error.CellError(cell_error.CellErrorType.TYPE_ERROR, "input error")
+            err = cell_error.CellError(cell_error.CellErrorType.TYPE_ERROR, "input error")
         case "#DIV/0!":
-            return cell_error.CellError(cell_error.CellErrorType.DIVIDE_BY_ZERO, "input error")
-    return None
+            err = cell_error.CellError(cell_error.CellErrorType.DIVIDE_BY_ZERO, "input error")
+    return err
 
 
 def is_number(string: str) -> bool:

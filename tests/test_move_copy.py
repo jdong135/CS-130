@@ -1,13 +1,13 @@
+"""
+Unit tests for implementation of Workbook.move_cells() and Workbook.copy_cells()
+"""
 import unittest
-import string
-import random
-import re
 import decimal
 from context import sheets
 from utils import store_stdout, restore_stdout, sort_notify_list, on_cells_changed
 
 
-class WorkbookMoveCells(unittest.TestCase):
+class WorkbookMoveCopyCells(unittest.TestCase):
     """
     Unit tests for Workbook.move_cells
     """
@@ -389,7 +389,7 @@ class WorkbookMoveCells(unittest.TestCase):
         self.assertEqual(wb.get_cell_value(
             "Sheet1", "C2"), None)
         output = sort_notify_list(restore_stdout(new_stdo, sys_out))
-        expected = ["'Sheet1', 'A1'", "'Sheet1', 'A2'", "'Sheet1', 'B1'", "'Sheet1', 'B2'", 
+        expected = ["'Sheet1', 'A1'", "'Sheet1', 'A2'", "'Sheet1', 'B1'", "'Sheet1', 'B2'",
                     "'Sheet1', 'C1'", "'Sheet1', 'C2'", "'Sheet2', 'A3'", "'Sheet2', 'A4'", 
                     "'Sheet2', 'B3'", "'Sheet2', 'B4'", "'Sheet2', 'C3'", "'Sheet2', 'C4'"]
         self.assertEqual(expected, output)
@@ -449,7 +449,7 @@ class WorkbookMoveCells(unittest.TestCase):
         self.assertEqual(wb.get_cell_value(
             "Sheet1", "A2"), None)
         output = sort_notify_list(restore_stdout(new_stdo, sys_out))
-        expected = ["'Sheet1', 'A1'", "'Sheet1', 'A2'", "'Sheet1', 'B1'", "'Sheet1', 'B2'", 
+        expected = ["'Sheet1', 'A1'", "'Sheet1', 'A2'", "'Sheet1', 'B1'", "'Sheet1', 'B2'",
                     "'Sheet1', 'B3'", "'Sheet1', 'C1'", "'Sheet1', 'C2'", "'Sheet1', 'C3'", 
                     "'Sheet1', 'D2'", "'Sheet1', 'D3'"]
         self.assertEqual(expected, output)
@@ -550,7 +550,7 @@ class WorkbookMoveCells(unittest.TestCase):
             "Sheet1", "B2"), None)
         self.assertEqual(wb.get_cell_value(
             "Sheet1", "C2"), None)
-        
+
     def test_formula_move3(self):
         wb = sheets.Workbook()
         wb.new_sheet()
@@ -620,7 +620,7 @@ class WorkbookMoveCells(unittest.TestCase):
             "Sheet1", "B2"), None)
         self.assertEqual(wb.get_cell_value(
             "Sheet1", "C2"), None)
-    
+
     def test_formula_overwritten_by_string(self):
         new_stdo, sys_out = store_stdout()
         wb = sheets.Workbook()
@@ -648,7 +648,7 @@ class WorkbookMoveCells(unittest.TestCase):
         self.assertEqual(wb.get_cell_contents("Sheet1", "D2"), "=B2 + C$1")
         self.assertEqual(wb.get_cell_value(
             "Sheet1", "D2"), decimal.Decimal(1))
-        
+
     def test_absolute_col_addition(self):
         wb = sheets.Workbook()
         wb.new_sheet()
@@ -669,7 +669,7 @@ class WorkbookMoveCells(unittest.TestCase):
         self.assertEqual(wb.get_cell_contents("Sheet1", "D2"), "=B2 + $B$1")
         self.assertEqual(wb.get_cell_value(
             "Sheet1", "D2"), decimal.Decimal(10))
-    
+
     def test_absolute_row_addition2(self):
         wb = sheets.Workbook()
         wb.new_sheet()
@@ -681,7 +681,7 @@ class WorkbookMoveCells(unittest.TestCase):
         self.assertEqual(wb.get_cell_contents("Sheet1", "F3"), "=D3 + E$1")
         self.assertEqual(wb.get_cell_value(
             "Sheet1", "F3"), decimal.Decimal(6))
-        
+
     def test_absolute_col_addition2(self):
         wb = sheets.Workbook()
         wb.new_sheet()
@@ -703,7 +703,7 @@ class WorkbookMoveCells(unittest.TestCase):
         self.assertEqual(wb.get_cell_contents("Sheet1", "F3"), "=D3 + $B$1")
         self.assertEqual(wb.get_cell_value(
             "Sheet1", "F3"), decimal.Decimal(10))
-        
+
     def test_div_zero_after_move(self):
         wb = sheets.Workbook()
         wb.new_sheet()
@@ -748,7 +748,7 @@ class WorkbookMoveCells(unittest.TestCase):
             "Sheet1", "C1").get_type(), sheets.cell_error.CellErrorType.PARSE_ERROR)
         self.assertEqual(wb.get_cell_value(
             "Sheet1", "C2").get_type(), sheets.cell_error.CellErrorType.PARSE_ERROR)
-    
+
     def test_move_sheet_ref(self):
         wb = sheets.Workbook()
         wb.new_sheet()
@@ -786,11 +786,13 @@ class WorkbookMoveCells(unittest.TestCase):
         self.assertEqual(expected, output)
 
     def test_copy_no_overlap(self):
+        new_stdo, sys_out = store_stdout()
         wb = sheets.Workbook()
         wb.new_sheet()
         wb.set_cell_contents("sheet1", "A1", "'123")
         wb.set_cell_contents("sheet1", "B1", "5.3")
         wb.set_cell_contents("sheet1", "C1", "=A1*B1")
+        wb.notify_cells_changed(on_cells_changed)
         wb.copy_cells("sheet1", "A1", "C1", "A2")
         self.assertEqual(wb.get_cell_contents("sheet1", "A2"), "'123")
         self.assertEqual(wb.get_cell_contents("sheet1", "B2"), "5.3")
@@ -798,13 +800,18 @@ class WorkbookMoveCells(unittest.TestCase):
         self.assertEqual(wb.get_cell_contents("sheet1", "A1"), "'123")
         self.assertEqual(wb.get_cell_contents("sheet1", "B1"), "5.3")
         self.assertEqual(wb.get_cell_contents("sheet1", "C1"), "=A1*B1")
-    
+        output = sort_notify_list(restore_stdout(new_stdo, sys_out))
+        expected = ["'Sheet1', 'A2'", "'Sheet1', 'B2'", "'Sheet1', 'C2'"]
+        self.assertEqual(expected, output)
+
     def test_move_no_overlap(self):
+        new_stdo, sys_out = store_stdout()
         wb = sheets.Workbook()
         wb.new_sheet()
         wb.set_cell_contents("sheet1", "A1", "'123")
         wb.set_cell_contents("sheet1", "B1", "5.3")
         wb.set_cell_contents("sheet1", "C1", "=A1*B1")
+        wb.notify_cells_changed(on_cells_changed)
         wb.move_cells("sheet1", "A1", "C1", "A2")
         self.assertEqual(wb.get_cell_contents("sheet1", "A2"), "'123")
         self.assertEqual(wb.get_cell_contents("sheet1", "B2"), "5.3")
@@ -812,13 +819,19 @@ class WorkbookMoveCells(unittest.TestCase):
         self.assertEqual(wb.get_cell_contents("sheet1", "A1"), None)
         self.assertEqual(wb.get_cell_contents("sheet1", "B1"), None)
         self.assertEqual(wb.get_cell_contents("sheet1", "C1"), None)
+        output = sort_notify_list(restore_stdout(new_stdo, sys_out))
+        expected = ["'Sheet1', 'A1'", "'Sheet1', 'A2'", "'Sheet1', 'B1'", \
+                    "'Sheet1', 'B2'", "'Sheet1', 'C1'", "'Sheet1', 'C2'"]
+        self.assertEqual(expected, output)
 
     def test_copy_no_overlap_shift(self):
+        new_stdo, sys_out = store_stdout()
         wb = sheets.Workbook()
         wb.new_sheet()
         wb.set_cell_contents("sheet1", "A1", "'123")
         wb.set_cell_contents("sheet1", "B1", "5.3")
         wb.set_cell_contents("sheet1", "C1", "=A1*B1")
+        wb.notify_cells_changed(on_cells_changed)
         wb.copy_cells("sheet1", "A1", "C1", "B2")
         self.assertEqual(wb.get_cell_contents("sheet1", "B2"), "'123")
         self.assertEqual(wb.get_cell_contents("sheet1", "C2"), "5.3")
@@ -826,13 +839,18 @@ class WorkbookMoveCells(unittest.TestCase):
         self.assertEqual(wb.get_cell_contents("sheet1", "A1"), "'123")
         self.assertEqual(wb.get_cell_contents("sheet1", "B1"), "5.3")
         self.assertEqual(wb.get_cell_contents("sheet1", "C1"), "=A1*B1")
+        output = sort_notify_list(restore_stdout(new_stdo, sys_out))
+        expected = ["'Sheet1', 'B2'", "'Sheet1', 'C2'", "'Sheet1', 'D2'"]
+        self.assertEqual(expected, output)
 
     def test_move_no_overlap_shift(self):
+        new_stdo, sys_out = store_stdout()
         wb = sheets.Workbook()
         wb.new_sheet()
         wb.set_cell_contents("sheet1", "A1", "'123")
         wb.set_cell_contents("sheet1", "B1", "5.3")
         wb.set_cell_contents("sheet1", "C1", "=A1*B1")
+        wb.notify_cells_changed(on_cells_changed)
         wb.move_cells("sheet1", "A1", "C1", "B2")
         self.assertEqual(wb.get_cell_contents("sheet1", "B2"), "'123")
         self.assertEqual(wb.get_cell_contents("sheet1", "C2"), "5.3")
@@ -840,8 +858,13 @@ class WorkbookMoveCells(unittest.TestCase):
         self.assertEqual(wb.get_cell_contents("sheet1", "A1"), None)
         self.assertEqual(wb.get_cell_contents("sheet1", "B1"), None)
         self.assertEqual(wb.get_cell_contents("sheet1", "C1"), None)
-    
+        output = sort_notify_list(restore_stdout(new_stdo, sys_out))
+        expected = ["'Sheet1', 'A1'", "'Sheet1', 'B1'", "'Sheet1', 'B2'", \
+                    "'Sheet1', 'C1'", "'Sheet1', 'C2'", "'Sheet1', 'D2'"]
+        self.assertEqual(expected, output)
+
     def test_copy_invalid_cell_ref(self):
+        new_stdo, sys_out = store_stdout()
         wb = sheets.Workbook()
         wb.new_sheet()
         wb.set_cell_contents("sheet1", "A1", "2.2")
@@ -850,6 +873,7 @@ class WorkbookMoveCells(unittest.TestCase):
         wb.set_cell_contents("sheet1", "A2", "4.5")
         wb.set_cell_contents("sheet1", "B2", "3.1")
         wb.set_cell_contents("sheet1", "C2", "=A2 * B2")
+        wb.notify_cells_changed(on_cells_changed)
         wb.copy_cells("sheet1", "C1", "C2", "B1")
         self.assertEqual(wb.get_cell_contents("Sheet1", "B1"), "=#REF! * A1")
         self.assertEqual(wb.get_cell_contents("Sheet1", "B2"), "=#REF! * A2")
@@ -861,53 +885,73 @@ class WorkbookMoveCells(unittest.TestCase):
             "Sheet1", "C1").get_type(), sheets.cell_error.CellErrorType.BAD_REFERENCE)
         self.assertEqual(wb.get_cell_value(
             "Sheet1", "C2").get_type(), sheets.cell_error.CellErrorType.BAD_REFERENCE)
+        output = sort_notify_list(restore_stdout(new_stdo, sys_out))
+        expected = ["'Sheet1', 'B1'", "'Sheet1', 'B2'"]
+        self.assertEqual(expected, output)
 
     def test_move_to_invalid(self):
+        new_stdo, sys_out = store_stdout()
         wb = sheets.Workbook()
         wb.new_sheet()
         wb.set_cell_contents("sheet1", "A1", "2.2")
         wb.set_cell_contents("sheet1", "B1", "5.3")
         wb.set_cell_contents("sheet1", "A2", "4.5")
         wb.set_cell_contents("sheet1", "B2", "3.1")
+        wb.notify_cells_changed(on_cells_changed)
         with self.assertRaises(ValueError):
             wb.move_cells("sheet1", "A1", "C2", "ZZZZ9999")
+        output = sort_notify_list(restore_stdout(new_stdo, sys_out))
+        self.assertEqual([], output)
 
     def test_copy_to_invalid(self):
+        new_stdo, sys_out = store_stdout()
         wb = sheets.Workbook()
         wb.new_sheet()
         wb.set_cell_contents("sheet1", "A1", "2.2")
         wb.set_cell_contents("sheet1", "B1", "5.3")
         wb.set_cell_contents("sheet1", "A2", "4.5")
         wb.set_cell_contents("sheet1", "B2", "3.1")
+        wb.notify_cells_changed(on_cells_changed)
         with self.assertRaises(ValueError):
             wb.copy_cells("sheet1", "A1", "C2", "ZZZZ9999")
+        output = sort_notify_list(restore_stdout(new_stdo, sys_out))
+        self.assertEqual([], output)
 
     def test_move_zero_error(self):
+        new_stdo, sys_out = store_stdout()
         wb = sheets.Workbook()
         wb.new_sheet()
         wb.set_cell_contents("sheet1", "A1", "0")
         wb.set_cell_contents("sheet1", "A2", "1")
         wb.set_cell_contents("sheet1", "B1", '= 1 / A1')
-        self.assertEqual(wb.get_cell_value("sheet1", "B1").get_type(), 
+        self.assertEqual(wb.get_cell_value("sheet1", "B1").get_type(),
                          sheets.cell_error.CellErrorType.DIVIDE_BY_ZERO)
+        wb.notify_cells_changed(on_cells_changed)
         wb.move_cells("sheet1", "B1", "B1", "B2")
-        self.assertEqual(wb.get_cell_value("sheet1", "B2"), 
+        self.assertEqual(wb.get_cell_value("sheet1", "B2"),
                          decimal.Decimal(1))
         self.assertEqual(wb.get_cell_contents("sheet1", "B1"), None)
-        
+        output = sort_notify_list(restore_stdout(new_stdo, sys_out))
+        expected = ["'Sheet1', 'B1'", "'Sheet1', 'B2'"]
+        self.assertEqual(expected, output)
+
     def test_move_ref_error(self):
+        new_stdo, sys_out = store_stdout()
         wb = sheets.Workbook()
         wb.new_sheet()
         wb.set_cell_contents("sheet1", "A1", "2.2")
         wb.set_cell_contents("sheet1", "B1", "=#REF!*A1")
+        wb.notify_cells_changed(on_cells_changed)
         wb.move_cells("sheet1", "A1", "B1", "A2")
         self.assertEqual(wb.get_cell_contents("sheet1", "B2"), "=#REF!*A2")
-        self.assertEqual(wb.get_cell_value("sheet1", "B2").get_type(), 
+        self.assertEqual(wb.get_cell_value("sheet1", "B2").get_type(),
                          sheets.cell_error.CellErrorType.BAD_REFERENCE)
         self.assertEqual(wb.get_cell_contents("sheet1", "A1"), None)
         self.assertEqual(wb.get_cell_contents("sheet1", "B1"), None)
+        output = sort_notify_list(restore_stdout(new_stdo, sys_out))
+        expected = ["'Sheet1', 'A1'", "'Sheet1', 'A2'", "'Sheet1', 'B1'", "'Sheet1', 'B2'"]
+        self.assertEqual(expected, output)
 
-    
     def test_copy_ref_error(self):
         wb = sheets.Workbook()
         wb.new_sheet()
@@ -915,32 +959,37 @@ class WorkbookMoveCells(unittest.TestCase):
         wb.set_cell_contents("sheet1", "B1", "=#REF!*A1")
         wb.copy_cells("sheet1", "A1", "B1", "A2")
         self.assertEqual(wb.get_cell_contents("sheet1", "B2"), "=#REF!*A2")
-        self.assertEqual(wb.get_cell_value("sheet1", "B2").get_type(), 
+        self.assertEqual(wb.get_cell_value("sheet1", "B2").get_type(),
                          sheets.cell_error.CellErrorType.BAD_REFERENCE)
         self.assertEqual(wb.get_cell_contents("sheet1", "A1"), "2.2")
         self.assertEqual(wb.get_cell_contents("sheet1", "B1"), "=#REF!*A1")
 
     def test_move_fix_circ_error(self):
+        new_stdo, sys_out = store_stdout()
         wb = sheets.Workbook()
         wb.new_sheet()
         wb.set_cell_contents("sheet1", "A1", "=A2")
         wb.set_cell_contents("sheet1", "A2", "=B2")
         wb.set_cell_contents("sheet1", "B2", "=B1")
         wb.set_cell_contents("sheet1", "B1", "=A1")
-        self.assertEqual(wb.get_cell_value("sheet1", "A1").get_type(), 
+        self.assertEqual(wb.get_cell_value("sheet1", "A1").get_type(),
                          sheets.cell_error.CellErrorType.CIRCULAR_REFERENCE)
-        self.assertEqual(wb.get_cell_value("sheet1", "A2").get_type(), 
+        self.assertEqual(wb.get_cell_value("sheet1", "A2").get_type(),
                          sheets.cell_error.CellErrorType.CIRCULAR_REFERENCE)
-        self.assertEqual(wb.get_cell_value("sheet1", "B1").get_type(), 
+        self.assertEqual(wb.get_cell_value("sheet1", "B1").get_type(),
                          sheets.cell_error.CellErrorType.CIRCULAR_REFERENCE)
-        self.assertEqual(wb.get_cell_value("sheet1", "B2").get_type(), 
+        self.assertEqual(wb.get_cell_value("sheet1", "B2").get_type(),
                          sheets.cell_error.CellErrorType.CIRCULAR_REFERENCE)
+        wb.notify_cells_changed(on_cells_changed)
         wb.move_cells("sheet1", "B2", "B2", "C2")
         self.assertEqual(wb.get_cell_value("sheet1", "A1"), decimal.Decimal(0))
         self.assertEqual(wb.get_cell_value("sheet1", "A2"), decimal.Decimal(0))
         self.assertEqual(wb.get_cell_value("sheet1", "B1"), decimal.Decimal(0))
         self.assertEqual(wb.get_cell_value("sheet1", "C2"), decimal.Decimal(0))
-    
+        output = sort_notify_list(restore_stdout(new_stdo, sys_out))
+        expected = ["'Sheet1', 'B2'", "'Sheet1', 'C2'"]
+        self.assertEqual(expected, output)
+
     def test_copy_fix_circ_error(self):
         wb = sheets.Workbook()
         wb.new_sheet()
@@ -948,69 +997,69 @@ class WorkbookMoveCells(unittest.TestCase):
         wb.set_cell_contents("sheet1", "A2", "=B2")
         wb.set_cell_contents("sheet1", "B2", "=B1")
         wb.set_cell_contents("sheet1", "B1", "=A1")
-        self.assertEqual(wb.get_cell_value("sheet1", "A1").get_type(), 
+        self.assertEqual(wb.get_cell_value("sheet1", "A1").get_type(),
                          sheets.cell_error.CellErrorType.CIRCULAR_REFERENCE)
-        self.assertEqual(wb.get_cell_value("sheet1", "A2").get_type(), 
+        self.assertEqual(wb.get_cell_value("sheet1", "A2").get_type(),
                          sheets.cell_error.CellErrorType.CIRCULAR_REFERENCE)
-        self.assertEqual(wb.get_cell_value("sheet1", "B1").get_type(), 
+        self.assertEqual(wb.get_cell_value("sheet1", "B1").get_type(),
                          sheets.cell_error.CellErrorType.CIRCULAR_REFERENCE)
-        self.assertEqual(wb.get_cell_value("sheet1", "B2").get_type(), 
+        self.assertEqual(wb.get_cell_value("sheet1", "B2").get_type(),
                          sheets.cell_error.CellErrorType.CIRCULAR_REFERENCE)
         wb.copy_cells("sheet1", "B2", "B2", "C2")
-        self.assertEqual(wb.get_cell_value("sheet1", "A1").get_type(), 
+        self.assertEqual(wb.get_cell_value("sheet1", "A1").get_type(),
                          sheets.cell_error.CellErrorType.CIRCULAR_REFERENCE)
-        self.assertEqual(wb.get_cell_value("sheet1", "A2").get_type(), 
+        self.assertEqual(wb.get_cell_value("sheet1", "A2").get_type(),
                          sheets.cell_error.CellErrorType.CIRCULAR_REFERENCE)
-        self.assertEqual(wb.get_cell_value("sheet1", "B1").get_type(), 
+        self.assertEqual(wb.get_cell_value("sheet1", "B1").get_type(),
                          sheets.cell_error.CellErrorType.CIRCULAR_REFERENCE)
-        self.assertEqual(wb.get_cell_value("sheet1", "B2").get_type(), 
+        self.assertEqual(wb.get_cell_value("sheet1", "B2").get_type(),
                          sheets.cell_error.CellErrorType.CIRCULAR_REFERENCE)
-        self.assertEqual(wb.get_cell_contents("sheet1", "C2"), 
+        self.assertEqual(wb.get_cell_contents("sheet1", "C2"),
                          "=C1")
-        
+
     def test_move_fix_circ_error2(self):
         wb = sheets.Workbook()
         wb.new_sheet()
         wb.set_cell_contents("sheet1", "A1", "=B1")
         wb.set_cell_contents("sheet1", "B1", "=C1")
         wb.set_cell_contents("sheet1", "C1", "=A1")
-        self.assertEqual(wb.get_cell_value("sheet1", "A1").get_type(), 
+        self.assertEqual(wb.get_cell_value("sheet1", "A1").get_type(),
                          sheets.cell_error.CellErrorType.CIRCULAR_REFERENCE)
-        self.assertEqual(wb.get_cell_value("sheet1", "B1").get_type(), 
+        self.assertEqual(wb.get_cell_value("sheet1", "B1").get_type(),
                          sheets.cell_error.CellErrorType.CIRCULAR_REFERENCE)
-        self.assertEqual(wb.get_cell_value("sheet1", "C1").get_type(), 
+        self.assertEqual(wb.get_cell_value("sheet1", "C1").get_type(),
                          sheets.cell_error.CellErrorType.CIRCULAR_REFERENCE)
         wb.move_cells("sheet1", "C1", "C1", "C2")
-        self.assertEqual(wb.get_cell_value("sheet1", "A1"), 
+        self.assertEqual(wb.get_cell_value("sheet1", "A1"),
                          decimal.Decimal(0))
-        self.assertEqual(wb.get_cell_value("sheet1", "B1"), 
+        self.assertEqual(wb.get_cell_value("sheet1", "B1"),
                          decimal.Decimal(0))
-        self.assertEqual(wb.get_cell_contents("sheet1", "C1"), 
+        self.assertEqual(wb.get_cell_contents("sheet1", "C1"),
                          None)
-        self.assertEqual(wb.get_cell_value("sheet1", "C2"), 
+        self.assertEqual(wb.get_cell_value("sheet1", "C2"),
                          decimal.Decimal(0))
-    
-    def test_move_fix_circ_error2(self):
+
+    def test_move_fix_circ_error3(self):
         wb = sheets.Workbook()
         wb.new_sheet()
         wb.set_cell_contents("sheet1", "A1", "=B1")
         wb.set_cell_contents("sheet1", "B1", "=C1")
         wb.set_cell_contents("sheet1", "C1", "=A1")
-        self.assertEqual(wb.get_cell_value("sheet1", "A1").get_type(), 
+        self.assertEqual(wb.get_cell_value("sheet1", "A1").get_type(),
                          sheets.cell_error.CellErrorType.CIRCULAR_REFERENCE)
-        self.assertEqual(wb.get_cell_value("sheet1", "B1").get_type(), 
+        self.assertEqual(wb.get_cell_value("sheet1", "B1").get_type(),
                          sheets.cell_error.CellErrorType.CIRCULAR_REFERENCE)
-        self.assertEqual(wb.get_cell_value("sheet1", "C1").get_type(), 
+        self.assertEqual(wb.get_cell_value("sheet1", "C1").get_type(),
                          sheets.cell_error.CellErrorType.CIRCULAR_REFERENCE)
         wb.copy_cells("sheet1", "C1", "C1", "C2")
-        self.assertEqual(wb.get_cell_value("sheet1", "A1").get_type(), 
+        self.assertEqual(wb.get_cell_value("sheet1", "A1").get_type(),
                          sheets.cell_error.CellErrorType.CIRCULAR_REFERENCE)
-        self.assertEqual(wb.get_cell_value("sheet1", "B1").get_type(), 
+        self.assertEqual(wb.get_cell_value("sheet1", "B1").get_type(),
                          sheets.cell_error.CellErrorType.CIRCULAR_REFERENCE)
-        self.assertEqual(wb.get_cell_value("sheet1", "C1").get_type(), 
+        self.assertEqual(wb.get_cell_value("sheet1", "C1").get_type(),
                          sheets.cell_error.CellErrorType.CIRCULAR_REFERENCE)
-        self.assertEqual(wb.get_cell_value("sheet1", "C2"), 
-                         decimal.Decimal(0))        
+        self.assertEqual(wb.get_cell_value("sheet1", "C2"),
+                         decimal.Decimal(0))
 
 if __name__ == "__main__":
     unittest.main()
