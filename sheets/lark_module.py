@@ -267,12 +267,12 @@ class FormulaEvaluator(lark.visitors.Interpreter):
                 return cell_error.CellError(
                     cell_error.CellErrorType.DIVIDE_BY_ZERO, "input error")
 
-@lru_cache
+@lru_cache(maxsize=None)
 def open_grammar() -> lark.Lark:
     parser = lark.Lark.open('sheets/formulas.lark', start='formula')
     return parser
 
-@lru_cache
+@lru_cache(maxsize=None)
 def get_tree(parser: lark.Lark, contents: str) -> lark.ParseTree:
     return parser.parse(contents)
 

@@ -101,9 +101,7 @@ class Workbook:
         """
         if cell_list == [] or len(cell_list) == 0:
             return
-        changed_cells = []
-        for c in cell_list:
-            changed_cells.append((c.sheet.name, c.location))
+        changed_cells = [(c.sheet.name, c.location) for c in cell_list]
         for notify_function in self.notify_functions:
             with suppress(Exception):
                 notify_function(copy.deepcopy(self), changed_cells)
@@ -236,7 +234,7 @@ class Workbook:
             for j in range(destination_corners[1], destination_corners[3] + 1):
                 if original_corners[0] <= i <= original_corners[2] and \
                         original_corners[1] <= j <= original_corners[3]:
-                    loc = string_conversions.num_to_col(i) + str(j)
+                    loc = "".join([string_conversions.num_to_col(i),str(j)])
                     contents = self.get_cell_contents(spreadsheet.name, loc)
                     cell_type = spreadsheet.cells[loc].cell_type
                     mapping[loc] = (contents, cell_type)
@@ -282,7 +280,7 @@ class Workbook:
             end_top_left_col, end_top_left_row, end_bottom_right_col, end_bottom_right_row)
         # if our top left corner is equal to to_location, then we aren't actually moving any
         # cells and we can just return an empty set.
-        if string_conversions.num_to_col(top_left_col) + str(top_left_row) == to_location:
+        if "".join([string_conversions.num_to_col(top_left_col),str(top_left_row)]) == to_location:
             return affected_cells
         overlap_map = self.__get_overlap_map(
             spreadsheet, original_corners, destination_corners)
@@ -387,10 +385,7 @@ class Workbook:
         #
         # A user should be able to mutate the return-value without affecting the
         # workbook's internal state.
-        output = []
-        for spreadsheet in self.spreadsheets:
-            output.append(self.spreadsheets[spreadsheet].name)
-        return output
+        return [self.spreadsheets[spreadsheet].name for spreadsheet in self.spreadsheets]
 
     def new_sheet(self, sheet_name: Optional[str] = None) -> Tuple[int, str]:
         # Add a new sheet to the workbook.  If the sheet name is specified, it
@@ -416,11 +411,8 @@ class Workbook:
                     break
                 i += 1
         self.spreadsheets[sheet_name.lower()] = sheet.Sheet(sheet_name)
-        changed_cells = []
-        for c in list(self.adjacency_list.keys()):
-            _, c_updated = self.__set_cell_value_and_type(c)
-            if c_updated:
-                changed_cells.append(c)
+        changed_cells = [c for c in list(self.adjacency_list.keys())
+                         if self.__set_cell_value_and_type(c)[1]]
         self.__generate_notifications(changed_cells)
         return len(self.spreadsheets) - 1, sheet_name
 
@@ -518,21 +510,21 @@ class Workbook:
                     if self.__call_notify:
                         self.__generate_notifications([existing_cell])
                     return
-            # updating cells that depend on existing cell
-            circular, cell_dependents = topo_sort(
-                existing_cell, self.adjacency_list)
-            if not circular:
-                for dependent in cell_dependents[1:]:
-                    self.__set_cell_value_and_type(dependent)
-            else:  # everything in the cycle should have an error value
-                for dependent in cell_dependents:
-                    dependent.set_fields(value=cell_error.CellError(
-                        cell_error.CellErrorType.CIRCULAR_REFERENCE, "circular reference"))
-            self.__update_extent(spreadsheet, location, False)
-            # include the existing cell iff its value is updated
-            if self.__call_notify:
-                self.__generate_notifications(
-                    cell_dependents if val_updated else cell_dependents[1:])
+            # updating cells that depend on existing cell only if the value is updated
+            if val_updated:
+                circular, cell_dependents = topo_sort(
+                    existing_cell, self.adjacency_list)
+                if not circular:
+                    for dependent in cell_dependents[1:]:
+                        self.__set_cell_value_and_type(dependent)
+                else:  # everything in the cycle should have an error value
+                    for dependent in cell_dependents:
+                        dependent.set_fields(value=cell_error.CellError(
+                            cell_error.CellErrorType.CIRCULAR_REFERENCE, "circular reference"))
+                self.__update_extent(spreadsheet, location, False)
+                # include the existing cell iff its value is updated
+                if self.__call_notify:
+                    self.__generate_notifications(cell_dependents)
         else:  # if cell does not exist (create contents)
             new_cell = cell.Cell(spreadsheet, location, contents, None, None)
             self.__set_cell_value_and_type(new_cell)
@@ -929,4 +921,3 @@ class Workbook:
             affected_cells = self.__copy_cell_block(spreadsheet, start_location,
                                 end_location, to_location, to_sheet, False)
         self.__generate_notifications(affected_cells)
-        
