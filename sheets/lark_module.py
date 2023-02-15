@@ -290,11 +290,11 @@ def evaluate_expr(workbook, curr_cell, sheetname: str, contents: str) \
     Returns:
         FormulaEvaluator, Any: Evaluator object and provided value 
     """
-    try:
-        sheet = workbook.spreadsheets[sheetname.lower()]
-    except KeyError:
+    if sheetname.lower() not in workbook.spreadsheets:
         return None, cell_error.CellError(
             cell_error.CellErrorType.BAD_REFERENCE, "bad reference")
+    else:
+        sheet = workbook.spreadsheets[sheetname.lower()]
     evaluator = FormulaEvaluator(workbook, sheet, curr_cell)
     parser = open_grammar()
     try:
