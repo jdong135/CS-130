@@ -5,11 +5,13 @@ errors, and numbers. Also contains method to strip zeros from string num.
 import decimal
 from typing import Tuple
 from sheets import cell_error
+from functools import cache
 
 
 ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
 
+@cache
 def str_to_tuple(location: str) -> Tuple[int, int]:
     """
     Take in a string location ranging from A1 to ZZZZ9999 and return the 
