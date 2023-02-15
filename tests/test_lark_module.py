@@ -87,15 +87,16 @@ class LarkModuleTests(unittest.TestCase):
             wb, None, "Sheet2", "=E1")
         self.assertEqual(value, 7)
 
-    def test_div_zero1(self):
+    def test_zero_div1(self):
         wb = sheets.Workbook()
         wb.new_sheet()
         wb.set_cell_contents('sheet1', 'A1', "= 2 * 8 / 0 + 1")
         value = wb.get_cell_value('sheet1', 'A1')
         self.assertTrue(isinstance(value, sheets.cell_error.CellError))
-        self.assertTrue(value.get_type() == sheets.cell_error.CellErrorType.DIVIDE_BY_ZERO)
+        self.assertTrue(value.get_type() ==
+                        sheets.cell_error.CellErrorType.DIVIDE_BY_ZERO)
 
-    def test_div_zero2(self):
+    def test_zero_div2(self):
         wb = sheets.Workbook()
         wb.new_sheet()
         wb.set_cell_contents("sheet1", "A1", "=1")
@@ -103,7 +104,8 @@ class LarkModuleTests(unittest.TestCase):
         wb.set_cell_contents("sheet1", "A3", "=A1/A2")
         value = wb.get_cell_value('sheet1', 'A3')
         self.assertTrue(isinstance(value, sheets.cell_error.CellError))
-        self.assertTrue(value.get_type() == sheets.cell_error.CellErrorType.DIVIDE_BY_ZERO)
+        self.assertTrue(value.get_type() ==
+                        sheets.cell_error.CellErrorType.DIVIDE_BY_ZERO)
 
     def test_string_arithmetic1(self):
         wb = sheets.Workbook()
@@ -113,7 +115,8 @@ class LarkModuleTests(unittest.TestCase):
         wb.set_cell_contents("sheet1", "A3", "=A1 + A2")
         value = wb.get_cell_value('sheet1', 'A3')
         self.assertTrue(isinstance(value, sheets.cell_error.CellError))
-        self.assertTrue(value.get_type() == sheets.cell_error.CellErrorType.TYPE_ERROR)
+        self.assertTrue(value.get_type() ==
+                        sheets.cell_error.CellErrorType.TYPE_ERROR)
 
     def test_string_arithmetic2(self):
         wb = sheets.Workbook()
@@ -123,7 +126,8 @@ class LarkModuleTests(unittest.TestCase):
         wb.set_cell_contents("sheet1", "A3", "=A1 + A2")
         value = wb.get_cell_value('sheet1', 'A3')
         self.assertTrue(isinstance(value, sheets.cell_error.CellError))
-        self.assertTrue(value.get_type() == sheets.cell_error.CellErrorType.TYPE_ERROR)
+        self.assertTrue(value.get_type() ==
+                        sheets.cell_error.CellErrorType.TYPE_ERROR)
 
     def test_string_arithmetic3(self):
         wb = sheets.Workbook()
@@ -142,7 +146,8 @@ class LarkModuleTests(unittest.TestCase):
         wb.set_cell_contents("sheet1", "A3", "=A1 * A2")
         value = wb.get_cell_value('sheet1', 'A3')
         self.assertTrue(isinstance(value, sheets.cell_error.CellError))
-        self.assertTrue(value.get_type() == sheets.cell_error.CellErrorType.TYPE_ERROR)
+        self.assertTrue(value.get_type() ==
+                        sheets.cell_error.CellErrorType.TYPE_ERROR)
 
     def test_string_arithmetic5(self):
         wb = sheets.Workbook()
@@ -152,7 +157,8 @@ class LarkModuleTests(unittest.TestCase):
         wb.set_cell_contents("sheet1", "A3", "=A1 * A2")
         value = wb.get_cell_value('sheet1', 'A3')
         self.assertTrue(isinstance(value, sheets.cell_error.CellError))
-        self.assertTrue(value.get_type() == sheets.cell_error.CellErrorType.TYPE_ERROR)
+        self.assertTrue(value.get_type() ==
+                        sheets.cell_error.CellErrorType.TYPE_ERROR)
 
     def test_string_arithmetic6(self):
         wb = sheets.Workbook()
@@ -188,7 +194,8 @@ class LarkModuleTests(unittest.TestCase):
         wb.set_cell_contents("sheet1", "A2", "=Sheet2!A1")
         value = wb.get_cell_value('sheet1', 'A2')
         self.assertTrue(isinstance(value, sheets.cell_error.CellError))
-        self.assertTrue(value.get_type() == sheets.cell_error.CellErrorType.BAD_REFERENCE)
+        self.assertTrue(value.get_type() ==
+                        sheets.cell_error.CellErrorType.BAD_REFERENCE)
 
     def test_bad_reference2(self):
         wb = sheets.Workbook()
@@ -197,7 +204,8 @@ class LarkModuleTests(unittest.TestCase):
         wb.set_cell_contents("sheet1", "A2", "=Sheet1!A10000")
         value = wb.get_cell_value('sheet1', 'A2')
         self.assertTrue(isinstance(value, sheets.cell_error.CellError))
-        self.assertTrue(value.get_type() == sheets.cell_error.CellErrorType.BAD_REFERENCE)
+        self.assertTrue(value.get_type() ==
+                        sheets.cell_error.CellErrorType.BAD_REFERENCE)
 
     def test_bad_reference3(self):
         wb = sheets.Workbook()
@@ -206,7 +214,8 @@ class LarkModuleTests(unittest.TestCase):
         wb.set_cell_contents("sheet1", "A2", "=Sheet1!ZZZZZ9999")
         value = wb.get_cell_value('sheet1', 'A2')
         self.assertTrue(isinstance(value, sheets.cell_error.CellError))
-        self.assertTrue(value.get_type() == sheets.cell_error.CellErrorType.BAD_REFERENCE)
+        self.assertTrue(value.get_type() ==
+                        sheets.cell_error.CellErrorType.BAD_REFERENCE)
 
     def test_parse_error1(self):
         wb = sheets.Workbook()
@@ -214,7 +223,8 @@ class LarkModuleTests(unittest.TestCase):
         wb.set_cell_contents('sheet1', 'A1', '=e71s18d')
         value = wb.get_cell_value('sheet1', 'A1')
         self.assertTrue(isinstance(value, sheets.cell_error.CellError))
-        self.assertTrue(value.get_type() == sheets.cell_error.CellErrorType.PARSE_ERROR)
+        self.assertTrue(value.get_type() ==
+                        sheets.cell_error.CellErrorType.PARSE_ERROR)
 
     def test_error_propagation1(self):
         wb = sheets.Workbook()
@@ -224,7 +234,8 @@ class LarkModuleTests(unittest.TestCase):
         wb.set_cell_contents("sheet1", "C1", "=B1 + 1")
         value = wb.get_cell_value("sheet1", "C1")
         self.assertTrue(isinstance(value, sheets.cell_error.CellError))
-        self.assertTrue(value.get_type() == sheets.cell_error.CellErrorType.TYPE_ERROR)
+        self.assertTrue(value.get_type() ==
+                        sheets.cell_error.CellErrorType.TYPE_ERROR)
 
     def test_error_propagation2(self):
         wb = sheets.Workbook()
@@ -234,7 +245,8 @@ class LarkModuleTests(unittest.TestCase):
         wb.set_cell_contents("sheet1", "C1", "=B1 + 1")
         value = wb.get_cell_value("sheet1", "C1")
         self.assertTrue(isinstance(value, sheets.cell_error.CellError))
-        self.assertTrue(value.get_type() == sheets.cell_error.CellErrorType.DIVIDE_BY_ZERO)
+        self.assertTrue(value.get_type() ==
+                        sheets.cell_error.CellErrorType.DIVIDE_BY_ZERO)
 
     def test_add(self):
         wb = sheets.Workbook()
@@ -278,7 +290,8 @@ class LarkModuleTests(unittest.TestCase):
         wb.set_cell_contents('sheet1', 'B1', '=A1')
         value = wb.get_cell_value('sheet1', 'B1')
         self.assertTrue(isinstance(value, sheets.cell_error.CellError))
-        self.assertTrue(value.get_type() == sheets.cell_error.CellErrorType.CIRCULAR_REFERENCE)
+        self.assertTrue(value.get_type() ==
+                        sheets.cell_error.CellErrorType.CIRCULAR_REFERENCE)
 
     def test_three_circ_ref(self):
         wb = sheets.Workbook()
@@ -288,7 +301,8 @@ class LarkModuleTests(unittest.TestCase):
         wb.set_cell_contents('sheet1', 'C1', '=A1')
         value = wb.get_cell_value('sheet1', 'C1')
         self.assertTrue(isinstance(value, sheets.cell_error.CellError))
-        self.assertTrue(value.get_type() == sheets.cell_error.CellErrorType.CIRCULAR_REFERENCE)
+        self.assertTrue(value.get_type() ==
+                        sheets.cell_error.CellErrorType.CIRCULAR_REFERENCE)
         wb.set_cell_contents('sheet1', 'C1', '1')
         self.assertEqual(wb.get_cell_value('sheet1', 'A1'), decimal.Decimal(1))
         self.assertEqual(wb.get_cell_value('sheet1', 'B1'), decimal.Decimal(1))
@@ -332,7 +346,8 @@ class LarkModuleTests(unittest.TestCase):
         wb.set_cell_contents("sheet1", "A1", "=1")
         wb.set_cell_contents("sheet1", "A2", "=A1")
         wb.set_cell_contents("sheet1", "A3", "=$A1")
-        self.assertEqual(wb.get_cell_value("sheet1", "A2"), wb.get_cell_value("sheet1", "A3"))
+        self.assertEqual(wb.get_cell_value("sheet1", "A2"),
+                         wb.get_cell_value("sheet1", "A3"))
 
     def test_second_dollar_ref(self):
         wb = sheets.Workbook()
@@ -340,7 +355,8 @@ class LarkModuleTests(unittest.TestCase):
         wb.set_cell_contents("sheet1", "A1", "=1")
         wb.set_cell_contents("sheet1", "A2", "=A1")
         wb.set_cell_contents("sheet1", "A3", "=A$1")
-        self.assertEqual(wb.get_cell_value("sheet1", "A2"), wb.get_cell_value("sheet1", "A3"))
+        self.assertEqual(wb.get_cell_value("sheet1", "A2"),
+                         wb.get_cell_value("sheet1", "A3"))
 
     def test_double_dollar_ref(self):
         wb = sheets.Workbook()
@@ -348,7 +364,8 @@ class LarkModuleTests(unittest.TestCase):
         wb.set_cell_contents("sheet1", "A1", "=1")
         wb.set_cell_contents("sheet1", "A2", "=A1")
         wb.set_cell_contents("sheet1", "A3", "=$A$1")
-        self.assertEqual(wb.get_cell_value("sheet1", "A2"), wb.get_cell_value("sheet1", "A3"))
+        self.assertEqual(wb.get_cell_value("sheet1", "A2"),
+                         wb.get_cell_value("sheet1", "A3"))
 
     def test_first_dollar_sheet_ref(self):
         wb = sheets.Workbook()
@@ -357,7 +374,8 @@ class LarkModuleTests(unittest.TestCase):
         wb.set_cell_contents("sheet1", "A1", "=1")
         wb.set_cell_contents("sheet2", "A2", "=sheet1!A1")
         wb.set_cell_contents("sheet2", "A3", "=sheet1!$A1")
-        self.assertEqual(wb.get_cell_value("sheet2", "A2"), wb.get_cell_value("sheet2", "A3"))
+        self.assertEqual(wb.get_cell_value("sheet2", "A2"),
+                         wb.get_cell_value("sheet2", "A3"))
 
     def test_second_dollar_sheet_ref(self):
         wb = sheets.Workbook()
@@ -366,7 +384,8 @@ class LarkModuleTests(unittest.TestCase):
         wb.set_cell_contents("sheet1", "A1", "=1")
         wb.set_cell_contents("sheet2", "A2", "=sheet1!A1")
         wb.set_cell_contents("sheet2", "A3", "=sheet1!A$1")
-        self.assertEqual(wb.get_cell_value("sheet2", "A2"), wb.get_cell_value("sheet2", "A3"))
+        self.assertEqual(wb.get_cell_value("sheet2", "A2"),
+                         wb.get_cell_value("sheet2", "A3"))
 
     def test_double_dollar_sheet_ref(self):
         wb = sheets.Workbook()
@@ -375,7 +394,8 @@ class LarkModuleTests(unittest.TestCase):
         wb.set_cell_contents("sheet1", "A1", "=1")
         wb.set_cell_contents("sheet2", "A2", "=sheet1!A1")
         wb.set_cell_contents("sheet2", "A3", "=sheet1!$A$1")
-        self.assertEqual(wb.get_cell_value("sheet2", "A2"), wb.get_cell_value("sheet2", "A3"))
+        self.assertEqual(wb.get_cell_value("sheet2", "A2"),
+                         wb.get_cell_value("sheet2", "A3"))
 
     def test_invalid_dollar_ref(self):
         wb = sheets.Workbook()
@@ -383,7 +403,8 @@ class LarkModuleTests(unittest.TestCase):
         wb.set_cell_contents("sheet1", "A1", "=$A$2$")
         value = wb.get_cell_value('sheet1', 'A1')
         self.assertTrue(isinstance(value, sheets.cell_error.CellError))
-        self.assertTrue(value.get_type() == sheets.cell_error.CellErrorType.PARSE_ERROR)
+        self.assertTrue(value.get_type() ==
+                        sheets.cell_error.CellErrorType.PARSE_ERROR)
 
 
 if __name__ == "__main__":

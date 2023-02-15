@@ -390,7 +390,7 @@ class WorkbookMoveCopyCells(unittest.TestCase):
             "Sheet1", "C2"), None)
         output = sort_notify_list(restore_stdout(new_stdo, sys_out))
         expected = ["'Sheet1', 'A1'", "'Sheet1', 'A2'", "'Sheet1', 'B1'", "'Sheet1', 'B2'",
-                    "'Sheet1', 'C1'", "'Sheet1', 'C2'", "'Sheet2', 'A3'", "'Sheet2', 'A4'", 
+                    "'Sheet1', 'C1'", "'Sheet1', 'C2'", "'Sheet2', 'A3'", "'Sheet2', 'A4'",
                     "'Sheet2', 'B3'", "'Sheet2', 'B4'", "'Sheet2', 'C3'", "'Sheet2', 'C4'"]
         self.assertEqual(expected, output)
 
@@ -450,7 +450,7 @@ class WorkbookMoveCopyCells(unittest.TestCase):
             "Sheet1", "A2"), None)
         output = sort_notify_list(restore_stdout(new_stdo, sys_out))
         expected = ["'Sheet1', 'A1'", "'Sheet1', 'A2'", "'Sheet1', 'B1'", "'Sheet1', 'B2'",
-                    "'Sheet1', 'B3'", "'Sheet1', 'C1'", "'Sheet1', 'C2'", "'Sheet1', 'C3'", 
+                    "'Sheet1', 'B3'", "'Sheet1', 'C1'", "'Sheet1', 'C2'", "'Sheet1', 'C3'",
                     "'Sheet1', 'D2'", "'Sheet1', 'D3'"]
         self.assertEqual(expected, output)
 
@@ -742,7 +742,8 @@ class WorkbookMoveCopyCells(unittest.TestCase):
         self.assertEqual(wb.get_cell_value(
             "Sheet1", "A2").get_type(), sheets.cell_error.CellErrorType.PARSE_ERROR)
         wb.move_cells("sheet1", "A1", "A2", "C1")
-        self.assertEqual(wb.get_cell_contents("Sheet1", "C1"), "=5Q sheet1!B1 Z")
+        self.assertEqual(wb.get_cell_contents(
+            "Sheet1", "C1"), "=5Q sheet1!B1 Z")
         self.assertEqual(wb.get_cell_contents("Sheet1", "C2"), "=7N- B2 k")
         self.assertEqual(wb.get_cell_value(
             "Sheet1", "C1").get_type(), sheets.cell_error.CellErrorType.PARSE_ERROR)
@@ -763,15 +764,17 @@ class WorkbookMoveCopyCells(unittest.TestCase):
         wb.new_sheet()
         wb.set_cell_contents("sheet1", "A1", "=Sheet2!A1 + Sheet1!A2 + A3")
         wb.move_cells("sheet1", "A1", "A1", "B1")
-        self.assertEqual(wb.get_cell_contents("sheet1", "B1"), "=Sheet2!B1 + Sheet1!B2 + B3")
+        self.assertEqual(wb.get_cell_contents("sheet1", "B1"),
+                         "=Sheet2!B1 + Sheet1!B2 + B3")
 
     def test_ref_adjacent_char(self):
         wb = sheets.Workbook()
         wb.new_sheet()
-        wb.set_cell_contents("sheet1", "A1", "=1 + (A2) + (Sheet1!A3) + (Sheet2!A4)")
+        wb.set_cell_contents(
+            "sheet1", "A1", "=1 + (A2) + (Sheet1!A3) + (Sheet2!A4)")
         wb.move_cells("sheet1", "A1", "A1", "B1")
-        self.assertEqual(wb.get_cell_contents("sheet1", "B1"), "=1 + (B2) + (Sheet1!B3) " \
-            "+ (Sheet2!B4)")
+        self.assertEqual(wb.get_cell_contents("sheet1", "B1"), "=1 + (B2) + (Sheet1!B3) "
+                         "+ (Sheet2!B4)")
 
     def test_basic_move_noitfy(self):
         new_stdo, sys_out = store_stdout()
@@ -782,7 +785,8 @@ class WorkbookMoveCopyCells(unittest.TestCase):
         wb.notify_cells_changed(on_cells_changed)
         wb.move_cells("sheet1", "A1", "A2", "B1")
         output = sort_notify_list(restore_stdout(new_stdo, sys_out))
-        expected = ["'Sheet1', 'A1'", "'Sheet1', 'A2'", "'Sheet1', 'B1'", "'Sheet1', 'B2'"]
+        expected = ["'Sheet1', 'A1'", "'Sheet1', 'A2'",
+                    "'Sheet1', 'B1'", "'Sheet1', 'B2'"]
         self.assertEqual(expected, output)
 
     def test_copy_no_overlap(self):
@@ -820,7 +824,7 @@ class WorkbookMoveCopyCells(unittest.TestCase):
         self.assertEqual(wb.get_cell_contents("sheet1", "B1"), None)
         self.assertEqual(wb.get_cell_contents("sheet1", "C1"), None)
         output = sort_notify_list(restore_stdout(new_stdo, sys_out))
-        expected = ["'Sheet1', 'A1'", "'Sheet1', 'A2'", "'Sheet1', 'B1'", \
+        expected = ["'Sheet1', 'A1'", "'Sheet1', 'A2'", "'Sheet1', 'B1'",
                     "'Sheet1', 'B2'", "'Sheet1', 'C1'", "'Sheet1', 'C2'"]
         self.assertEqual(expected, output)
 
@@ -859,7 +863,7 @@ class WorkbookMoveCopyCells(unittest.TestCase):
         self.assertEqual(wb.get_cell_contents("sheet1", "B1"), None)
         self.assertEqual(wb.get_cell_contents("sheet1", "C1"), None)
         output = sort_notify_list(restore_stdout(new_stdo, sys_out))
-        expected = ["'Sheet1', 'A1'", "'Sheet1', 'B1'", "'Sheet1', 'B2'", \
+        expected = ["'Sheet1', 'A1'", "'Sheet1', 'B1'", "'Sheet1', 'B2'",
                     "'Sheet1', 'C1'", "'Sheet1', 'C2'", "'Sheet1', 'D2'"]
         self.assertEqual(expected, output)
 
@@ -949,7 +953,8 @@ class WorkbookMoveCopyCells(unittest.TestCase):
         self.assertEqual(wb.get_cell_contents("sheet1", "A1"), None)
         self.assertEqual(wb.get_cell_contents("sheet1", "B1"), None)
         output = sort_notify_list(restore_stdout(new_stdo, sys_out))
-        expected = ["'Sheet1', 'A1'", "'Sheet1', 'A2'", "'Sheet1', 'B1'", "'Sheet1', 'B2'"]
+        expected = ["'Sheet1', 'A1'", "'Sheet1', 'A2'",
+                    "'Sheet1', 'B1'", "'Sheet1', 'B2'"]
         self.assertEqual(expected, output)
 
     def test_copy_ref_error(self):
@@ -1060,6 +1065,7 @@ class WorkbookMoveCopyCells(unittest.TestCase):
                          sheets.cell_error.CellErrorType.CIRCULAR_REFERENCE)
         self.assertEqual(wb.get_cell_value("sheet1", "C2"),
                          decimal.Decimal(0))
+
 
 if __name__ == "__main__":
     unittest.main()

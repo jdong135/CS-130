@@ -267,14 +267,17 @@ class FormulaEvaluator(lark.visitors.Interpreter):
                 return cell_error.CellError(
                     cell_error.CellErrorType.DIVIDE_BY_ZERO, "input error")
 
+
 @lru_cache(maxsize=None)
 def open_grammar() -> lark.Lark:
     parser = lark.Lark.open('sheets/formulas.lark', start='formula')
     return parser
 
+
 @lru_cache(maxsize=None)
 def get_tree(parser: lark.Lark, contents: str) -> lark.ParseTree:
     return parser.parse(contents)
+
 
 def evaluate_expr(workbook, curr_cell, sheetname: str, contents: str) \
         -> tuple[FormulaEvaluator, Any]:
@@ -293,8 +296,7 @@ def evaluate_expr(workbook, curr_cell, sheetname: str, contents: str) \
     if sheetname.lower() not in workbook.spreadsheets:
         return None, cell_error.CellError(
             cell_error.CellErrorType.BAD_REFERENCE, "bad reference")
-    else:
-        sheet = workbook.spreadsheets[sheetname.lower()]
+    sheet = workbook.spreadsheets[sheetname.lower()]
     evaluator = FormulaEvaluator(workbook, sheet, curr_cell)
     parser = open_grammar()
     try:

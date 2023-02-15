@@ -4,8 +4,8 @@ errors, and numbers. Also contains method to strip zeros from string num.
 """
 import decimal
 from typing import Tuple
-from sheets import cell_error
 from functools import cache
+from sheets import cell_error
 
 
 ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
@@ -92,17 +92,23 @@ def str_to_error(str_error: str) -> cell_error.CellError:
     err = None
     match str_error.upper():
         case "#ERROR!":
-            err = cell_error.CellError(cell_error.CellErrorType.PARSE_ERROR, "input error")
+            err = cell_error.CellError(
+                cell_error.CellErrorType.PARSE_ERROR, "input error")
         case "#CIRCREF!":
-            err = cell_error.CellError(cell_error.CellErrorType.CIRCULAR_REFERENCE, "input error")
+            err = cell_error.CellError(
+                cell_error.CellErrorType.CIRCULAR_REFERENCE, "input error")
         case "#REF!":
-            err = cell_error.CellError(cell_error.CellErrorType.BAD_REFERENCE, "input error")
+            err = cell_error.CellError(
+                cell_error.CellErrorType.BAD_REFERENCE, "input error")
         case "#NAME?":
-            err = cell_error.CellError(cell_error.CellErrorType.BAD_NAME, "input error")
+            err = cell_error.CellError(
+                cell_error.CellErrorType.BAD_NAME, "input error")
         case "#VALUE!":
-            err = cell_error.CellError(cell_error.CellErrorType.TYPE_ERROR, "input error")
+            err = cell_error.CellError(
+                cell_error.CellErrorType.TYPE_ERROR, "input error")
         case "#DIV/0!":
-            err = cell_error.CellError(cell_error.CellErrorType.DIVIDE_BY_ZERO, "input error")
+            err = cell_error.CellError(
+                cell_error.CellErrorType.DIVIDE_BY_ZERO, "input error")
     return err
 
 

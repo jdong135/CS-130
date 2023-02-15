@@ -234,7 +234,7 @@ class Workbook:
             for j in range(destination_corners[1], destination_corners[3] + 1):
                 if original_corners[0] <= i <= original_corners[2] and \
                         original_corners[1] <= j <= original_corners[3]:
-                    loc = "".join([string_conversions.num_to_col(i),str(j)])
+                    loc = "".join([string_conversions.num_to_col(i), str(j)])
                     contents = self.get_cell_contents(spreadsheet.name, loc)
                     cell_type = spreadsheet.cells[loc].cell_type
                     mapping[loc] = (contents, cell_type)
@@ -280,7 +280,8 @@ class Workbook:
             end_top_left_col, end_top_left_row, end_bottom_right_col, end_bottom_right_row)
         # if our top left corner is equal to to_location, then we aren't actually moving any
         # cells and we can just return an empty set.
-        if "".join([string_conversions.num_to_col(top_left_col),str(top_left_row)]) == to_location:
+        if "".join(
+            [string_conversions.num_to_col(top_left_col), str(top_left_row)]) == to_location:
             return affected_cells
         overlap_map = self.__get_overlap_map(
             spreadsheet, original_corners, destination_corners)
@@ -311,7 +312,7 @@ class Workbook:
                     # get_type() will throw an attribute error.
                     try:
                         if self.get_cell_value(spreadsheet.name, start_cell_loc).get_type() == \
-                            cell_error.CellErrorType.PARSE_ERROR:
+                                cell_error.CellErrorType.PARSE_ERROR:
                             self.set_cell_contents(
                                 to_sheet, end_cell_loc, contents)
                             affected_cells.add(
@@ -331,7 +332,8 @@ class Workbook:
                         loc = loc.upper()
                         # If $ precedes col or row, do not update relative location
                         # In the regex, () defines the two groups
-                        match = re.match(r"(\$?[A-Za-z]+)(\$?[1-9][0-9]*)", loc)
+                        match = re.match(
+                            r"(\$?[A-Za-z]+)(\$?[1-9][0-9]*)", loc)
                         col = match.group(1)
                         row = match.group(2)
                         new_loc = ""
@@ -353,12 +355,14 @@ class Workbook:
                         contents = re.sub(
                             re.escape(loc), new_loc, contents, flags=re.IGNORECASE)
                     self.set_cell_contents(to_sheet, end_cell_loc, contents)
-                    affected_cells.add(self.spreadsheets[to_sheet.lower()].cells[end_cell_loc])
+                    affected_cells.add(
+                        self.spreadsheets[to_sheet.lower()].cells[end_cell_loc])
                 # Cells that aren't formulas can copy the original location's contents
                 else:
                     self.set_cell_contents(
                         to_sheet, end_cell_loc, contents)
-                    affected_cells.add(self.spreadsheets[to_sheet.lower()].cells[end_cell_loc])
+                    affected_cells.add(
+                        self.spreadsheets[to_sheet.lower()].cells[end_cell_loc])
                 if deleting:
                     # Delete cells that don't overlap with the new location
                     if start_cell_loc not in overlap_map:
@@ -864,7 +868,7 @@ class Workbook:
             to_sheet = sheet_name
         with self.__disable_notify_calls():
             affected_cells = self.__copy_cell_block(spreadsheet, start_location,
-                                end_location, to_location, to_sheet, True)
+                                                    end_location, to_location, to_sheet, True)
         self.__generate_notifications(affected_cells)
 
     def copy_cells(self, sheet_name: str, start_location: str,
@@ -919,5 +923,5 @@ class Workbook:
             to_sheet = sheet_name
         with self.__disable_notify_calls():
             affected_cells = self.__copy_cell_block(spreadsheet, start_location,
-                                end_location, to_location, to_sheet, False)
+                                                    end_location, to_location, to_sheet, False)
         self.__generate_notifications(affected_cells)
