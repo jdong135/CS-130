@@ -43,10 +43,6 @@ def topo_sort(cell: Cell, graph: Dict[Cell, List[Cell]]) -> Tuple[bool, List[Cel
                 if (w.location, w.sheet, DFSState.LEAVE) in call_set:
                     circular = True
                     break
-                # for c, s in call_stack:
-                #     if w.location == c.location and w.sheet == c.sheet and s == DFSState.LEAVE:
-                #         circular = True
-                #         break
         else:
             result.append(v)
     if not circular:
