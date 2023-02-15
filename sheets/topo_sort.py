@@ -45,6 +45,4 @@ def topo_sort(cell: Cell, graph: Dict[Cell, List[Cell]]) -> Tuple[bool, List[Cel
                     break
         else:
             result.append(v)
-    if not circular:
-        return False, result[::-1]
-    return True, result[::-1]
+    return circular, result[::-1]

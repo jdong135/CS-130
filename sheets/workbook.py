@@ -32,7 +32,7 @@ class Workbook:
             Workbook, Iterable[Tuple[str, str]]], None]] = []
         # Whether we should call __generate_notifications() in set_cell_contents()
         # Pertinent in move_cells() and copy_cells() where cells are updated multiple times
-        self.__call_notify = True
+        self.__call_notify: bool = True
 
     @contextmanager
     def __disable_notify_calls(self):
@@ -163,15 +163,13 @@ class Workbook:
                 if c.contents and \
                     (re.match(regex, c.contents.lower()) or
                         re.match(regex2, c.contents.lower())):
-                    try:
+                    with suppress(AttributeError):
                         # If a cell is an error type, check if it is a parse error and don't
                         # add to our list of cells. Otherwise, if it is not a cell error type,
                         # get_type() will throw an attribute error.
                         if self.get_cell_value(name, loc).get_type() == \
                                 cell_error.CellErrorType.PARSE_ERROR:
                             continue
-                    except AttributeError:
-                        pass
                     cells.append(c)
         return cells
 
@@ -310,7 +308,7 @@ class Workbook:
                     # If a cell is an error type, check if it is a parse error and don't
                     # update its contents. Otherwise, if it is not a cell error type,
                     # get_type() will throw an attribute error.
-                    try:
+                    with suppress(AttributeError):
                         if self.get_cell_value(spreadsheet.name, start_cell_loc).get_type() == \
                                 cell_error.CellErrorType.PARSE_ERROR:
                             self.set_cell_contents(
@@ -318,8 +316,6 @@ class Workbook:
                             affected_cells.add(
                                 self.spreadsheets[to_sheet.lower()].cells[end_cell_loc])
                             continue
-                    except AttributeError:
-                        pass
                     # Since cell type is not error, we don't worry about invalid cell refs
                     # Locations can be specified as A1, sheet1!A1, or 'sheet1'!A1
                     # sheetname: \'[^']*\'! OR [A-Za-z_][A-Za-z0-9_]*!
