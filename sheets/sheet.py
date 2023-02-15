@@ -13,10 +13,10 @@ class Sheet:
     """
 
     def __eq__(self, obj):
-        return isinstance(obj, Sheet) and obj.__dict__ == self.__dict__
+        return obj.__dict__ == self.__dict__
 
     def __hash__(self):
-        return hash(str(self.uuid))
+        return hash(self.uuid)
 
     def __init__(self, name: str):
         """
