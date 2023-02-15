@@ -240,46 +240,46 @@ class Multiple_Reference_Tests(unittest.TestCase):
     """
 
     def test_many_reference_one(self):
-        many_reference_one(self, 50)
-        many_reference_one(self, 100)
-        many_reference_one(self, 150)
+        many_reference_one(self, 500)
+        many_reference_one(self, 1000)
+        many_reference_one(self, 1500)
 
     def test_many_reference_many(self):
-        many_reference_many(self, 5, 10)
-        many_reference_many(self, 10, 10)
-        many_reference_many(self, 15, 10)
+        many_reference_many(self, 50, 10)
+        many_reference_many(self, 100, 10)
+        many_reference_many(self, 150, 10)
 
     def test_chain(self):
-        chain(self, 50)
-        chain(self, 100)
-        chain(self, 150)
+        chain(self, 500)
+        chain(self, 1000)
+        chain(self, 1500)
 
     def test_large_cycle(self):
-        large_cycle(self, 50)
-        large_cycle(self, 100)
-        large_cycle(self, 150)
+        large_cycle(self, 500)
+        large_cycle(self, 1000)
+        large_cycle(self, 1500)
 
     def test_delete_sheet(self):
-        delete_sheet1(self, 5, 10)
-        delete_sheet1(self, 10, 10)
-        delete_sheet1(self, 15, 10)
+        delete_sheet1(self, 50, 10)
+        delete_sheet1(self, 100, 10)
+        delete_sheet1(self, 150, 10)
 
     def test_make_break_cycle(self):
-        make_break_cycle(self, 20, 3)
-        make_break_cycle(self, 40, 3)
-        make_break_cycle(self, 60, 3)
-        make_break_cycle(self, 20, 6)
-        make_break_cycle(self, 20, 9)
+        make_break_cycle(self, 2000, 3)
+        make_break_cycle(self, 4000, 3)
+        make_break_cycle(self, 6000, 3)
+        make_break_cycle(self, 2000, 6)
+        make_break_cycle(self, 2000, 9)
 
     def test_rename_sheet(self):
-        reference_rename_sheet(self, 5, 10)
-        reference_rename_sheet(self, 10, 10)
-        reference_rename_sheet(self, 15, 10)
+        reference_rename_sheet(self, 50, 10)
+        reference_rename_sheet(self, 100, 10)
+        reference_rename_sheet(self, 150, 10)
 
     def test_dangling_chain(self):
-        dangling_chain(self, 5, 10)
-        dangling_chain(self, 10, 10)
-        dangling_chain(self, 15, 10)
+        dangling_chain(self, 5, 100)
+        dangling_chain(self, 10, 100)
+        dangling_chain(self, 15, 100)
 
 
 if __name__ == "__main__":
