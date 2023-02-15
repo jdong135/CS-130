@@ -21,11 +21,11 @@ class Cell:
 
     def __eq__(self, obj):
         """Override equality for user defined class"""
-        return obj.__dict__ == self.__dict__
+        return isinstance(obj, Cell) and obj.__dict__ == self.__dict__
 
     def __hash__(self):
         """Hash based off of the cell's sheet's id and the cell's location"""
-        return hash((self.sheet.uuid, self.uuid))
+        return hash((str(self.sheet.uuid), str(self.uuid)))
 
     def __init__(self, sheet, location: str, contents: str, value: str, cell_type: CellType):
         """

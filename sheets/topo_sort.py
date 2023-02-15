@@ -25,7 +25,7 @@ def topo_sort(cell: Cell, graph: Dict[Cell, List[Cell]]) -> Tuple[bool, List[Cel
         cycle and the corresponding ordered list of topologically sorted cells.
     """
     call_stack = [(cell, DFSState.ENTER)]
-    call_set = set((cell.location, cell.sheet, DFSState.ENTER))
+    call_set = set()
     result = []
     visited = set()
     circular = False
