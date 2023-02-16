@@ -1,0 +1,234 @@
+CS130 Project 3 - Design Document
+=================================
+
+Please answer all questions in this design document.  Note that the final
+feedback section is optional, and you are not required to answer it if you
+don't want to.
+
+Unanswered or incompletely answered questions, or answers that don't actually
+match the code/repository, will result in deductions.
+
+Answers don't have to be deeply detailed!  We are mainly looking for an
+overview or summary description of how your project works, and your team's
+experiences working on this project.
+
+Logistics (7 pts)
+-----------------
+
+L1.  [2pts] Enumerate all teammates here.
+
+Jay Dong, Jake Goldman, Andy Sun
+
+L2.  [2pts] What did each teammate focus on during this project?
+
+Jay: Working on updating contents of a cell when moved or copied, wrote
+functionality tests, implemented caching to improve performance
+Jake: Modify lark grammar to support absolute references,
+wrote functionality tests, updated notify function
+Andy: Fixed project 1 errors involving string and decimal concatenation,
+wrote functionality tests, improved topo sort speed
+
+L3.  [3pts] Approximately how many hours did each teammate spend on the project?
+
+Jay: 22
+Jake: 22
+Andy: 22
+
+Spreadsheet Engine Design (9 pts)
+----------------------------------
+
+D1.  [3pts] Moving and copying regions of a sheet are very similar operations,
+     with only a few differences between them.  How did your team take advantage
+     of the similarity of these two operations to reduce the amount of code
+     required to provide this functionality?
+
+We realized that moving a cell block is equivalent to copying the cell block
+and then deleting the original cell block, except for the cells in any
+overlapping region. We then just created a helper function to copy a
+cell block, and called it from move_cells and copy_cells. We pass in a
+boolean to the helper function to indicate whether the original block
+should be deleted. 
+
+D2.  [3pts] Similarly, moving/copying regions of a sheet, and renaming a sheet,
+     both involve formula updates.  Was your team able to factor out common
+     aspects of these two operations to reduce the amount of code required to
+     implement these operations?  If so, what did you do?  If not, why not?
+
+We did not refactor our rename sheet function to use move or copy cells
+because we felt that our current implementation would be faster. Currently,
+we only update the contents of the cells that contain the sheet name to be
+updated. But if we were to create a new sheet, copy the cells over, and
+then delete the old sheet, this would require calling set_cell_contents
+more times than may be necessary. 
+
+D3.  [3pts] How does your implementation address the challenges of moving or
+     copying a region of cells where the source and target regions overlap?
+
+Given the corners of the original block and the destination location, we
+generate a mapping of {location: (contents, cell_type)}. For every cell in
+the mapping, we copy its contents and store it in the contents field of
+the dictionary. As we iterate through our original block of cells, when we
+reach a cell inside of our overlap, we get its contents by querying from our
+mapping, rather than calling get_cell_contents, since its original contents
+may have already been overwritten. Another challenge faced with overlapping
+cells is that notification functions may recognize cells as updated multiple
+times since the dependencies of cells in a block can update multiple times
+before the given cell is moved. So, we created a context that silences calls
+to the notification functions typically called within set_cell_contents, and
+instead add updated cells to a set in our private method __copy_cell_block
+that is called by the notification function at the end of execution. The usage
+of a set prevents cells from being reported as updated multiple times. 
+
+Static Code Analysis / Code Linting (16pts)
+-------------------------------------------
+
+L1.  [5pts] The Project 3 spec includes an example of a subtle implementation
+     bug with the Python counts(s, totals) function as written in the spec.
+     Briefly describe the cause of the buggy behavior, and what is the
+     recommended approach for avoiding the buggy behavior.
+
+The problem with the buggy code is that totals is a default mutable argument,
+so when counts is called multiple times, Python references the same
+dictionary object every time. “totals” is treated as a global variable
+that every counts() call references. 
+
+The fix is to initialize totals as None, and check if “totals” has been
+initialized within the body of counts(). If it has not been initialized,
+then the function will create a new totals dictionary. As a result, separate
+calls to counts() will not reuse the same dictionary. 
+
+L2.  [4pts] What code-linter did your team use on your project?  Why did you
+     choose it?  Was this the first CS130 project in which you used a linter?
+
+We used Pylint because it was strongly recommended in the spec. This was the
+first project in which we used a linter. 
+
+
+L3.  [3pts] How did you automate the execution of your code linter?  Did
+     everyone in your team find it easy to run?
+
+We created a make target for Pylint, so all you had to do to execute code
+linting was “make lint”. Then, we would log the errors in a text file to
+review. Everyone found this easy to use. 
+
+L4.  [4pts] Did the use of the linter improve your overall code quality and
+     correctness?  Give some specific details in your answer.  Were there any
+     serious issues (e.g. buggy language idioms) you were unaware of?
+
+We had a try/except block that was catching all exceptions when we checked
+if a cell was a parse error. This is bad practice, so we explicitly caught
+AttributeError. We had another try/except block that was catching any error
+returned by the notification function and continuing, so we replaced that with
+a suppress context for better code quality. We also made abstractions within
+our test cases of commonly used setup and takedown methods to helper functions,
+so readers could clearly see what was being tested in the test functions
+without having to parse through setup code. 
+
+Performance Improvement (18 pts)
+--------------------------------
+
+In this project you must improve the performance of two central areas of your
+spreadsheet engine - cell updating and cycle detection.  In the previous project
+your team should have written some performance-testing code in preparation for
+this effort, and should have run it under a profiler to get an initial sense of
+where improvements can be made.  In this project you will follow through on
+this investigation, and fix performance issues in your code.
+
+P1.  [7pts] Give a brief overview of 3-4 of the worst hot-spots you identified
+     in your performance testing and analysis.  For each one, describe how your
+     team was able to resolve it.
+
+As mentioned in our previous design document, the majority of time was spent
+within our formula evaluator class, specifically within calls to Lark. From
+our performance tests, the hotspots we identified were opening the parser and
+grammar using Lark.open() in our formula evaluator, parsing the contents with
+the Lark parser (Lark.parse), and our toposort implementation.
+
+We resolved the Lark.open() hotspot by implementing caching. In our previous
+implementation, every time a formula was evaluated, a new Lark instance was
+initialized and the grammar was read. As the number of formulas evaluated
+increases in a single workbook instance, we were constantly reinitializing
+a new Lark instance and rereading the grammar. Thus, we implemented caching
+for Lark.open() which dramatically reduced the time spent in our stress tests
+(95%). 
+
+Similarly, we resolved the parser hotspot by implementing caching.
+After implementing caching, the time required for stress tests also
+dramatically decreased (82%). 
+
+Another hotspot we identified was toposort. We improved toposort by utilizing
+a secondary “call_set” set rather than iterating through the “call_stack”
+list to check if an element was in the call stack. We recognized that sets
+had O(1) lookup compared to a list which has O(n) lookup. After implementing
+this fix, the time required for stress tests also dramatically decreased (63%).
+
+P2.  [4pts] Did your team try anything to resolve performance issues and find
+     that it didn't improve things at all - perhaps even made things worse?
+     If so, were you able to identify why the intended fix didn't produce the
+     desired benefit?
+
+Yes. The majority of our attempted solutions did not improve performance or
+even decreased performance. 
+
+For example, we tried modifying the __eq__ method in Cell and Sheet to see if
+we could improve object comparison, but this had little to no effect on run
+time. It was a false lead because ncalls was high for __eq__, but each
+individual call did not take much time. 
+
+One thing we wanted to change was making the neighbors of each cell a set
+instead of a list for the adjacency list. However, with our current
+implementation, that would regress our codebase since order matters
+when traversing neighbors. 
+
+
+P3.  [4pts] How do you feel that your performance updates affected your code's
+     readability and maintainability?  Did it make it better? worse? unchanged?
+     Elaborate on your answer.
+
+We felt that the performance updates we implemented and kept did not affect
+our code’s readability and maintainability. Since the majority of our fixes
+involved caching, the fixes only required adding a few lines and we did not
+need to alter any existing code. Our toposort fix did slightly alter our
+toposort implementation, but the structure was largely unchanged.
+
+P4.  [3pts] Did your performance updates cause any regressions in functionality?
+     If so, briefly describe any issues that emerged.  How were these issues
+     identified (e.g. automated test failures, manual testing, etc.)?  How
+     quickly were issues identified?
+
+No. Our performance updates did not cause any regressions in functionality.
+We believe our tests are comprehensive and should catch any breaks
+in functionality. Since we run our tests locally after any updates to
+our code, we do not keep any performance updates that break any tests.
+We also have automated tests when pushing to main as another backup to
+ensure functionality of our code. Since our tests are comprehensive,
+any potential issues are identified immediately without the need for
+manual testing. For example, we did implement caching for several functions
+such as our evaluate expression function which is called when evaluating
+functions, but after immediately running our tests after implementation
+and failing our tests, we undid our changes.
+
+Section F:  CS130 Project 3 Feedback [OPTIONAL]
+-----------------------------------------------
+
+These questions are OPTIONAL, and you do not need to answer them.  Your grade
+will not be affected by answering or not answering them.  Also, your grade will
+not be affected by negative feedback - we want to know what went poorly so that
+we can improve future versions of the course.
+
+F1.  What parts of the assignment did you find highly enjoyable?  Conversely,
+     what parts of the assignment did you find unenjoyable?
+
+
+F2.  What parts of the assignment helped you learn more about software
+     engineering best-practices, or other useful development skills?
+     What parts were not helpful in learning these skills?
+
+
+F3.  Were there any parts of the assignment that seemed _unnecessarily_ tedious?
+     (Some parts of software development are always tedious, of course.)
+
+
+F4.  Do you have any feedback and/or constructive criticism about how this
+     project can be made better in future iterations of CS130?
+

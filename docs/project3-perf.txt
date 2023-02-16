@@ -1,0 +1,69 @@
+Theory - We think that Lark.open(‘sheets/formula.lark’, start = ‘formula’),
+specifically loading the grammar within this function, is inefficient and
+takes a lot of time.
+Rationale - In our profiler data for stress tests involving formula evaluations,
+we recognize that lark.open has the highest cumulative time compared to any
+other function calls. Taking a deeper look, we recognize that the time is spent
+loading the grammar and parsing the grammar. We think that implementing caching
+will be beneficial since the grammar stays the same and we are repeatedly
+calling lark.open when evaluating a higher number of functions.
+Outcome - After implementing caching for the Lark.open function, the overall
+time to run our stress tests decreased by 94%. In the profiler data, we can see
+that Lark.open and loading the grammar no longer have the highest cumulative
+time in our stress tests. This is a great improvement.
+
+Theory - We think that parsing the formula is a hotspot and will try to
+improve its time efficiency.
+Rationale - In our profiler data for stress tests involving formula evaluations,
+having optimized Lark.open, the parse now has the highest cumulative time
+compared to any other function calls. 
+Outcome - After implementing caching for the parse function, the overall time
+to run our stress tests decreased by 67%. In the profiler data, parse no longer
+has the highest cumulative running time in the tests and is no longer a
+hotspot. This is also a significant improvement.
+
+Theory - Within our toposort, for each neighbor of the current cell in the
+DFS, we iterate through the call stack and check if any of the calls in the
+call stack match the neighbor and is DFSstate.LEAVE to detect cycles. This
+is highly inefficient and searching through the call stack is O(n). We felt
+that this could be improved.
+Rationale - In our profiler data for stress tests involving a lot of cell
+references and chains of references, the topo sort function took the majority
+of run time during the stress tests. We identified the topo sort function as a
+hotspot.
+Outcome - By implementing a second set to replicate the call stack for the
+above search operation, searching through the call stack becomes O(1).
+The overall time to run our tests decreased by 57%. In our profiler data,
+topo sort is still a hot spot and has higher cumulative running time than
+other functions, but the actual cumulative running time decreased
+significantly, especially in tests with lots of cell references. This is also
+a significant improvement, but we will continue to brainstorm ways to further
+improve toposort’s efficiency.
+
+Theory - As mentioned, our toposort is a hot spot. Within our iterative
+toposort approach, we use a list as a stack. We recognized that there are
+other Python data structures that could possibly improve performance for
+popping and adding such as deque. 
+Rationale - Similar to above, the topo sort function continues to take a
+majority of run time during the stress tests especially for tests with a
+lot of long reference chains. We identified the topo sort function as a hotspot.
+Outcome - This change did not improve our performance and performance remained
+the same. The profiler data also did not change. 
+
+Theory - Within our formula evaluator, we recognize that the Lark visit
+method is slow.
+Rationale - We recognized that Lark visit was a function with a relatively
+higher cumulative run time compared to our methods/functions in the Profiler
+data. Thus, we implemented caching in an attempt to improve performance.
+Outcome - This change did not improve our performance and performance remained
+the same. The profiler data also did not change. Caching does not improve
+visit performance.
+
+Theory - Checking equality between cells and sheets using the __eq__method was
+taking a lot of time. We simplified the __eq__ methods.
+Rationale - In our Cprofile data, eq method of both cells and sheets was
+taking up a significant amount of time compared to other functions/methods.
+Outcome - This change did not improve our performance and performance remained
+the same. The profiler data also did not change. We suspect it is because the
+profiler number of calls were high for __eq__, but each individual call did
+not take much time. 
