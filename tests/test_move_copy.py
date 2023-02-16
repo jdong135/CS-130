@@ -1081,6 +1081,52 @@ class WorkbookMoveCopyCells(unittest.TestCase):
                          decimal.Decimal(50))
         self.assertEqual(wb.get_cell_contents('sheet1', "A1"), None)
         self.assertEqual(wb.get_cell_contents('sheet1', "A2"), None)
+    
+    def test_move_absolute_diff_sheet(self):
+        wb = sheets.Workbook()
+        wb.new_sheet()
+        wb.new_sheet()
+        wb.set_cell_contents('Sheet2', 'A1', '5')
+        wb.set_cell_contents('sheet1', 'A1', '=Sheet2!$A$1')
+        wb.set_cell_contents('sheet1', 'A2', '=A1 * 5')
+        self.assertEqual(wb.get_cell_value("sheet1", "A2"),
+                         decimal.Decimal(25))
+        wb.move_cells('sheet1', 'A1', 'A2', 'B1')
+        self.assertEqual(wb.get_cell_value("sheet1", "B2"),
+                         decimal.Decimal(25))
+        self.assertEqual(wb.get_cell_contents('sheet1', "A1"), None)
+        self.assertEqual(wb.get_cell_contents('sheet1', "A2"), None)
+    
+    def test_move_absolute_diff_sheet2(self):
+        wb = sheets.Workbook()
+        wb.new_sheet()
+        wb.new_sheet()
+        wb.set_cell_contents('Sheet2', 'A1', '5')
+        wb.set_cell_contents('sheet1', 'A1', '=Sheet2!$A1')
+        wb.set_cell_contents('sheet1', 'A2', '=A1 * 5')
+        self.assertEqual(wb.get_cell_value("sheet1", "A2"),
+                         decimal.Decimal(25))
+        wb.move_cells('sheet1', 'A1', 'A2', 'B1')
+        self.assertEqual(wb.get_cell_value("sheet1", "B2"),
+                         decimal.Decimal(25))
+        self.assertEqual(wb.get_cell_contents('sheet1', "A1"), None)
+        self.assertEqual(wb.get_cell_contents('sheet1', "A2"), None)
+    
+    def test_move_absolute_diff_sheet3(self):
+        wb = sheets.Workbook()
+        wb.new_sheet()
+        wb.new_sheet()
+        wb.set_cell_contents('Sheet2', 'A1', '5')
+        wb.set_cell_contents('sheet1', 'A1', '=Sheet2!A$1')
+        wb.set_cell_contents('sheet1', 'A2', '=A1 * 5')
+        self.assertEqual(wb.get_cell_value("sheet1", "A2"),
+                         decimal.Decimal(25))
+        wb.move_cells('sheet1', 'A1', 'A2', 'A3')
+        self.assertEqual(wb.get_cell_value("sheet1", "A4"),
+                         decimal.Decimal(25))
+        self.assertEqual(wb.get_cell_contents('sheet1', "A1"), None)
+        self.assertEqual(wb.get_cell_contents('sheet1', "A2"), None)
+
 
 if __name__ == "__main__":
     unittest.main()
