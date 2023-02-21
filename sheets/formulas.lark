@@ -72,3 +72,7 @@ QUOTED_SHEET_NAME: /\'[^']*\'/
 NUMBER: /([0-9]+(\.[0-9]*)?)|(\.[0-9]+)/
 
 STRING: /\"[^"]*\"/
+
+// (?i) means case insensitive
+// ^ and $ ensure the whole string matches
+BOOLEAN: /(?i)^(true|false)$/

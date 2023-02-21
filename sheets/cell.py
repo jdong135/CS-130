@@ -12,6 +12,7 @@ class CellType(enum.Enum):
     LITERAL_NUM = 4
     LITERAL_STRING = 5
     ERROR = 6
+    BOOLEAN = 7
 
 
 class Cell:
