@@ -140,6 +140,12 @@ class Workbook:
             cell_type = cell.CellType.FORMULA
             if evaluator:
                 relies_on = evaluator.calling_cell_relies_on
+        elif string_conversions.is_boolexpr(cell_contents):
+            if string_conversions.is_trueexpr(cell_contents):
+                val = True
+            else:
+                val = False
+            cell_type = cell.CellType.BOOLEAN
         elif string_conversions.is_number(cell_contents):
             stripped = string_conversions.strip_zeros(cell_contents)
             val = Decimal(stripped)

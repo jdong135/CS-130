@@ -9,6 +9,7 @@ from sheets import cell_error
 
 
 ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+COMPARISON_OPERATORS = ["=", "==", "<>", "!=", ">", "<", ">=", "<="]
 
 
 @cache
@@ -153,3 +154,18 @@ def strip_evaluation(evaluation):
         stripped = strip_zeros(str(evaluation))
         return decimal.Decimal(stripped)
     return evaluation
+
+def is_boolexpr(expr: str):
+    if expr.lower() == "false" or expr.lower() == "true":
+        return True
+    else:
+        return False
+
+def is_trueexpr(expr: str):
+    if expr.lower() == "true":
+        return True
+    else:
+        return False
+
+
+    
