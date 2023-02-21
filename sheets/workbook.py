@@ -1,8 +1,8 @@
 """Workbook API. Contains spreadsheet functions accessible to public users."""
 from __future__ import annotations
 from typing import Tuple, List, Optional, Any, TextIO, Callable, Iterable, Dict, Set
-import decimal
-import copy
+from copy import deepcopy
+from decimal import Decimal
 import json
 import re
 from contextlib import contextmanager, suppress
@@ -104,7 +104,7 @@ class Workbook:
         changed_cells = [(c.sheet.name, c.location) for c in cell_list]
         for notify_function in self.notify_functions:
             with suppress(Exception):
-                notify_function(copy.deepcopy(self), changed_cells)
+                notify_function(deepcopy(self), changed_cells)
 
     def __set_cell_value_and_type(self, calling_cell: cell.Cell) -> Tuple[list, bool]:
         """
@@ -137,7 +137,7 @@ class Workbook:
                 relies_on = evaluator.calling_cell_relies_on
         elif string_conversions.is_number(cell_contents):
             stripped = string_conversions.strip_zeros(cell_contents)
-            val = decimal.Decimal(stripped)
+            val = Decimal(stripped)
             cell_type = cell.CellType.LITERAL_NUM
         else:
             val = cell_contents
@@ -589,7 +589,7 @@ class Workbook:
             raise ValueError(f"Cell location {location} is invalid")
         if location in spreadsheet.cells:
             if isinstance(spreadsheet.cells[location].value, unitialized_value.UninitializedValue):
-                return decimal.Decimal(0)
+                return Decimal(0)
             return spreadsheet.cells[location].value
         return None
 
