@@ -216,7 +216,7 @@ class Workbook:
         bottom_right_row = max(start_row, end_row)
         return top_left_col, top_left_row, bottom_right_col, bottom_right_row
 
-    def __get_overlap_map(self, spreadsheet: sheet.Sheet,
+    def __get_overlap_map(self, spreadsheet: sheet.Sheet, to_sheet: sheet.Sheet,
                           original_corners: Tuple[int, int, int, int],
                           destination_corners: Tuple[int, int, int, int]
                           ) -> Dict[str, Tuple[str, cell.CellType]]:
@@ -233,6 +233,8 @@ class Workbook:
             Dict[str, Tuple[str, cell.CellType]]: Mapping of location to contents and cell type
         """
         mapping = {}
+        if spreadsheet != to_sheet:
+            return mapping
         for i in range(destination_corners[0], destination_corners[2] + 1):
             for j in range(destination_corners[1], destination_corners[3] + 1):
                 if original_corners[0] <= i <= original_corners[2] and \
@@ -290,7 +292,7 @@ class Workbook:
                 [string_conversions.num_to_col(top_left_col), str(top_left_row)]) == to_location:
             return affected_cells
         overlap_map = self.__get_overlap_map(
-            spreadsheet, original_corners, destination_corners)
+            spreadsheet, self.spreadsheets[to_sheet.lower()], original_corners, destination_corners)
         # move each cell in our selection zone
         for i in range(top_left_col, bottom_right_col + 1):
             start_cell_col = string_conversions.num_to_col(i)
@@ -367,12 +369,12 @@ class Workbook:
                 else:
                     initial_val = self.get_cell_value(to_sheet, end_cell_loc)
                     self.set_cell_contents(
-                        to_sheet, end_cell_loc, contents) 
+                        to_sheet, end_cell_loc, contents)
                     if end_cell_loc in self.spreadsheets[to_sheet.lower()].cells:
                         affected_cells.add(
                             self.spreadsheets[to_sheet.lower()].cells[end_cell_loc])
                     # If we are deleting the cells value when copying it, then it is no longer
-                    # located in our cells dictionary. So, if our initial value exists, we 
+                    # located in our cells dictionary. So, if our initial value exists, we
                     # create a temporary cell object that is stored in affected_cells.
                     elif initial_val is not None:
                         temp_cell = cell.Cell(
