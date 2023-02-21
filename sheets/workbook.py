@@ -8,7 +8,12 @@ import re
 from contextlib import contextmanager, suppress
 from sheets import cell, topo_sort, cell_error, lark_module, sheet, \
     string_conversions, unitialized_value
-
+import logging
+logging.basicConfig(filename="logs/lark_module.log",
+                    format='%(asctime)s %(message)s',
+                    filemode='w')
+logger = logging.getLogger()
+logger.setLevel(logging.DEBUG)
 
 ALLOWED_PUNC = set([".", "?", "!", ",", ":", ";", "@", "#",
                     "$", "%", "^", "&", "*", "(", ")", "-", "_"])
@@ -234,7 +239,10 @@ class Workbook:
                         original_corners[1] <= j <= original_corners[3]:
                     loc = "".join([string_conversions.num_to_col(i), str(j)])
                     contents = self.get_cell_contents(spreadsheet.name, loc)
-                    cell_type = spreadsheet.cells[loc].cell_type
+                    if loc in spreadsheet.cells:
+                        cell_type = spreadsheet.cells[loc].cell_type
+                    else:
+                        cell_type = cell.CellType.EMPTY
                     mapping[loc] = (contents, cell_type)
         return mapping
 
@@ -279,7 +287,7 @@ class Workbook:
         # if our top left corner is equal to to_location, then we aren't actually moving any
         # cells and we can just return an empty set.
         if "".join(
-            [string_conversions.num_to_col(top_left_col), str(top_left_row)]) == to_location:
+                [string_conversions.num_to_col(top_left_col), str(top_left_row)]) == to_location:
             return affected_cells
         overlap_map = self.__get_overlap_map(
             spreadsheet, original_corners, destination_corners)
@@ -313,8 +321,9 @@ class Workbook:
                                 cell_error.CellErrorType.PARSE_ERROR:
                             self.set_cell_contents(
                                 to_sheet, end_cell_loc, contents)
-                            affected_cells.add(
-                                self.spreadsheets[to_sheet.lower()].cells[end_cell_loc])
+                            if end_cell_loc in self.spreadsheets[to_sheet.lower()].cells:
+                                affected_cells.add(
+                                    self.spreadsheets[to_sheet.lower()].cells[end_cell_loc])
                             continue
                     # Since cell type is not error, we don't worry about invalid cell refs
                     # Locations can be specified as A1, sheet1!A1, or 'sheet1'!A1
@@ -351,18 +360,22 @@ class Workbook:
                         contents = re.sub(
                             re.escape(loc), new_loc, contents, flags=re.IGNORECASE)
                     self.set_cell_contents(to_sheet, end_cell_loc, contents)
-                    affected_cells.add(
-                        self.spreadsheets[to_sheet.lower()].cells[end_cell_loc])
+                    if end_cell_loc in self.spreadsheets[to_sheet.lower()].cells:
+                        affected_cells.add(
+                            self.spreadsheets[to_sheet.lower()].cells[end_cell_loc])
                 # Cells that aren't formulas can copy the original location's contents
                 else:
                     self.set_cell_contents(
                         to_sheet, end_cell_loc, contents)
-                    affected_cells.add(
-                        self.spreadsheets[to_sheet.lower()].cells[end_cell_loc])
+                    if end_cell_loc in self.spreadsheets[to_sheet.lower()].cells:
+                        affected_cells.add(
+                            self.spreadsheets[to_sheet.lower()].cells[end_cell_loc])
                 if deleting:
                     # Delete cells that don't overlap with the new location
                     if start_cell_loc not in overlap_map:
-                        affected_cells.add(spreadsheet.cells[start_cell_loc])
+                        if start_cell_loc in spreadsheet.cells:
+                            affected_cells.add(
+                                spreadsheet.cells[start_cell_loc])
                         self.set_cell_contents(
                             spreadsheet.name, start_cell_loc, None)
         return affected_cells
