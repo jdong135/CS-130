@@ -365,11 +365,20 @@ class Workbook:
                             self.spreadsheets[to_sheet.lower()].cells[end_cell_loc])
                 # Cells that aren't formulas can copy the original location's contents
                 else:
+                    initial_val = self.get_cell_value(to_sheet, end_cell_loc)
                     self.set_cell_contents(
-                        to_sheet, end_cell_loc, contents)
+                        to_sheet, end_cell_loc, contents) 
                     if end_cell_loc in self.spreadsheets[to_sheet.lower()].cells:
                         affected_cells.add(
                             self.spreadsheets[to_sheet.lower()].cells[end_cell_loc])
+                    # If we are deleting the cells value when copying it, then it is no longer
+                    # located in our cells dictionary. So, if our initial value exists, we 
+                    # create a temporary cell object that is stored in affected_cells.
+                    elif initial_val is not None:
+                        temp_cell = cell.Cell(
+                            self.spreadsheets[to_sheet.lower()], end_cell_loc, None, None, None)
+                        affected_cells.add(temp_cell)
+                        del temp_cell
                 if deleting:
                     # Delete cells that don't overlap with the new location
                     if start_cell_loc not in overlap_map:
