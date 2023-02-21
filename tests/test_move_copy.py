@@ -426,6 +426,91 @@ class WorkbookMoveCopyCells(unittest.TestCase):
                     "'Sheet1', 'B3'", "'Sheet1', 'C3'"]
         self.assertEqual(expected, output)
 
+    def test_move_block_with_empty_cells_to_diff_sheet(self):
+        new_stdo, sys_out = store_stdout()
+        wb = sheets.Workbook()
+        wb.new_sheet()
+        wb.new_sheet()
+        wb.set_cell_contents("sheet1", "A1", "1")
+        wb.set_cell_contents("sheet1", "A2", "2")
+        wb.set_cell_contents("sheet1", "B3", "3")
+        wb.notify_cells_changed(on_cells_changed)
+        wb.move_cells("sheet1", "A3", "B1", "B1", "sheet2")
+        self.assertEqual(wb.get_cell_value(
+            "Sheet2", "B1"), decimal.Decimal(1))
+        self.assertEqual(wb.get_cell_value(
+            "Sheet2", "B2"), decimal.Decimal(2))
+        self.assertEqual(wb.get_cell_value(
+            "Sheet2", "C3"), decimal.Decimal(3))
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "A1"), None)
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "A2"), None)
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "B3"), None)
+        output = sort_notify_list(restore_stdout(new_stdo, sys_out))
+        expected = ["'Sheet1', 'A1'", "'Sheet1', 'A2'", "'Sheet1', 'B3'", "'Sheet2', 'B1'",
+                    "'Sheet2', 'B2'", "'Sheet2', 'C3'"]
+        self.assertEqual(expected, output)
+
+    def test_copy_block_with_empty_cells(self):
+        new_stdo, sys_out = store_stdout()
+        wb = sheets.Workbook()
+        wb.new_sheet()
+        wb.set_cell_contents("sheet1", "A1", "1")
+        wb.set_cell_contents("sheet1", "A2", "2")
+        wb.set_cell_contents("sheet1", "B3", "3")
+        wb.notify_cells_changed(on_cells_changed)
+        wb.copy_cells("sheet1", "A3", "B1", "B1", "sheet1")
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "A1"), decimal.Decimal(1))
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "A2"), decimal.Decimal(2))
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "A3"), None)
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "B1"), decimal.Decimal(1))
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "B2"), decimal.Decimal(2))
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "B3"), None)
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "C1"), None)
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "C2"), None)
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "C3"), decimal.Decimal(3))
+        output = sort_notify_list(restore_stdout(new_stdo, sys_out))
+        expected = ["'Sheet1', 'B1'", "'Sheet1', 'B2'",
+                    "'Sheet1', 'B3'", "'Sheet1', 'C3'"]
+        self.assertEqual(expected, output)
+
+    def test_copy_block_with_empty_cells_to_diff_sheet(self):
+        new_stdo, sys_out = store_stdout()
+        wb = sheets.Workbook()
+        wb.new_sheet()
+        wb.new_sheet()
+        wb.set_cell_contents("sheet1", "A1", "1")
+        wb.set_cell_contents("sheet1", "A2", "2")
+        wb.set_cell_contents("sheet1", "B3", "3")
+        wb.notify_cells_changed(on_cells_changed)
+        wb.copy_cells("sheet1", "A3", "B1", "B1", "sheet2")
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "A1"), decimal.Decimal(1))
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "A2"), decimal.Decimal(2))
+        self.assertEqual(wb.get_cell_value(
+            "Sheet1", "B3"), decimal.Decimal(3))
+        self.assertEqual(wb.get_cell_value(
+            "Sheet2", "B1"), decimal.Decimal(1))
+        self.assertEqual(wb.get_cell_value(
+            "Sheet2", "B2"), decimal.Decimal(2))
+        self.assertEqual(wb.get_cell_value(
+            "Sheet2", "C3"), decimal.Decimal(3))
+        output = sort_notify_list(restore_stdout(new_stdo, sys_out))
+        expected = ["'Sheet2', 'B1'", "'Sheet2', 'B2'", "'Sheet2', 'C3'"]
+        self.assertEqual(expected, output)
+
     def test_basic_sheet_name_not_found(self):
         new_stdo, sys_out = store_stdout()
         wb = sheets.Workbook()
