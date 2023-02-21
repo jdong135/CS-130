@@ -155,13 +155,13 @@ def strip_evaluation(evaluation):
         return decimal.Decimal(stripped)
     return evaluation
 
-def is_boolexpr(expr: str):
+def is_bool_expr(expr: str):
     if expr.lower() == "false" or expr.lower() == "true":
         return True
     else:
         return False
 
-def is_trueexpr(expr: str):
+def is_true_expr(expr: str):
     if expr.lower() == "true":
         return True
     else:

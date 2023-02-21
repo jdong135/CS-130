@@ -4,8 +4,10 @@ PYLINT_OPTS_TESTS = --exit-zero --disable=C0103,C0116,R0904
 # C0116: missing docstring
 # R0904: too many public methods
 
+.DEFAULT_GOAL := test
+
 .PHONY: format
-format:
+format: clean
 	autopep8 -i sheets/*.py
 	autopep8 -i tests/*.py
 
@@ -16,6 +18,7 @@ test:
 	python3 tests/smoketest.py
 	python3 tests/test_spec2.py
 	python3 tests/test_move_copy.py
+	python3 tests/test_booleans.py
 
 stresstest: clean
 	python3 tests/test_stresstest.py

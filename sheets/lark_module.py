@@ -8,6 +8,13 @@ from lark.visitors import visit_children_decor
 from lark.exceptions import UnexpectedInput
 from sheets import cell_error, cell, string_conversions, unitialized_value
 
+import logging
+logging.basicConfig(filename="logs/lark_module.log",
+                    format='%(asctime)s %(message)s',
+                    filemode='w')
+logger = logging.getLogger()
+logger.setLevel(logging.DEBUG)
+
 
 class FormulaEvaluator(lark.visitors.Interpreter):
     """
@@ -182,6 +189,7 @@ class FormulaEvaluator(lark.visitors.Interpreter):
 
     @visit_children_decor
     def cell(self, values):
+        logger.info(f"cell: {values}")
         # handle different input formats for value
         if len(values) > 1:  # =[sheet]![col][row]
             sheet_name = self.__check_sheet_name(values[0].value)
@@ -232,6 +240,7 @@ class FormulaEvaluator(lark.visitors.Interpreter):
         return self.sub_evaluator.visit(tree.children[0])
 
     def number(self, tree):
+        logger.info(f"number: {tree}")
         number = decimal.Decimal(tree.children[0])
         if number == decimal.Decimal('NaN'):
             return "NaN"
@@ -240,11 +249,19 @@ class FormulaEvaluator(lark.visitors.Interpreter):
         return decimal.Decimal(string_conversions.strip_zeros(tree.children[0]))
 
     def string(self, tree):
+        logger.info(f"string: {tree}")
         value = tree.children[0].value[1:-1]
         potential_error = string_conversions.str_to_error(value)
         if potential_error:
             return potential_error
         return value
+
+    def boolean(self, tree):
+        logger.info(f"boolean: {tree}")
+        value = tree.children[0].value
+        if string_conversions.is_true_expr(value):
+            return True
+        return False
 
     def error(self, tree):
         match tree.children[0].upper():
@@ -293,6 +310,7 @@ def evaluate_expr(workbook, curr_cell, sheetname: str, contents: str) \
     Returns:
         FormulaEvaluator, Any: Evaluator object and provided value 
     """
+    logger.info("TEST")
     if sheetname.lower() not in workbook.spreadsheets:
         return None, cell_error.CellError(
             cell_error.CellErrorType.BAD_REFERENCE, "bad reference")
@@ -302,6 +320,7 @@ def evaluate_expr(workbook, curr_cell, sheetname: str, contents: str) \
     try:
         tree = get_tree(parser, contents)
     except UnexpectedInput:
+        logger.info("PARSE ERRROR")
         return evaluator, cell_error.CellError(
             cell_error.CellErrorType.PARSE_ERROR, "parse error")
     value = evaluator.visit(tree)

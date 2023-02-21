@@ -32,6 +32,7 @@
 // Base values
 
 ?base : cell
+      | BOOLEAN                 -> boolean
       | ERROR_VALUE             -> error
       | NUMBER                  -> number
       | STRING                  -> string
@@ -49,6 +50,7 @@ _sheetname : SHEET_NAME | QUOTED_SHEET_NAME
 
 ADD_OP: ("+" | "-")
 MUL_OP: ("*" | "/")
+// BOOL_OP: ("=" | "==" | "<>" | "!=" | "<" | ">" | "<=" | ">=")
 
 // Error values are also separately named lexer rules so we know what kind of
 // error is referenced.  All are case-insensitive.
@@ -75,4 +77,4 @@ STRING: /\"[^"]*\"/
 
 // (?i) means case insensitive
 // ^ and $ ensure the whole string matches
-BOOLEAN: /(?i)^(true|false)$/
+BOOLEAN: ("true"i | "false"i)
