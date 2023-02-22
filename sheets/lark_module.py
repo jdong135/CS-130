@@ -75,6 +75,8 @@ class FormulaEvaluator(lark.visitors.Interpreter):
             value = values[i]
             if isinstance(value, decimal.Decimal):
                 res[i] = value
+            elif isinstance(value, bool):
+                res[i] = 1 if value else 0
             elif isinstance(value, unitialized_value.UninitializedValue):
                 continue
             elif value and string_conversions.is_number(value):
@@ -178,10 +180,14 @@ class FormulaEvaluator(lark.visitors.Interpreter):
             return potential_error
         if isinstance(values[1], decimal.Decimal) and values[1] == decimal.Decimal(0):
             values[1] = "0"
+        elif isinstance(values[1], bool):
+            values[1] = "TRUE" if values[1] else "FALSE"
         elif not values[1] or isinstance(values[1], unitialized_value.UninitializedValue):
             values[1] = ""
         if isinstance(values[0], decimal.Decimal) and values[0] == decimal.Decimal(0):
             values[0] = "0"
+        elif isinstance(values[0], bool):
+            values[0] = "TRUE" if values[0] else "FALSE"
         elif not values[0] or isinstance(values[0], unitialized_value.UninitializedValue):
             values[0] = ""
         res = str(values[0]) + str(values[1])
@@ -193,18 +199,30 @@ class FormulaEvaluator(lark.visitors.Interpreter):
         if potential_error:
             return potential_error
         left, operator, right = values
+        ###
         if isinstance(left, str):
             left = left.lower()
-        if isinstance(right, str):
-            right = right.lower()
-        if isinstance(left, unitialized_value.UninitializedValue):
+            if left == "true":
+                left = True
+            elif left == "false":
+                left = False
+        ##
+        elif isinstance(left, unitialized_value.UninitializedValue):
             if isinstance(right, str):
                 left = ""
             elif isinstance(right, decimal.Decimal):
                 left = decimal.Decimal(0)
             elif isinstance(right, bool):
                 left = False
-        if isinstance(right, unitialized_value.UninitializedValue):
+        # ASK DONNIE
+        if isinstance(right, str):
+            right = right.lower()
+            if right == "true":
+                right = True
+            elif right == "false":
+                right = False
+        ###
+        elif isinstance(right, unitialized_value.UninitializedValue):
             if isinstance(left, str):
                 right = ""
             elif isinstance(left, decimal.Decimal):
@@ -223,6 +241,7 @@ class FormulaEvaluator(lark.visitors.Interpreter):
             return self.bool_cmpr(left, right, lambda x, y: x < y, '<')
         elif operator == "<=":
             return self.bool_cmpr(left, right, lambda x, y: x <= y, '<=')
+        assert False, 'Unexpected operator: ' + operator
 
     def bool_cmpr(self, left, right, operand, string_op):
         # booleans > strings > numbers

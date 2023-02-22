@@ -4,12 +4,16 @@ PYLINT_OPTS_TESTS = --exit-zero --disable=C0103,C0116,R0904
 # C0116: missing docstring
 # R0904: too many public methods
 
-.DEFAULT_GOAL := test
+.DEFAULT_GOAL := cui
 
 .PHONY: format
 format: clean
 	autopep8 -i sheets/*.py
 	autopep8 -i tests/*.py
+
+.PHONY: cui
+cui:
+	python3 -m sheets_cui
 
 test:
 	python3 tests/test_workbook.py
