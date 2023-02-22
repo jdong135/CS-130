@@ -9,7 +9,12 @@
 
 ?formula : "=" expression
 
-?expression : add_expr | concat_expr
+?expression : add_expr | concat_expr | bool_expr
+
+//========================================
+// Boolean evaluation
+
+?bool_expr : (bool_expr BOOL_OP)? (add_expr | concat_expr)
 
 //========================================
 // Arithmetic expressions
@@ -28,14 +33,16 @@
 
 ?concat_expr : (concat_expr "&")? base
 
+
+
 //========================================
 // Base values
 
 ?base : cell
-      | BOOLEAN                 -> boolean
       | ERROR_VALUE             -> error
       | NUMBER                  -> number
       | STRING                  -> string
+      | BOOLEAN                 -> boolean
       | "(" expression ")"      -> parens
 
 cell : (_sheetname "!")? CELLREF
@@ -50,7 +57,7 @@ _sheetname : SHEET_NAME | QUOTED_SHEET_NAME
 
 ADD_OP: ("+" | "-")
 MUL_OP: ("*" | "/")
-// BOOL_OP: ("=" | "==" | "<>" | "!=" | "<" | ">" | "<=" | ">=")
+BOOL_OP: ("=" | "==" | "<>" | "!=" | "<" | ">" | "<=" | ">=")
 
 // Error values are also separately named lexer rules so we know what kind of
 // error is referenced.  All are case-insensitive.
