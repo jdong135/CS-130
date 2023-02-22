@@ -257,6 +257,30 @@ class FormulaEvaluator(lark.visitors.Interpreter):
             return False if string_op in ['>', '>='] else True
 
     @visit_children_decor
+    def function(self, values):
+        logger.info(values)
+        value = values[0]
+        logger.info(value)
+        func_name, func_args = self.parse_function(value)
+        return self.wb.function_directory.call_function(func_name, func_args)
+        
+    def parse_function(self, func_call: str):
+        first_paren = func_call.index("(")
+        func_name = func_call[:first_paren]
+        args = func_call[first_paren+1:-1].split(",")
+        self.sub_evaluator = FormulaEvaluator(
+            self.wb, self.sheet, self.calling_cell)
+        res = []
+        for arg in args:
+            self.calling_cell_relies_on.extend(
+                self.sub_evaluator.calling_cell_relies_on)
+            parser = open_grammar()
+            sub_tree = get_tree(parser, "=" + arg)
+            value = self.sub_evaluator.visit(sub_tree)
+            res.append(value)
+        return func_name, res
+
+    @visit_children_decor
     def cell(self, values):
         # handle different input formats for value
         if len(values) > 1:  # =[sheet]![col][row]
@@ -376,6 +400,7 @@ def evaluate_expr(workbook, curr_cell, sheetname: str, contents: str) \
     Returns:
         FormulaEvaluator, Any: Evaluator object and provided value 
     """
+    logger.info("evaluating")
     if sheetname.lower() not in workbook.spreadsheets:
         return None, cell_error.CellError(
             cell_error.CellErrorType.BAD_REFERENCE, "bad reference")
