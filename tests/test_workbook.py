@@ -220,7 +220,7 @@ class WorkbookCopySheet(unittest.TestCase):
         wb.new_sheet("Sheet1_5")
         wb.set_cell_contents("sheet1_5", "A4", "Hello World")
         wb.set_cell_contents("sheet1", "A5", "=sheet1_5!A4")
-        name, index = wb.copy_sheet("sheet1")
+        index, name = wb.copy_sheet("sheet1")
         self.assertEqual(name, "sheet1_6")
         self.assertEqual(index, 6)
         self.assertEqual(wb.get_cell_value("sheet1_6", "A3"),

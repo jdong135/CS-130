@@ -841,7 +841,7 @@ class Workbook:
         self.new_sheet(copy_name)
         for location, c in self.spreadsheets[stored_name].cells.items():
             self.set_cell_contents(copy_name, location, c.contents)
-        return copy_name, len(self.spreadsheets) - 1
+        return len(self.spreadsheets) - 1, copy_name
 
     def move_cells(self, sheet_name: str, start_location: str,
                    end_location: str, to_location: str, to_sheet: Optional[str] = None) -> None:
