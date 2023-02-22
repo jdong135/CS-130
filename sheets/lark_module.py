@@ -8,13 +8,6 @@ from lark.visitors import visit_children_decor
 from lark.exceptions import UnexpectedInput
 from sheets import cell_error, cell, string_conversions, unitialized_value
 
-import logging
-logging.basicConfig(filename="logs/lark_module.log",
-                    format='%(asctime)s %(message)s',
-                    filemode='w')
-logger = logging.getLogger()
-logger.setLevel(logging.DEBUG)
-
 
 class FormulaEvaluator(lark.visitors.Interpreter):
     """
@@ -324,7 +317,6 @@ class FormulaEvaluator(lark.visitors.Interpreter):
 
     def boolean(self, tree):
         value = tree.children[0].value
-        logger.info(f'{value}')
         if string_conversions.is_true_expr(value):
             return True
         return False
