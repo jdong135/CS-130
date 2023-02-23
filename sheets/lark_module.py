@@ -275,7 +275,12 @@ class FormulaEvaluator(lark.visitors.Interpreter):
             self.calling_cell_relies_on.extend(
                 self.sub_evaluator.calling_cell_relies_on)
             parser = open_grammar()
-            sub_tree = get_tree(parser, "=" + arg)
+            try:
+                sub_tree = get_tree(parser, "=" + arg)
+            except UnexpectedInput:
+                value = cell_error.CellError(cell_error.CellErrorType.PARSE_ERROR, "parse error")
+                res.append(value)
+                continue
             value = self.sub_evaluator.visit(sub_tree)
             res.append(value)
         return func_name, res

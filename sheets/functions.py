@@ -1,11 +1,12 @@
-from typing import List, Dict, Callable
+from typing import List, Dict, Callable, Any
 from decimal import Decimal
 from sheets import cell_error, string_conversions
 
 
-class FunctionDirectory:## func_name : callable function
+class FunctionDirectory:
     def __init__(self):
-        self.directory: Dict[str, Callable] = {
+        # Function name -> callable function
+        self.directory: Dict[str, Callable[[List[Any]], Any]] = {
             "AND": and_func
         }
 

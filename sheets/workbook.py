@@ -7,7 +7,8 @@ import json
 import re
 from contextlib import contextmanager, suppress
 from sheets import cell, topo_sort, cell_error, lark_module, sheet, \
-    string_conversions, unitialized_value, functions
+    string_conversions, unitialized_value
+from sheets.functions import FunctionDirectory
 
 import logging
 logging.basicConfig(filename="logs/lark_module.log",
@@ -39,8 +40,8 @@ class Workbook:
         # Whether we should call __generate_notifications() in set_cell_contents()
         # Pertinent in move_cells() and copy_cells() where cells are updated multiple times
         self.__call_notify: bool = True
-        # WRITE LATER
-        self.function_directory = functions.FunctionDirectory() # fn in functions.py that creates directory 
+        # Directory of defined functions callable within cells
+        self.function_directory: FunctionDirectory = FunctionDirectory() 
 
     @contextmanager
     def __disable_notify_calls(self):
