@@ -40,9 +40,16 @@ class FunctionTests(unittest.TestCase):
     def test_and3(self):
         wb = sheets.Workbook()
         wb.new_sheet()
+        wb.set_cell_contents("sheet1", "A1", "=AND(TruE, tRUE, TRUE)")
+        self.assertEqual(wb.get_cell_value("sheet1", "A1"), True)
+
+    def test_and_error1(self):
+        wb = sheets.Workbook()
+        wb.new_sheet()
         wb.set_cell_contents("sheet1", "A1", "=AND(A1)")
         self.assertEqual(wb.get_cell_value("sheet1", "A1").get_type(), 
-                         sheets.cell_error.CellErrorType.CIRCULAR_REFERENCE)   
+                         sheets.cell_error.CellErrorType.CIRCULAR_REFERENCE)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -3,6 +3,7 @@ import decimal
 import re
 from typing import Any, Union
 from functools import lru_cache
+from contextlib import suppress
 from typing import List
 import lark
 from lark.visitors import visit_children_decor
@@ -286,12 +287,13 @@ class FormulaEvaluator(lark.visitors.Interpreter):
             if isinstance(arg, functions.Function):
                 arg.args, error_found = self.evaluate_function_cell_refs(arg.args)
             else:
-                tree = get_tree(self.parser, "=" + arg)
-                arg = self.visit(tree)
+                try:
+                    tree = get_tree(self.parser, "=" + arg)
+                    arg = self.visit(tree)
+                except lark.exceptions.UnexpectedInput:
+                    continue
             args_list[i] = arg
         error_found = self.__check_for_error(args_list)
-        if error_found:
-            return args_list, error_found
         return args_list, error_found
 
     def parse_function(self, func_call: str):
