@@ -263,11 +263,20 @@ class FormulaEvaluator(lark.visitors.Interpreter):
         logger.info(value)
         func_name, func_args = self.parse_function(value)
         return self.wb.function_directory.call_function(func_name, func_args)
-        
+
     def parse_function(self, func_call: str):
+        """Parse function call to extract function name and list of args
+
+        Args:
+            func_call (str): string of form FUNC(, ,)
+
+        Returns:
+            func_name (str): function name
+            res (list): list of args
+        """
         first_paren = func_call.index("(")
         func_name = func_call[:first_paren]
-        args = func_call[first_paren+1:-1].split(",")
+        args = func_call[first_paren + 1:-1].split(",")
         self.sub_evaluator = FormulaEvaluator(
             self.wb, self.sheet, self.calling_cell)
         res = []
@@ -278,7 +287,8 @@ class FormulaEvaluator(lark.visitors.Interpreter):
             try:
                 sub_tree = get_tree(parser, "=" + arg)
             except UnexpectedInput:
-                value = cell_error.CellError(cell_error.CellErrorType.PARSE_ERROR, "parse error")
+                value = cell_error.CellError(
+                    cell_error.CellErrorType.PARSE_ERROR, "parse error")
                 res.append(value)
                 continue
             value = self.sub_evaluator.visit(sub_tree)

@@ -21,7 +21,7 @@ def and_func(args: List):
         elif isinstance(arg, Decimal):
             if arg == Decimal(0):
                 return False
-        elif string_conversions.is_number(arg):
+        elif isinstance(arg, str) and string_conversions.is_number(arg):
             if Decimal(arg) == Decimal(0):
                 return False
         elif isinstance(arg, str):
@@ -30,4 +30,4 @@ def and_func(args: List):
             if arg.lower() != "true":
                 return cell_error.CellError(
                     cell_error.CellErrorType.TYPE_ERROR, "Invalid string argument")
-    return True 
+    return True
