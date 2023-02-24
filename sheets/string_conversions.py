@@ -166,6 +166,3 @@ def is_true_expr(expr: str):
         return True
     else:
         return False
-
-
-    

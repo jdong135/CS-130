@@ -6,7 +6,7 @@ from functools import lru_cache
 import lark
 from lark.visitors import visit_children_decor
 from lark.exceptions import UnexpectedInput
-from sheets import cell_error, cell, string_conversions, unitialized_value
+from sheets import cell_error, cell, string_conversions, unitialized_value, functions
 
 import logging
 logging.basicConfig(filename="logs/lark_module.log",
@@ -258,42 +258,21 @@ class FormulaEvaluator(lark.visitors.Interpreter):
 
     @visit_children_decor
     def function(self, values):
-        logger.info(values)
-        value = values[0]
-        logger.info(value)
-        func_name, func_args = self.parse_function(value)
-        return self.wb.function_directory.call_function(func_name, func_args)
+        func = self.parse_function(values[0])
+        return self.wb.function_directory.call_function(func.name, func.args)
 
     def parse_function(self, func_call: str):
-        """Parse function call to extract function name and list of args
+        """
+        Parse function call to extract function name and list of args
 
         Args:
             func_call (str): string of form FUNC(, ,)
 
         Returns:
-            func_name (str): function name
-            res (list): list of args
+            Function object with name and arguments
         """
-        first_paren = func_call.index("(")
-        func_name = func_call[:first_paren]
-        args = func_call[first_paren + 1:-1].split(",")
-        self.sub_evaluator = FormulaEvaluator(
-            self.wb, self.sheet, self.calling_cell)
-        res = []
-        for arg in args:
-            self.calling_cell_relies_on.extend(
-                self.sub_evaluator.calling_cell_relies_on)
-            parser = open_grammar()
-            try:
-                sub_tree = get_tree(parser, "=" + arg)
-            except UnexpectedInput:
-                value = cell_error.CellError(
-                    cell_error.CellErrorType.PARSE_ERROR, "parse error")
-                res.append(value)
-                continue
-            value = self.sub_evaluator.visit(sub_tree)
-            res.append(value)
-        return func_name, res
+        name, args, _ = functions.parse_function_by_index(func_call)
+        return functions.Function(name, args)
 
     @visit_children_decor
     def cell(self, values):
