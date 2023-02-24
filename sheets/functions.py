@@ -4,9 +4,12 @@ from sheets import cell_error, string_conversions, unitialized_value
 
 
 class Function:
-    def __init__(self, name, args):
+    def __init__(self, name: str, args: List[Any]):
         self.name = name
         self.args = args
+
+    def __repr__(self):
+        return f"Function: {self.name.strip()}{self.args}" 
 
 def parse_function_by_index(func_call: str):
     """
@@ -60,7 +63,8 @@ class FunctionDirectory:
             "AND": self.and_func,
             "OR": self.or_func,
             "NOT": self.not_func,
-            "XOR": self.xor_func
+            "XOR": self.xor_func,
+            "EXACT": self.exact_fn
         }
 
     def call_function(self, func_name: str, args: List):
@@ -166,4 +170,10 @@ class FunctionDirectory:
                         cell_error.CellErrorType.TYPE_ERROR, "Invalid string argument")
             true_cnt += 1
         return true_cnt % 2 != 0
+    
+    def exact_fn(self, args: List):
+        if len(args) != 2:
+            return cell_error.CellError(
+                        cell_error.CellErrorType.TYPE_ERROR, "Invalid argument count")
+        return str(args[0]) == str(args[1])
     
