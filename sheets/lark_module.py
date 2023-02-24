@@ -307,6 +307,8 @@ class FormulaEvaluator(lark.visitors.Interpreter):
             Function object with name and arguments
         """
         name, args, _ = functions.parse_function_by_index(func_call)
+        logger.info(name)
+        logger.info(args)
         return functions.Function(name, args)
 
     @visit_children_decor

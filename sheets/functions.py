@@ -1,6 +1,7 @@
 from typing import List, Dict, Callable, Any
 from decimal import Decimal
-from sheets import cell_error, string_conversions
+from sheets import cell_error, string_conversions, unitialized_value
+
 
 class Function:
     def __init__(self, name, args):
@@ -8,6 +9,15 @@ class Function:
         self.args = args
 
 def parse_function_by_index(func_call: str):
+    """
+    deal with later
+
+    Args:
+        func_call (str): _description_
+
+    Returns:
+        _type_: _description_
+    """
     accumulator = ""
     head = ""
     i = 0
@@ -51,17 +61,14 @@ class FunctionDirectory:
         }
 
     def call_function(self, func_name: str, args: List):
-        # for arg in args:
-            # if isinstance(arg, Function):
-            #     arg = self.call_function(arg.name, arg.args)
-            # elif 
         return self.directory[func_name.strip()](args)
-
 
     def and_func(self, args: List):
         for arg in args:
             if isinstance(arg, Function):
                 arg = self.call_function(arg.name, arg.args)
+            if isinstance(arg, unitialized_value.UninitializedValue):
+                return False
             if isinstance(arg, bool) and not arg:
                 return False
             elif isinstance(arg, Decimal):
