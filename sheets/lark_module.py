@@ -3,6 +3,7 @@ import decimal
 import re
 from typing import Any, Union
 from functools import lru_cache
+from typing import List
 import lark
 from lark.visitors import visit_children_decor
 from lark.exceptions import UnexpectedInput
@@ -28,6 +29,7 @@ class FormulaEvaluator(lark.visitors.Interpreter):
         self.sheet = sheet
         self.calling_cell = calling_cell
         self.calling_cell_relies_on = []
+        self.parser = None
 
     def __check_sheet_name(self, sheet_name) -> Union[str, cell_error.CellError]:
         """
@@ -93,7 +95,8 @@ class FormulaEvaluator(lark.visitors.Interpreter):
 
         Args:
             values (List): array of input values for artithmetic evaluation
-            args: indices of values array to check for cell error instances
+            args: indices of values array to check for cell error instances. If no arguments are
+            provided, check the whole array.
 
         Returns:
             bool or CellError: return self.error if an error is found. Otherwise, return false
@@ -101,6 +104,8 @@ class FormulaEvaluator(lark.visitors.Interpreter):
         errs = {}  # {int error enum : CellError object}
         for arg in args:
             assert isinstance(arg, int)
+        if len(args) == 0:
+            args = range(len(values))
         for i in args:
             if isinstance(values[i], cell_error.CellError):
                 match values[i].get_type():
@@ -259,7 +264,35 @@ class FormulaEvaluator(lark.visitors.Interpreter):
     @visit_children_decor
     def function(self, values):
         func = self.parse_function(values[0])
+        func.args, error_found = self.evaluate_function_cell_refs(func.args)
+        if error_found:
+            return error_found
         return self.wb.function_directory.call_function(func.name, func.args)
+    
+    def evaluate_function_cell_refs(self, args_list: List[str]):
+        """
+        Evaluate all arguments of a function and any composed function.
+
+        Args:
+            args_list (List[str]): List of string arguments
+
+        Returns:
+            Tuple[List[Any], bool | CellError]: Tuple containing a list of evaluated arguments
+            and if a CellError is present in the evaluation. If an error is present, the error 
+            with highest priority is returned. If no CellError is detected, this field is False.
+        """
+        for i in range(len(args_list)):
+            arg = args_list[i]
+            if isinstance(arg, functions.Function):
+                arg.args, error_found = self.evaluate_function_cell_refs(arg.args)
+            else:
+                tree = get_tree(self.parser, "=" + arg)
+                arg = self.visit(tree)
+            args_list[i] = arg
+        error_found = self.__check_for_error(args_list)
+        if error_found:
+            return args_list, error_found
+        return args_list, error_found
 
     def parse_function(self, func_call: str):
         """
@@ -394,13 +427,13 @@ def evaluate_expr(workbook, curr_cell, sheetname: str, contents: str) \
     Returns:
         FormulaEvaluator, Any: Evaluator object and provided value 
     """
-    logger.info("evaluating")
     if sheetname.lower() not in workbook.spreadsheets:
         return None, cell_error.CellError(
             cell_error.CellErrorType.BAD_REFERENCE, "bad reference")
     sheet = workbook.spreadsheets[sheetname.lower()]
     evaluator = FormulaEvaluator(workbook, sheet, curr_cell)
     parser = open_grammar()
+    evaluator.parser = parser
     try:
         tree = get_tree(parser, contents)
     except UnexpectedInput:

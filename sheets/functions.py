@@ -51,7 +51,11 @@ class FunctionDirectory:
         }
 
     def call_function(self, func_name: str, args: List):
-        return self.directory[func_name](args)
+        # for arg in args:
+            # if isinstance(arg, Function):
+            #     arg = self.call_function(arg.name, arg.args)
+            # elif 
+        return self.directory[func_name.strip()](args)
 
 
     def and_func(self, args: List):

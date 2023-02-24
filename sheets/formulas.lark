@@ -93,6 +93,4 @@ STRING: /\"[^"]*\"/
 BOOLEAN: ("true"i | "false"i)
 
 // Function: func_name(arg1, ..., argn)
-// /[A-Za-z_][A-Za-z0-9_]*\([^"]*\,[^"]\)/
-// FUNC: /[A-Za-z_][A-Za-z0-9_]*\([^"]*\,[^"]\)/
 FUNC: /[A-Za-z_][A-Za-z0-9_]*\((?:[^()]|\((?:[^()]|\([^()]*\))*\))*\)/
