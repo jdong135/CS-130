@@ -73,14 +73,12 @@ class FunctionDirectory:
             "XOR": self.xor_func,
             "EXACT": self.exact_fn,
             "ISBLANK": self.is_blank,
-            # "ISERROR": self.is_error
-            "VERSION": self.version,
+            "ISERROR": self.is_error,
+            "VERSION": self.version
         }
 
-    def call_function(self, func_name: str, args: List, error_found=None):
+    def call_function(self, func_name: str, args: List):
         try:
-            if func_name.strip().upper() == "ISERROR":
-                return self.directory[func_name.strip().upper()](args, error_found)
             return self.directory[func_name.strip().upper()](args)
         except KeyError:
             return cell_error.CellError(
@@ -212,12 +210,14 @@ class FunctionDirectory:
             return False
         return False
 
-    # def is_error(self, args: List):
-    #     if len(args) != 1:
-    #         return cell_error.CellError(
-    #             cell_error.CellErrorType.TYPE_ERROR, "Invalid argument count")
-    #     if isinstance(args[0], cell_error.CellError):
-    #         return True
+    def is_error(self, args: List):
+        if len(args) != 1:
+            return cell_error.CellError(
+                cell_error.CellErrorType.TYPE_ERROR, "Invalid argument count")
+        logger.info(args[0])
+        if isinstance(args[0], cell_error.CellError):
+            return True
+        return False
 
     def version(self, args: List):
         if len(args) != 0:

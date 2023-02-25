@@ -266,7 +266,7 @@ class FormulaEvaluator(lark.visitors.Interpreter):
     def function(self, values):
         func = self.parse_function(values[0])
         func.args, error_found = self.evaluate_function_cell_refs(func.args)
-        if error_found:
+        if error_found and func.name.strip().lower() != "iserror":
             return error_found
         return self.wb.function_directory.call_function(func.name, func.args)
 
