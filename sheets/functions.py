@@ -9,7 +9,8 @@ class Function:
         self.args = args
 
     def __repr__(self):
-        return f"Function: {self.name.strip()}{self.args}" 
+        return f"Function: {self.name.strip()}{self.args}"
+
 
 def parse_function_by_index(func_call: str):
     """
@@ -29,16 +30,16 @@ def parse_function_by_index(func_call: str):
         curr = func_call[i]
         if curr == "(":
             if writing_head:
-                head = accumulator 
+                head = accumulator
                 accumulator = ""
                 args = []
                 writing_head = False
             else:
                 sub_head = accumulator
                 accumulator = ""
-                _, sub_args, d = parse_function_by_index(func_call[i:]) 
+                _, sub_args, d = parse_function_by_index(func_call[i:])
                 i += d
-                args.append(Function(sub_head, sub_args))         
+                args.append(Function(sub_head, sub_args))
         elif curr == ",":
             accumulator = accumulator.strip()
             if len(accumulator) > 0:
@@ -54,7 +55,7 @@ def parse_function_by_index(func_call: str):
             accumulator += curr
         i += 1
     return head, args, i
-    
+
 
 class FunctionDirectory:
     def __init__(self):
@@ -75,6 +76,9 @@ class FunctionDirectory:
                 cell_error.CellErrorType.BAD_NAME, "Invalid Function name")
 
     def and_func(self, args: List):
+        if len(args) == 0:
+            return cell_error.CellError(
+                cell_error.CellErrorType.TYPE_ERROR, "Invalid argument count")
         for arg in args:
             if isinstance(arg, Function):
                 arg = self.call_function(arg.name, arg.args)
@@ -82,6 +86,10 @@ class FunctionDirectory:
                 return False
             if isinstance(arg, bool) and not arg:
                 return False
+            if isinstance(arg, cell_error.CellError):
+                if arg.get_type() == cell_error.CellErrorType.BAD_REFERENCE:
+                    return cell_error.CellError(
+                        cell_error.CellErrorType.BAD_REFERENCE, "bad reference")
             elif isinstance(arg, Decimal):
                 if arg == Decimal(0):
                     return False
@@ -97,6 +105,9 @@ class FunctionDirectory:
         return True
 
     def or_func(self, args: List):
+        if len(args) == 0:
+            return cell_error.CellError(
+                cell_error.CellErrorType.TYPE_ERROR, "Invalid argument count")
         for arg in args:
             if isinstance(arg, Function):
                 arg = self.call_function(arg.name, arg.args)
@@ -118,11 +129,11 @@ class FunctionDirectory:
                         cell_error.CellErrorType.TYPE_ERROR, "Invalid string argument")
             return True
         return False
-    
+
     def not_func(self, args: List):
         if len(args) != 1:
             return cell_error.CellError(
-                        cell_error.CellErrorType.TYPE_ERROR, "Invalid argument count")
+                cell_error.CellErrorType.TYPE_ERROR, "Invalid argument count")
         arg = args[0]
         if isinstance(arg, Function):
             arg = self.call_function(arg.name, arg.args)
@@ -147,7 +158,7 @@ class FunctionDirectory:
     def xor_func(self, args: List):
         if len(args) == 0:
             return cell_error.CellError(
-                        cell_error.CellErrorType.TYPE_ERROR, "Invalid argument count")            
+                cell_error.CellErrorType.TYPE_ERROR, "Invalid argument count")
         true_cnt = 0
         for arg in args:
             if isinstance(arg, Function):
@@ -170,10 +181,9 @@ class FunctionDirectory:
                         cell_error.CellErrorType.TYPE_ERROR, "Invalid string argument")
             true_cnt += 1
         return true_cnt % 2 != 0
-    
+
     def exact_fn(self, args: List):
         if len(args) != 2:
             return cell_error.CellError(
-                        cell_error.CellErrorType.TYPE_ERROR, "Invalid argument count")
+                cell_error.CellErrorType.TYPE_ERROR, "Invalid argument count")
         return str(args[0]) == str(args[1])
-    

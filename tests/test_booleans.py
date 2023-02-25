@@ -46,6 +46,13 @@ class BooleanTests(unittest.TestCase):
         wb.set_cell_contents('sheet1', 'a1', '=a2')
         self.assertEqual(wb.get_cell_value('sheet1', 'B1'), True)
 
+    # Unsure what correct behavior is
+    # def test_concat_str_into_bool(self):
+    #     wb = sheets.Workbook()
+    #     wb.new_sheet()
+    #     wb.set_cell_contents('sheet1', 'a1', '\'tru')
+    #     wb.set_cell_contents('sheet1', 'b1', '=A1 & "e"')
+
 
 if __name__ == "__main__":
     unittest.main()
