@@ -1,6 +1,6 @@
 from typing import List, Dict, Callable, Any
 from decimal import Decimal
-from sheets import cell_error, string_conversions, unitialized_value
+from sheets import cell_error, string_conversions, unitialized_value, version
 import logging
 logging.basicConfig(filename="logs/lark_module.log",
                     format='%(asctime)s %(message)s',
@@ -74,6 +74,7 @@ class FunctionDirectory:
             "EXACT": self.exact_fn,
             "ISBLANK": self.is_blank,
             # "ISERROR": self.is_error
+            "VERSION": self.version,
         }
 
     def call_function(self, func_name: str, args: List, error_found=None):
@@ -217,3 +218,9 @@ class FunctionDirectory:
     #             cell_error.CellErrorType.TYPE_ERROR, "Invalid argument count")
     #     if isinstance(args[0], cell_error.CellError):
     #         return True
+
+    def version(self, args: List):
+        if len(args) != 0:
+            return cell_error.CellError(
+                cell_error.CellErrorType.TYPE_ERROR, "Invalid argument count")
+        return version.version
