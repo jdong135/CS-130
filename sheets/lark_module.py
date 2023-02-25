@@ -269,7 +269,7 @@ class FormulaEvaluator(lark.visitors.Interpreter):
         if error_found:
             return error_found
         return self.wb.function_directory.call_function(func.name, func.args)
-    
+
     def evaluate_function_cell_refs(self, args_list: List[str]):
         """
         Evaluate all arguments of a function and any composed function.
@@ -285,7 +285,8 @@ class FormulaEvaluator(lark.visitors.Interpreter):
         for i in range(len(args_list)):
             arg = args_list[i]
             if isinstance(arg, functions.Function):
-                arg.args, error_found = self.evaluate_function_cell_refs(arg.args)
+                arg.args, error_found = self.evaluate_function_cell_refs(
+                    arg.args)
             else:
                 try:
                     tree = get_tree(self.parser, "=" + arg)

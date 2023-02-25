@@ -1,6 +1,12 @@
 from typing import List, Dict, Callable, Any
 from decimal import Decimal
 from sheets import cell_error, string_conversions, unitialized_value
+import logging
+logging.basicConfig(filename="logs/lark_module.log",
+                    format='%(asctime)s %(message)s',
+                    filemode='w')
+logger = logging.getLogger()
+logger.setLevel(logging.DEBUG)
 
 
 class Function:
@@ -65,11 +71,15 @@ class FunctionDirectory:
             "OR": self.or_func,
             "NOT": self.not_func,
             "XOR": self.xor_func,
-            "EXACT": self.exact_fn
+            "EXACT": self.exact_fn,
+            "ISBLANK": self.is_blank,
+            # "ISERROR": self.is_error
         }
 
-    def call_function(self, func_name: str, args: List):
+    def call_function(self, func_name: str, args: List, error_found=None):
         try:
+            if func_name.strip().upper() == "ISERROR":
+                return self.directory[func_name.strip().upper()](args, error_found)
             return self.directory[func_name.strip().upper()](args)
         except KeyError:
             return cell_error.CellError(
@@ -187,3 +197,23 @@ class FunctionDirectory:
             return cell_error.CellError(
                 cell_error.CellErrorType.TYPE_ERROR, "Invalid argument count")
         return str(args[0]) == str(args[1])
+
+    def is_blank(self, args: List):
+        if len(args) != 1:
+            return cell_error.CellError(
+                cell_error.CellErrorType.TYPE_ERROR, "Invalid argument count")
+        value = args[0]
+        if value == "" or value == Decimal(0):
+            return False
+        if isinstance(value, unitialized_value.UninitializedValue):
+            return True
+        if isinstance(value, bool) and value == False:
+            return False
+        return False
+
+    # def is_error(self, args: List):
+    #     if len(args) != 1:
+    #         return cell_error.CellError(
+    #             cell_error.CellErrorType.TYPE_ERROR, "Invalid argument count")
+    #     if isinstance(args[0], cell_error.CellError):
+    #         return True
