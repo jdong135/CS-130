@@ -62,6 +62,28 @@ def parse_function_by_index(func_call: str):
         i += 1
     return head, args, i
 
+def check_for_true_arg(arg):
+    if isinstance(arg, unitialized_value.UninitializedValue):
+        return False 
+    if isinstance(arg, bool) and not arg:
+        return False
+    if isinstance(arg, cell_error.CellError):
+        if arg.get_type() == cell_error.CellErrorType.BAD_REFERENCE:
+            return cell_error.CellError(
+                cell_error.CellErrorType.BAD_REFERENCE, "bad reference")
+    elif isinstance(arg, Decimal):
+        if arg == Decimal(0):
+            return False
+    elif isinstance(arg, str) and string_conversions.is_number(arg):
+        if Decimal(arg) == Decimal(0):
+            return False
+    elif isinstance(arg, str):
+        if arg.lower() == "false":
+            return False
+        if arg.lower() != "true":
+            return cell_error.CellError(
+                cell_error.CellErrorType.TYPE_ERROR, "Invalid string argument")
+    return True
 
 class FunctionDirectory:
     def __init__(self):
@@ -76,6 +98,7 @@ class FunctionDirectory:
             "ISERROR": self.is_error,
             "VERSION": self.version,
             "INDIRECT": self.indirect,
+            "IF": self.if_func
         }
 
     def call_function(self, func_name: str, args: List):
@@ -89,56 +112,31 @@ class FunctionDirectory:
         if len(args) == 0:
             return cell_error.CellError(
                 cell_error.CellErrorType.TYPE_ERROR, "Invalid argument count")
+        found_false = False
         for arg in args:
             if isinstance(arg, Function):
                 arg = self.call_function(arg.name, arg.args)
-            if isinstance(arg, unitialized_value.UninitializedValue):
-                return False
-            if isinstance(arg, bool) and not arg:
-                return False
-            if isinstance(arg, cell_error.CellError):
-                if arg.get_type() == cell_error.CellErrorType.BAD_REFERENCE:
-                    return cell_error.CellError(
-                        cell_error.CellErrorType.BAD_REFERENCE, "bad reference")
-            elif isinstance(arg, Decimal):
-                if arg == Decimal(0):
-                    return False
-            elif isinstance(arg, str) and string_conversions.is_number(arg):
-                if Decimal(arg) == Decimal(0):
-                    return False
-            elif isinstance(arg, str):
-                if arg.lower() == "false":
-                    return False
-                if arg.lower() != "true":
-                    return cell_error.CellError(
-                        cell_error.CellErrorType.TYPE_ERROR, "Invalid string argument")
-        return True
+            arg_eval = check_for_true_arg(arg)
+            if isinstance(arg_eval, cell_error.CellError):
+                return arg_eval
+            if not arg_eval:
+                found_false = True
+        return not found_false
 
     def or_func(self, args: List):
         if len(args) == 0:
             return cell_error.CellError(
                 cell_error.CellErrorType.TYPE_ERROR, "Invalid argument count")
+        found_true = False
         for arg in args:
             if isinstance(arg, Function):
                 arg = self.call_function(arg.name, arg.args)
-            if isinstance(arg, unitialized_value.UninitializedValue):
-                continue
-            if isinstance(arg, bool) and not arg:
-                continue
-            elif isinstance(arg, Decimal):
-                if arg == Decimal(0):
-                    continue
-            elif isinstance(arg, str) and string_conversions.is_number(arg):
-                if Decimal(arg) == Decimal(0):
-                    continue
-            elif isinstance(arg, str):
-                if arg.lower() == "false":
-                    continue
-                if arg.lower() != "true":
-                    return cell_error.CellError(
-                        cell_error.CellErrorType.TYPE_ERROR, "Invalid string argument")
-            return True
-        return False
+            arg_eval = check_for_true_arg(arg)
+            if isinstance(arg_eval, cell_error.CellError):
+                return arg_eval
+            if arg_eval:
+                found_true = True
+        return found_true
 
     def not_func(self, args: List):
         if len(args) != 1:
@@ -147,23 +145,10 @@ class FunctionDirectory:
         arg = args[0]
         if isinstance(arg, Function):
             arg = self.call_function(arg.name, arg.args)
-        if isinstance(arg, unitialized_value.UninitializedValue):
-            return True
-        if isinstance(arg, bool) and not arg:
-            return True
-        elif isinstance(arg, Decimal):
-            if arg == Decimal(0):
-                return True
-        elif isinstance(arg, str) and string_conversions.is_number(arg):
-            if Decimal(arg) == Decimal(0):
-                return True
-        elif isinstance(arg, str):
-            if arg.lower() == "false":
-                return True
-            if arg.lower() != "true":
-                return cell_error.CellError(
-                    cell_error.CellErrorType.TYPE_ERROR, "Invalid string argument")
-        return False
+        arg_eval = check_for_true_arg(arg)
+        if isinstance(arg_eval, cell_error.CellError):
+            return arg_eval
+        return not arg_eval
 
     def xor_func(self, args: List):
         if len(args) == 0:
@@ -173,23 +158,11 @@ class FunctionDirectory:
         for arg in args:
             if isinstance(arg, Function):
                 arg = self.call_function(arg.name, arg.args)
-            if isinstance(arg, unitialized_value.UninitializedValue):
-                continue
-            if isinstance(arg, bool) and not arg:
-                continue
-            elif isinstance(arg, Decimal):
-                if arg == Decimal(0):
-                    continue
-            elif isinstance(arg, str) and string_conversions.is_number(arg):
-                if Decimal(arg) == Decimal(0):
-                    continue
-            elif isinstance(arg, str):
-                if arg.lower() == "false":
-                    continue
-                if arg.lower() != "true":
-                    return cell_error.CellError(
-                        cell_error.CellErrorType.TYPE_ERROR, "Invalid string argument")
-            true_cnt += 1
+            arg_eval = check_for_true_arg(arg)
+            if isinstance(arg_eval, cell_error.CellError):
+                return arg_eval
+            if arg_eval:
+                true_cnt += 1
         return true_cnt % 2 != 0
 
     def exact_fn(self, args: List):
@@ -227,3 +200,6 @@ class FunctionDirectory:
 
     def indirect(self, args: List):
         return args[0]
+    
+    def if_func(self, args: List):
+        return args[1] if args[0] else args[2]
