@@ -76,6 +76,7 @@ class FunctionDirectory:
             "ISERROR": self.is_error,
             "VERSION": self.version,
             "INDIRECT": self.indirect,
+            "IF": self.if_func,
         }
 
     def call_function(self, func_name: str, args: List):
@@ -227,3 +228,8 @@ class FunctionDirectory:
 
     def indirect(self, args: List):
         return args[0]
+
+    def if_func(self, args: List):
+        if args[0]:
+            return args[1]
+        return args[2]
