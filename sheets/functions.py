@@ -226,7 +226,4 @@ class FunctionDirectory:
         return version.version
 
     def indirect(self, args: List):
-        if len(args) != 1:
-            return cell_error.CellError(
-                cell_error.CellErrorType.TYPE_ERROR, "Invalid argument count")
-        string_conversions.check_valid_location(args[0])
+        return args[0]

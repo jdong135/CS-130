@@ -278,6 +278,15 @@ class FormulaEvaluator(lark.visitors.Interpreter):
                 except lark.exceptions.UnexpectedInput:
                     return cell_error.CellError(
                         cell_error.CellErrorType.PARSE_ERROR, "Input cannot be parsed")
+        elif func.name.upper() == "INDIRECT":
+            if len(func.args) != 1:
+                return cell_error.CellError(
+                    cell_error.CellErrorType.TYPE_ERROR, "Invalid argument count")
+            if not isinstance(func.args[0], str
+                              ) and not string_conversions.check_valid_location(func.args[0]):
+                return cell_error.CellError(
+                    cell_error.CellErrorType.BAD_REFERENCE, "Bad reference")
+            func.args[0] = self.visit(get_tree(self.parser, "=" + func.args[0]))
         return self.wb.function_directory.call_function(func.name, func.args)
 
     def evaluate_function_cell_refs(self, args_list: List[str]):
