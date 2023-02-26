@@ -269,12 +269,14 @@ class FormulaEvaluator(lark.visitors.Interpreter):
                 return cell_error.CellError(
                     cell_error.CellErrorType.TYPE_ERROR, "Invalid argument count")
             # Evaluate the first argument completely
-            condition, error_found = self.evaluate_function_arguments([func.args[0]])
+            [condition], error_found = self.evaluate_function_arguments([func.args[0]])     
+            # condition = condition[0]       
+            if error_found: 
+                return error_found
             # If the first argument is a function, fully solve the function for a literal value
             if isinstance(condition, functions.Function): 
                 condition = self.wb.function_directory.call_function(condition.name, condition.args)
-            if error_found: 
-                return error_found
+            # Check if our solved condition is False or a False equivalent
             if functions.check_for_true_arg(condition):
                 func.args[0] = True 
             else:
@@ -282,20 +284,20 @@ class FormulaEvaluator(lark.visitors.Interpreter):
             # Lazy evaluation -> only evaluate the value that we are using
             # Condition is true -> Evaluate the first value
             if func.args[0]:
-                val, error_found = self.evaluate_function_arguments([func.args[1]])
-                if isinstance(val, functions.Function):
-                    val = self.wb.function_directory.call_function(val.name, val.args)          
+                [val], error_found = self.evaluate_function_arguments([func.args[1]])
                 if error_found:
                     return error_found
+                if isinstance(val, functions.Function):
+                    val = self.wb.function_directory.call_function(val.name, val.args) 
                 func.args[1] = val
-            # Condition is false -> if a second value exists, evaluate it. Otherwise, return False
+            # Condition is false -> if a second value exists, evaluate it. Otherwise, use False.
             elif len(func.args) > 2:
-                val, error_found = self.evaluate_function_arguments([func.args[2]]) 
+                [val], error_found = self.evaluate_function_arguments([func.args[2]]) 
+                if error_found:
+                    return error_found
                 if isinstance(val, functions.Function):
                     val = self.wb.function_directory.call_function(val.name, val.args)
-                if error_found:
-                    return error_found
-                func.args[1] = val
+                func.args[2] = val
             else:
                 func.args.append(False)         
         else:
@@ -356,8 +358,8 @@ class FormulaEvaluator(lark.visitors.Interpreter):
         # If no error has been found, check each arg for cell error instance
         if not error_found: 
             error_found = self.__check_for_error(args_list)
-        return (args_list, error_found) if len(args_list) > 1 else (args_list[0], error_found)
-
+        return args_list, error_found
+    
     def parse_function(self, func_call: str):
         """
         Parse function call to extract function name and list of args
