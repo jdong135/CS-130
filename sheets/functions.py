@@ -45,7 +45,7 @@ def parse_function_by_index(func_call: str):
                 accumulator = ""
                 _, sub_args, d = parse_function_by_index(func_call[i:])
                 i += d
-                args.append(Function(sub_head.strip(), sub_args))
+                args.append(Function(sub_head.strip().upper(), sub_args))
         elif curr == ",":
             accumulator = accumulator.strip()
             if len(accumulator) > 0:
@@ -80,7 +80,7 @@ class FunctionDirectory:
 
     def call_function(self, func_name: str, args: List):
         try:
-            return self.directory[func_name.upper()](args)
+            return self.directory[func_name](args)
         except KeyError:
             return cell_error.CellError(
                 cell_error.CellErrorType.BAD_NAME, "Invalid Function name")
