@@ -266,8 +266,18 @@ class FormulaEvaluator(lark.visitors.Interpreter):
     def function(self, values):
         func = self.parse_function(values[0])
         func.args, error_found = self.evaluate_function_cell_refs(func.args)
-        if error_found and func.name.strip().lower() != "iserror":
+        if error_found and func.name.upper() != "ISERROR":
             return error_found
+        if func.name.upper() == "ISERROR":
+            if len(func.args) != 1:
+                return cell_error.CellError(
+                    cell_error.CellErrorType.TYPE_ERROR, "Invalid argument count")
+            if isinstance(func.args[0], str):
+                try:
+                    get_tree(self.parser, "=" + func.args[0])
+                except lark.exceptions.UnexpectedInput:
+                    return cell_error.CellError(
+                        cell_error.CellErrorType.PARSE_ERROR, "Input cannot be parsed") 
         return self.wb.function_directory.call_function(func.name, func.args)
 
     def evaluate_function_cell_refs(self, args_list: List[str]):
@@ -308,7 +318,7 @@ class FormulaEvaluator(lark.visitors.Interpreter):
             Function object with name and arguments
         """
         name, args, _ = functions.parse_function_by_index(func_call)
-        return functions.Function(name, args)
+        return functions.Function(name.strip(), args)
 
     @visit_children_decor
     def cell(self, values):
