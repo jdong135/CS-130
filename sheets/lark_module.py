@@ -3,7 +3,6 @@ import decimal
 import re
 from typing import Any, Union
 from functools import lru_cache
-from contextlib import suppress
 from typing import List
 import lark
 from lark.visitors import visit_children_decor
@@ -265,7 +264,7 @@ class FormulaEvaluator(lark.visitors.Interpreter):
     @visit_children_decor
     def function(self, values):
         func = self.parse_function(values[0])
-        func.args, error_found = self.evaluate_function_cell_refs(func.args)
+        func.args, error_found = self.evaluate_function_arguments(func.args)
         if error_found and func.name.upper() != "ISERROR":
             return error_found
         if func.name.upper() == "ISERROR":
@@ -282,14 +281,15 @@ class FormulaEvaluator(lark.visitors.Interpreter):
             if len(func.args) != 1:
                 return cell_error.CellError(
                     cell_error.CellErrorType.TYPE_ERROR, "Invalid argument count")
-            if not isinstance(func.args[0], str
-                              ) and not string_conversions.check_valid_location(func.args[0]):
-                return cell_error.CellError(
-                    cell_error.CellErrorType.BAD_REFERENCE, "Bad reference")
+            if not isinstance(func.args[0], str) \
+                or not string_conversions.check_valid_location(func.args[0]) \
+                    or isinstance(func.args[0], unitialized_value.UninitializedValue):
+                    return cell_error.CellError(
+                        cell_error.CellErrorType.BAD_REFERENCE, "Bad reference")
             func.args[0] = self.visit(get_tree(self.parser, "=" + func.args[0]))
         return self.wb.function_directory.call_function(func.name, func.args)
 
-    def evaluate_function_cell_refs(self, args_list: List[str]):
+    def evaluate_function_arguments(self, args_list: List[str]):
         """
         Evaluate all arguments of a function and any composed function.
 
@@ -301,11 +301,16 @@ class FormulaEvaluator(lark.visitors.Interpreter):
             and if a CellError is present in the evaluation. If an error is present, the error 
             with highest priority is returned. If no CellError is detected, this field is False.
         """
+        error_found = False
         for i in range(len(args_list)):
             arg = args_list[i]
             if isinstance(arg, functions.Function):
-                arg.args, error_found = self.evaluate_function_cell_refs(
+                arg.args, temp_err = self.evaluate_function_arguments(
                     arg.args)
+                # We only overwrite with new errors if we haven't already found one
+                # We don't want to make error_found false again if we've already found an error
+                if not error_found:
+                    error_found = temp_err
             else:
                 try:
                     tree = get_tree(self.parser, "=" + arg)
@@ -313,7 +318,9 @@ class FormulaEvaluator(lark.visitors.Interpreter):
                 except lark.exceptions.UnexpectedInput:
                     continue
             args_list[i] = arg
-        error_found = self.__check_for_error(args_list)
+        # If no error has been found, check each arg for cell error instance
+        if not error_found: 
+            error_found = self.__check_for_error(args_list)
         return args_list, error_found
 
     def parse_function(self, func_call: str):
@@ -434,8 +441,8 @@ def get_tree(parser: lark.Lark, contents: str) -> lark.ParseTree:
     return parser.parse(contents)
 
 
-def evaluate_expr(workbook, curr_cell, sheetname: str, contents: str) \
-        -> tuple[FormulaEvaluator, Any]:
+def evaluate_expr(workbook, curr_cell, sheetname: str, 
+                  contents: str) -> tuple[FormulaEvaluator, Any]:
     """
     Evaluate a provided expression using the lark formula parser and evaluator.
 
