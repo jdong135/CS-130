@@ -6,6 +6,7 @@ import decimal
 from typing import Tuple
 from functools import cache
 from sheets import cell_error
+import re
 
 
 ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
@@ -155,14 +156,37 @@ def strip_evaluation(evaluation):
         return decimal.Decimal(stripped)
     return evaluation
 
+
 def is_bool_expr(expr: str):
     if expr.lower() == "false" or expr.lower() == "true":
         return True
     else:
         return False
 
+
 def is_true_expr(expr: str):
     if expr.lower() == "true":
         return True
     else:
         return False
+
+
+def check_valid_location(location: str) -> bool:
+    """
+    Determine if a cell location is witin the range of ZZZZ9999.
+
+    Args:
+        location (str): string location on the sheet.
+
+    Returns:
+        bool: if the input location is in-bounds.
+    """
+    # Ensure a letter and number is specified
+    if not re.match(r"\$?[A-Za-z]+\$?[1-9][0-9]*", location):
+        return False
+    col, row = str_to_tuple(location)
+    if col > 475254 or row > 9999:
+        return False
+    if len(location.strip()) != len(location):
+        return False
+    return True

@@ -74,7 +74,8 @@ class FunctionDirectory:
             "EXACT": self.exact_fn,
             "ISBLANK": self.is_blank,
             "ISERROR": self.is_error,
-            "VERSION": self.version
+            "VERSION": self.version,
+            "INDIRECT": self.indirect,
         }
 
     def call_function(self, func_name: str, args: List):
@@ -214,7 +215,6 @@ class FunctionDirectory:
         if len(args) != 1:
             return cell_error.CellError(
                 cell_error.CellErrorType.TYPE_ERROR, "Invalid argument count")
-        logger.info(args[0])
         if isinstance(args[0], cell_error.CellError):
             return True
         return False
@@ -224,3 +224,9 @@ class FunctionDirectory:
             return cell_error.CellError(
                 cell_error.CellErrorType.TYPE_ERROR, "Invalid argument count")
         return version.version
+
+    def indirect(self, args: List):
+        if len(args) != 1:
+            return cell_error.CellError(
+                cell_error.CellErrorType.TYPE_ERROR, "Invalid argument count")
+        string_conversions.check_valid_location(args[0])

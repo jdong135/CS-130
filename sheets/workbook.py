@@ -41,7 +41,7 @@ class Workbook:
         # Pertinent in move_cells() and copy_cells() where cells are updated multiple times
         self.__call_notify: bool = True
         # Directory of defined functions callable within cells
-        self.function_directory: FunctionDirectory = FunctionDirectory() 
+        self.function_directory: FunctionDirectory = FunctionDirectory()
 
     @contextmanager
     def __disable_notify_calls(self):
@@ -365,7 +365,7 @@ class Workbook:
                             new_loc += str(row)
                         else:
                             new_loc += row
-                        if not spreadsheet.check_valid_location(new_loc):
+                        if not string_conversions.check_valid_location(new_loc):
                             new_loc = "#REF!"
                         # Note that re.escape ensures we can properly search for $ in loc
                         # Normally, you'd have to escape $A$1 like \$A\$1
@@ -515,7 +515,7 @@ class Workbook:
         if sheet_name.lower() not in self.spreadsheets:
             raise KeyError("Specified sheet name not found")
         spreadsheet = self.spreadsheets[sheet_name.lower()]
-        if not spreadsheet.check_valid_location(location):
+        if not string_conversions.check_valid_location(location):
             raise ValueError(f"Cell location {location} is invalid")
         if contents:
             contents = contents.strip()
@@ -589,7 +589,7 @@ class Workbook:
         if sheet_name.lower() not in self.spreadsheets:
             raise KeyError("Specified sheet name not found")
         spreadsheet = self.spreadsheets[sheet_name.lower()]
-        if not spreadsheet.check_valid_location(location):
+        if not string_conversions.check_valid_location(location):
             raise ValueError(f"Cell location {location} is invalid")
         if location in spreadsheet.cells:
             return spreadsheet.cells[location].contents
@@ -619,7 +619,7 @@ class Workbook:
         if sheet_name.lower() not in self.spreadsheets:
             raise KeyError("Specified sheet name not found")
         spreadsheet = self.spreadsheets[sheet_name.lower()]
-        if not spreadsheet.check_valid_location(location):
+        if not string_conversions.check_valid_location(location):
             raise ValueError(f"Cell location {location} is invalid")
         if location in spreadsheet.cells:
             if isinstance(spreadsheet.cells[location].value, unitialized_value.UninitializedValue):
@@ -892,7 +892,7 @@ class Workbook:
             raise KeyError(f"{sheet_name} is invalid")
         spreadsheet = self.spreadsheets[sheet_name.lower()]
         for location in [start_location, end_location, to_location]:
-            if not spreadsheet.check_valid_location(location):
+            if not string_conversions.check_valid_location(location):
                 raise ValueError(f"Cell location {location} is invalid")
         if not to_sheet:
             to_sheet = sheet_name
@@ -947,7 +947,7 @@ class Workbook:
             raise KeyError(f"{sheet_name} is invalid")
         spreadsheet = self.spreadsheets[sheet_name.lower()]
         for location in [start_location, end_location, to_location]:
-            if not spreadsheet.check_valid_location(location):
+            if not string_conversions.check_valid_location(location):
                 raise ValueError(f"Cell location {location} is invalid")
         if not to_sheet:
             to_sheet = sheet_name

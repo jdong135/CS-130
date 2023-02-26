@@ -277,7 +277,7 @@ class FormulaEvaluator(lark.visitors.Interpreter):
                     get_tree(self.parser, "=" + func.args[0])
                 except lark.exceptions.UnexpectedInput:
                     return cell_error.CellError(
-                        cell_error.CellErrorType.PARSE_ERROR, "Input cannot be parsed") 
+                        cell_error.CellErrorType.PARSE_ERROR, "Input cannot be parsed")
         return self.wb.function_directory.call_function(func.name, func.args)
 
     def evaluate_function_cell_refs(self, args_list: List[str]):
@@ -337,7 +337,7 @@ class FormulaEvaluator(lark.visitors.Interpreter):
             return cell_error.CellError(
                 cell_error.CellErrorType.BAD_REFERENCE, "sheet name not found")
         sheet = self.wb.spreadsheets[sheet_name]
-        if not sheet.check_valid_location(location):
+        if not string_conversions.check_valid_location(location):
             return cell_error.CellError(cell_error.CellErrorType.BAD_REFERENCE, "invalid location")
         if self.calling_cell and self.calling_cell.sheet.name.lower() == sheet_name \
                 and self.calling_cell.location == location:
@@ -388,7 +388,6 @@ class FormulaEvaluator(lark.visitors.Interpreter):
 
     def boolean(self, tree):
         value = tree.children[0].value
-        logger.info(f'{value}')
         if string_conversions.is_true_expr(value):
             return True
         return False
