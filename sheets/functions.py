@@ -62,9 +62,10 @@ def parse_function_by_index(func_call: str):
         i += 1
     return head, args, i
 
+
 def check_for_true_arg(arg):
     if isinstance(arg, unitialized_value.UninitializedValue):
-        return False 
+        return False
     if isinstance(arg, bool) and not arg:
         return False
     if isinstance(arg, cell_error.CellError):
@@ -85,6 +86,7 @@ def check_for_true_arg(arg):
                 cell_error.CellErrorType.TYPE_ERROR, "Invalid string argument")
     return True
 
+
 class FunctionDirectory:
     def __init__(self):
         # Function name -> callable function
@@ -98,7 +100,8 @@ class FunctionDirectory:
             "ISERROR": self.is_error,
             "VERSION": self.version,
             "INDIRECT": self.indirect,
-            "IF": self.if_func
+            "IF": self.if_func,
+            "IFERROR": self.if_error
         }
 
     def call_function(self, func_name: str, args: List):
@@ -200,6 +203,13 @@ class FunctionDirectory:
 
     def indirect(self, args: List):
         return args[0]
-    
+
     def if_func(self, args: List):
+        logger.info(args)
         return args[1] if args[0] else args[2]
+
+    def if_error(self, args: List):
+        logger.info(args)
+        if isinstance(args[0], cell_error.CellError):
+            return args[1]
+        return args[0]
