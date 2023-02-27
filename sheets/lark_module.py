@@ -132,12 +132,61 @@ class FormulaEvaluator(lark.visitors.Interpreter):
             return errs[min(list(errs.keys()))]
         return False
 
+    def __evaluate_function_arguments(self, args_list: List[str]):
+        """
+        Evaluate all arguments of a function and any composed function.
+
+        Args:
+            args_list (List[str]): List of string arguments
+
+        Returns:
+            Tuple[List[Any], bool | CellError]: Tuple containing a list of evaluated arguments
+            and if a CellError is present in the evaluation. If an error is present, the error 
+            with highest priority is returned. If no CellError is detected, this field is False.
+        """
+        error_found = False
+        for i in range(len(args_list)):
+            arg = args_list[i]
+            if isinstance(arg, functions.Function):
+                arg.args, temp_err = self.__evaluate_function_arguments(
+                    arg.args)
+                # We only overwrite with new errors if we haven't already found one
+                # We don't want to make error_found false again if we've already found an error
+                if not error_found:
+                    error_found = temp_err
+            else:
+                try:
+                    logger.info(f'evaluating: {arg}')
+                    tree = get_tree(self.parser, "=" + arg)
+                    arg = self.visit(tree)
+                    logger.info(f'result: {arg}')
+                except lark.exceptions.UnexpectedInput:
+                    continue
+            args_list[i] = arg
+        # If no error has been found, check each arg for cell error instance
+        if not error_found:
+            error_found = self.__check_for_error(args_list)
+        return args_list, error_found
+
     def __evaluate_and_solve_arg(self, func, i) -> Tuple[Any, Union[bool, cell_error.CellError]]:
-        [val], error_found = self.evaluate_function_arguments([func.args[i]])
+        [val], error_found = self.__evaluate_function_arguments([func.args[i]])
         if not error_found and isinstance(val, functions.Function):
             val = self.wb.function_directory.call_function(
                 val.name, val.args)
         return val, error_found     
+
+    def __bool_cmpr(self, left, right, operand, string_op):
+            # booleans > strings > numbers
+            if type(left) == type(right):
+                return operand(left, right)
+            if isinstance(left, bool):
+                return True if string_op in ['>', '>='] else False
+            if isinstance(left, str):
+                if isinstance(right, decimal.Decimal):
+                    return True if string_op in ['>', '>='] else False
+                return False if string_op in ['>', '>='] else True
+            if isinstance(left, decimal.Decimal):
+                return False if string_op in ['>', '>='] else True
 
     @visit_children_decor
     def add_expr(self, values):
@@ -246,31 +295,19 @@ class FormulaEvaluator(lark.visitors.Interpreter):
         elif operator == "<>" or operator == "!=":
             return left != right
         elif operator == ">":
-            return self.bool_cmpr(left, right, lambda x, y: x > y, '>')
+            return self.__bool_cmpr(left, right, lambda x, y: x > y, '>')
         elif operator == ">=":
-            return self.bool_cmpr(left, right, lambda x, y: x >= y, '>=')
+            return self.__bool_cmpr(left, right, lambda x, y: x >= y, '>=')
         elif operator == "<":
-            return self.bool_cmpr(left, right, lambda x, y: x < y, '<')
+            return self.__bool_cmpr(left, right, lambda x, y: x < y, '<')
         elif operator == "<=":
-            return self.bool_cmpr(left, right, lambda x, y: x <= y, '<=')
+            return self.__bool_cmpr(left, right, lambda x, y: x <= y, '<=')
         assert False, 'Unexpected operator: ' + operator
-
-    def bool_cmpr(self, left, right, operand, string_op):
-        # booleans > strings > numbers
-        if type(left) == type(right):
-            return operand(left, right)
-        if isinstance(left, bool):
-            return True if string_op in ['>', '>='] else False
-        if isinstance(left, str):
-            if isinstance(right, decimal.Decimal):
-                return True if string_op in ['>', '>='] else False
-            return False if string_op in ['>', '>='] else True
-        if isinstance(left, decimal.Decimal):
-            return False if string_op in ['>', '>='] else True
 
     @visit_children_decor
     def function(self, values):
-        func = self.parse_function(values[0])
+        name, args, _ = functions.parse_function_by_index(values[0])
+        func = functions.Function(name.strip().upper(), args)
         if func.name == "IF":
             if len(func.args) not in [2, 3]:
                 return cell_error.CellError(
@@ -296,8 +333,6 @@ class FormulaEvaluator(lark.visitors.Interpreter):
                 return cell_error.CellError(
                     cell_error.CellErrorType.TYPE_ERROR, "Invalid argument count")
             func.args[0], error_found = self.__evaluate_and_solve_arg(func, 0)
-            if error_found:
-                return error_found
             if error_found or isinstance(func.args[0], cell_error.CellError):
                 if len(func.args) == 2:
                     func.args[1], error_found = self.__evaluate_and_solve_arg(func, 1)
@@ -306,7 +341,7 @@ class FormulaEvaluator(lark.visitors.Interpreter):
                 else:
                     func.args.append("")
         else:
-            func.args, error_found = self.evaluate_function_arguments(
+            func.args, error_found = self.__evaluate_function_arguments(
                 func.args)
         if error_found and func.name != "ISERROR":
             return error_found
@@ -332,55 +367,6 @@ class FormulaEvaluator(lark.visitors.Interpreter):
             func.args[0] = self.visit(
                 get_tree(self.parser, "=" + func.args[0]))
         return self.wb.function_directory.call_function(func.name, func.args)
-
-    def evaluate_function_arguments(self, args_list: List[str]):
-        """
-        Evaluate all arguments of a function and any composed function.
-
-        Args:
-            args_list (List[str]): List of string arguments
-
-        Returns:
-            Tuple[List[Any], bool | CellError]: Tuple containing a list of evaluated arguments
-            and if a CellError is present in the evaluation. If an error is present, the error 
-            with highest priority is returned. If no CellError is detected, this field is False.
-        """
-        error_found = False
-        for i in range(len(args_list)):
-            arg = args_list[i]
-            if isinstance(arg, functions.Function):
-                arg.args, temp_err = self.evaluate_function_arguments(
-                    arg.args)
-                # We only overwrite with new errors if we haven't already found one
-                # We don't want to make error_found false again if we've already found an error
-                if not error_found:
-                    error_found = temp_err
-            else:
-                try:
-                    logger.info(f'evaluating: {arg}')
-                    tree = get_tree(self.parser, "=" + arg)
-                    arg = self.visit(tree)
-                    logger.info(f'result: {arg}')
-                except lark.exceptions.UnexpectedInput:
-                    continue
-            args_list[i] = arg
-        # If no error has been found, check each arg for cell error instance
-        if not error_found:
-            error_found = self.__check_for_error(args_list)
-        return args_list, error_found
-
-    def parse_function(self, func_call: str):
-        """
-        Parse function call to extract function name and list of args
-
-        Args:
-            func_call (str): string of form FUNC(, ,)
-
-        Returns:
-            Function object with name and arguments
-        """
-        name, args, _ = functions.parse_function_by_index(func_call)
-        return functions.Function(name.strip().upper(), args)
 
     @visit_children_decor
     def cell(self, values):
