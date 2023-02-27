@@ -9,12 +9,7 @@
 
 ?formula : "=" expression
 
-?expression : add_expr | concat_expr | bool_expr | func_expr
-
-//========================================
-// Function evalutation
-
-?func_expr : (func_expr FUNC)? bool_expr
+?expression : add_expr | concat_expr | bool_expr
 
 //========================================
 // Boolean evaluation
@@ -44,14 +39,16 @@
 // Base values
 
 ?base : cell
+      | function
       | ERROR_VALUE             -> error
       | NUMBER                  -> number
       | STRING                  -> string
       | BOOLEAN                 -> boolean
-      | FUNC                    -> function
       | "(" expression ")"      -> parens
 
 cell : (_sheetname "!")? CELLREF
+
+function: FUNC "(" (expression ("," expression)*)? ")"
 
 _sheetname : SHEET_NAME | QUOTED_SHEET_NAME
 
@@ -93,4 +90,5 @@ STRING: /\"[^"]*\"/
 BOOLEAN: ("true"i | "false"i)
 
 // Function: func_name(arg1, ..., argn)
-FUNC: /[A-Za-z_][A-Za-z0-9_]*\s*\((?:[^()]|\((?:[^()]|\([^()]*\))*\))*\)/
+// FUNC: /[A-Za-z_][A-Za-z0-9_]*\s*\((?:[^()]|\((?:[^()]|\([^()]*\))*\))*\)/
+FUNC: /[A-Za-z_][A-Za-z0-9_]*\s*/

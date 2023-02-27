@@ -182,21 +182,21 @@ class FormulaEvaluator(lark.visitors.Interpreter):
         if not error_found and isinstance(val, functions.Function):
             val = self.wb.function_directory.call_function(
                 val.name, val.args)
-        return val, error_found     
+        return val, error_found
 
-    def __bool_cmpr(self, left: Any, right: Any, 
+    def __bool_cmpr(self, left: Any, right: Any,
                     operand: Callable[[str, str], bool], string_op: str) -> bool:
-            # booleans > strings > numbers
-            if type(left) == type(right):
-                return operand(left, right)
-            if isinstance(left, bool):
+        # booleans > strings > numbers
+        if type(left) == type(right):
+            return operand(left, right)
+        if isinstance(left, bool):
+            return True if string_op in ['>', '>='] else False
+        if isinstance(left, str):
+            if isinstance(right, decimal.Decimal):
                 return True if string_op in ['>', '>='] else False
-            if isinstance(left, str):
-                if isinstance(right, decimal.Decimal):
-                    return True if string_op in ['>', '>='] else False
-                return False if string_op in ['>', '>='] else True
-            if isinstance(left, decimal.Decimal):
-                return False if string_op in ['>', '>='] else True
+            return False if string_op in ['>', '>='] else True
+        if isinstance(left, decimal.Decimal):
+            return False if string_op in ['>', '>='] else True
 
     @visit_children_decor
     def add_expr(self, values):
@@ -316,7 +316,11 @@ class FormulaEvaluator(lark.visitors.Interpreter):
 
     @visit_children_decor
     def function(self, values):
-        name, args, _ = functions.Function.parse_function_by_index(values[0])
+        name = values[0]
+        args = []
+        if len(values) > 1:
+            args = values[1:]
+        # name, args, _ = functions.Function.parse_function_by_index(values[0])
         func = functions.Function(name.strip().upper(), args)
         if func.name == "IF":
             if len(func.args) not in [2, 3]:
@@ -330,10 +334,12 @@ class FormulaEvaluator(lark.visitors.Interpreter):
             # Lazy evaluation -> only evaluate the value that we are using
             # Condition is true -> Evaluate the first value
             if func.args[0]:
-                func.args[1], error_found = self.__evaluate_and_solve_arg(func, 1)
+                func.args[1], error_found = self.__evaluate_and_solve_arg(
+                    func, 1)
             # Condition is false -> if a second value exists, evaluate it. Otherwise, use False.
             elif len(func.args) > 2:
-                func.args[2], error_found = self.__evaluate_and_solve_arg(func, 2)
+                func.args[2], error_found = self.__evaluate_and_solve_arg(
+                    func, 2)
             else:
                 func.args.append(False)
             if error_found:
@@ -343,10 +349,12 @@ class FormulaEvaluator(lark.visitors.Interpreter):
                 return cell_error.CellError(
                     cell_error.CellErrorType.TYPE_ERROR, "Invalid argument count")
             with self.__ignore_error_literals():
-                func.args[0], error_found = self.__evaluate_and_solve_arg(func, 0)
+                func.args[0], error_found = self.__evaluate_and_solve_arg(
+                    func, 0)
             if error_found or isinstance(func.args[0], cell_error.CellError):
                 if len(func.args) == 2:
-                    func.args[1], error_found = self.__evaluate_and_solve_arg(func, 1)
+                    func.args[1], error_found = self.__evaluate_and_solve_arg(
+                        func, 1)
                     if error_found:
                         return error_found
                 else:
