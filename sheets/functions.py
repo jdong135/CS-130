@@ -1,4 +1,4 @@
-from typing import List, Dict, Callable, Any
+from typing import List, Dict, Callable, Any, Tuple, Union
 from decimal import Decimal
 from sheets import cell_error, string_conversions, unitialized_value, version
 import logging
@@ -10,6 +10,9 @@ logger.setLevel(logging.DEBUG)
 
 
 class Function:
+    """
+    Representation of functions as a grouping of a string name and list of arguments.
+    """
     def __init__(self, name: str, args: List[Any]):
         self.name = name
         self.args = args
@@ -17,77 +20,61 @@ class Function:
     def __repr__(self):
         return f"Function: {self.name.strip()}{self.args}"
 
+    @staticmethod
+    def parse_function_by_index(func_call: str) -> Tuple[str, List[Any], int]:
+        """
+        Given a function of the form "FUNC(arg1, ..., argn)", parse the function
+        into a corresponding function name and list of arguments that can be
+        fed into the functions.Function() constructor. Note that this will
+        recursively create function objets out of arguments that take the form of
+        a parsable function. 
 
-def parse_function_by_index(func_call: str):
-    """
-    deal with later
+        Args:
+            func_call (str): String function to parse
 
-    Args:
-        func_call (str): _description_
-
-    Returns:
-        _type_: _description_
-    """
-    accumulator = ""
-    head = ""
-    i = 0
-    writing_head = True
-    while True:
-        curr = func_call[i]
-        if curr == "(":
-            if writing_head:
-                head = accumulator
-                accumulator = ""
-                args = []
-                writing_head = False
+        Returns:
+            Tuple[str, List[Any], int]: Function name, list of corresponding arguments,
+            and amount of charactes parsed on the given recursive layer.
+        """
+        accumulator = ""
+        head = ""
+        i = 0
+        writing_head = True
+        while True:
+            curr = func_call[i]
+            if curr == "(":
+                if writing_head:
+                    head = accumulator
+                    accumulator = ""
+                    args = []
+                    writing_head = False
+                else:
+                    sub_head = accumulator
+                    accumulator = ""
+                    _, sub_args, d = Function.parse_function_by_index(func_call[i:])
+                    i += d
+                    args.append(Function(sub_head.strip().upper(), sub_args))
+            elif curr == ",":
+                accumulator = accumulator.strip()
+                if len(accumulator) > 0:
+                    args.append(accumulator)
+                    accumulator = ""
+            elif curr == ")":
+                accumulator = accumulator.strip()
+                if len(accumulator) > 0:
+                    args.append(accumulator)
+                    accumulator = ""
+                break
             else:
-                sub_head = accumulator
-                accumulator = ""
-                _, sub_args, d = parse_function_by_index(func_call[i:])
-                i += d
-                args.append(Function(sub_head.strip().upper(), sub_args))
-        elif curr == ",":
-            accumulator = accumulator.strip()
-            if len(accumulator) > 0:
-                args.append(accumulator)
-                accumulator = ""
-        elif curr == ")":
-            accumulator = accumulator.strip()
-            if len(accumulator) > 0:
-                args.append(accumulator)
-                accumulator = ""
-            break
-        else:
-            accumulator += curr
-        i += 1
-    return head, args, i
-
-
-def check_for_true_arg(arg):
-    if isinstance(arg, unitialized_value.UninitializedValue):
-        return False
-    if isinstance(arg, bool) and not arg:
-        return False
-    if isinstance(arg, cell_error.CellError):
-        if arg.get_type() == cell_error.CellErrorType.BAD_REFERENCE:
-            return cell_error.CellError(
-                cell_error.CellErrorType.BAD_REFERENCE, "bad reference")
-    elif isinstance(arg, Decimal):
-        if arg == Decimal(0):
-            return False
-    elif isinstance(arg, str) and string_conversions.is_number(arg):
-        if Decimal(arg) == Decimal(0):
-            return False
-    elif isinstance(arg, str):
-        if arg.lower() == "false":
-            return False
-        if arg.lower() != "true":
-            return cell_error.CellError(
-                cell_error.CellErrorType.TYPE_ERROR, "Invalid string argument")
-    return True
+                accumulator += curr
+            i += 1
+        return head, args, i
 
 
 class FunctionDirectory:
+    """
+    Directory of callable functions for a workbook object. 
+    """
     def __init__(self):
         # Function name -> callable function
         self.directory: Dict[str, Callable[[List[Any]], Any]] = {
@@ -119,7 +106,7 @@ class FunctionDirectory:
         for arg in args:
             if isinstance(arg, Function):
                 arg = self.call_function(arg.name, arg.args)
-            arg_eval = check_for_true_arg(arg)
+            arg_eval = string_conversions.check_for_true_arg(arg)
             if isinstance(arg_eval, cell_error.CellError):
                 return arg_eval
             if not arg_eval:
@@ -134,7 +121,7 @@ class FunctionDirectory:
         for arg in args:
             if isinstance(arg, Function):
                 arg = self.call_function(arg.name, arg.args)
-            arg_eval = check_for_true_arg(arg)
+            arg_eval = string_conversions.check_for_true_arg(arg)
             if isinstance(arg_eval, cell_error.CellError):
                 return arg_eval
             if arg_eval:
@@ -148,7 +135,7 @@ class FunctionDirectory:
         arg = args[0]
         if isinstance(arg, Function):
             arg = self.call_function(arg.name, arg.args)
-        arg_eval = check_for_true_arg(arg)
+        arg_eval = string_conversions.check_for_true_arg(arg)
         if isinstance(arg_eval, cell_error.CellError):
             return arg_eval
         return not arg_eval
@@ -161,7 +148,7 @@ class FunctionDirectory:
         for arg in args:
             if isinstance(arg, Function):
                 arg = self.call_function(arg.name, arg.args)
-            arg_eval = check_for_true_arg(arg)
+            arg_eval = string_conversions.check_for_true_arg(arg)
             if isinstance(arg_eval, cell_error.CellError):
                 return arg_eval
             if arg_eval:

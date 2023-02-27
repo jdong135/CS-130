@@ -3,9 +3,9 @@ Module containing functions involving converting strings between ints,
 errors, and numbers. Also contains method to strip zeros from string num. 
 """
 import decimal
-from typing import Tuple
+from typing import Tuple, Any, Union
 from functools import cache
-from sheets import cell_error
+from sheets import cell_error, unitialized_value
 import re
 
 
@@ -189,4 +189,38 @@ def check_valid_location(location: str) -> bool:
         return False
     if len(location.strip()) != len(location):
         return False
+    return True
+
+
+def check_for_true_arg(arg: Any) -> Union[bool, cell_error.CellError]:
+    """
+    Check if a function argument is True, or some equivalent evaluation to True. 
+
+    Args:
+        arg (Any): argument to check
+
+    Returns:
+        Union[bool, cell_error.CellError]: either the boolean value of the input, or a CellError
+        object if an invalid input is provided. 
+    """
+    if isinstance(arg, unitialized_value.UninitializedValue):
+        return False
+    if isinstance(arg, bool) and not arg:
+        return False
+    if isinstance(arg, cell_error.CellError):
+        if arg.get_type() == cell_error.CellErrorType.BAD_REFERENCE:
+            return cell_error.CellError(
+                cell_error.CellErrorType.BAD_REFERENCE, "bad reference")
+    elif isinstance(arg, decimal.Decimal):
+        if arg == decimal.Decimal(0):
+            return False
+    elif isinstance(arg, str) and is_number(arg):
+        if decimal.Decimal(arg) == decimal.Decimal(0):
+            return False
+    elif isinstance(arg, str):
+        if arg.lower() == "false":
+            return False
+        if arg.lower() != "true":
+            return cell_error.CellError(
+                cell_error.CellErrorType.TYPE_ERROR, "Invalid string argument")
     return True

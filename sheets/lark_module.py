@@ -1,10 +1,11 @@
 """Module containing functionality to parse spreadsheet formulas."""
 import decimal
 import re
-from typing import Any, Union, Tuple
+from typing import Any, Union, Tuple, Callable
 from functools import lru_cache
 from typing import List
 import lark
+from contextlib import contextmanager
 from lark.visitors import visit_children_decor
 from lark.exceptions import UnexpectedInput
 from sheets import cell_error, cell, string_conversions, unitialized_value, functions
@@ -30,6 +31,16 @@ class FormulaEvaluator(lark.visitors.Interpreter):
         self.calling_cell = calling_cell
         self.calling_cell_relies_on = []
         self.parser = None
+        self.__convert_literal_to_error = True
+
+    @contextmanager
+    def __ignore_error_literals(self):
+        """
+        Disable automatic conversions of error equivalent literals to CellError objects
+        """
+        self.__convert_literal_to_error = False
+        yield
+        self.__convert_literal_to_error = True
 
     def __check_sheet_name(self, sheet_name) -> Union[str, cell_error.CellError]:
         """
@@ -132,7 +143,7 @@ class FormulaEvaluator(lark.visitors.Interpreter):
             return errs[min(list(errs.keys()))]
         return False
 
-    def __evaluate_function_arguments(self, args_list: List[str]):
+    def __evaluate_function_arguments(self, args_list: List[str]) -> Tuple[List[Any], Union[bool, cell_error.CellError]]:
         """
         Evaluate all arguments of a function and any composed function.
 
@@ -156,10 +167,8 @@ class FormulaEvaluator(lark.visitors.Interpreter):
                     error_found = temp_err
             else:
                 try:
-                    logger.info(f'evaluating: {arg}')
                     tree = get_tree(self.parser, "=" + arg)
                     arg = self.visit(tree)
-                    logger.info(f'result: {arg}')
                 except lark.exceptions.UnexpectedInput:
                     continue
             args_list[i] = arg
@@ -175,7 +184,8 @@ class FormulaEvaluator(lark.visitors.Interpreter):
                 val.name, val.args)
         return val, error_found     
 
-    def __bool_cmpr(self, left, right, operand, string_op):
+    def __bool_cmpr(self, left: Any, right: Any, 
+                    operand: Callable[[str, str], bool], string_op: str) -> bool:
             # booleans > strings > numbers
             if type(left) == type(right):
                 return operand(left, right)
@@ -306,7 +316,7 @@ class FormulaEvaluator(lark.visitors.Interpreter):
 
     @visit_children_decor
     def function(self, values):
-        name, args, _ = functions.parse_function_by_index(values[0])
+        name, args, _ = functions.Function.parse_function_by_index(values[0])
         func = functions.Function(name.strip().upper(), args)
         if func.name == "IF":
             if len(func.args) not in [2, 3]:
@@ -316,7 +326,7 @@ class FormulaEvaluator(lark.visitors.Interpreter):
             func.args[0], error_found = self.__evaluate_and_solve_arg(func, 0)
             if error_found:
                 return error_found
-            func.args[0] = functions.check_for_true_arg(func.args[0])
+            func.args[0] = string_conversions.check_for_true_arg(func.args[0])
             # Lazy evaluation -> only evaluate the value that we are using
             # Condition is true -> Evaluate the first value
             if func.args[0]:
@@ -332,7 +342,8 @@ class FormulaEvaluator(lark.visitors.Interpreter):
             if len(func.args) not in [1, 2]:
                 return cell_error.CellError(
                     cell_error.CellErrorType.TYPE_ERROR, "Invalid argument count")
-            func.args[0], error_found = self.__evaluate_and_solve_arg(func, 0)
+            with self.__ignore_error_literals():
+                func.args[0], error_found = self.__evaluate_and_solve_arg(func, 0)
             if error_found or isinstance(func.args[0], cell_error.CellError):
                 if len(func.args) == 2:
                     func.args[1], error_found = self.__evaluate_and_solve_arg(func, 1)
@@ -430,9 +441,10 @@ class FormulaEvaluator(lark.visitors.Interpreter):
 
     def string(self, tree):
         value = tree.children[0].value[1:-1]
-        potential_error = string_conversions.str_to_error(value)
-        if potential_error:
-            return potential_error
+        if self.__convert_literal_to_error:
+            potential_error = string_conversions.str_to_error(value)
+            if potential_error:
+                return potential_error
         return value
 
     def boolean(self, tree):
