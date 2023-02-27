@@ -13,68 +13,20 @@ class Function:
     """
     Representation of functions as a grouping of a string name and list of arguments.
     """
-    def __init__(self, name: str, args: List[Any]):
+    def __init__(self, name: str, args: List[Any], lazy_eval):
         self.name = name
         self.args = args
+        self.lazy_eval = lazy_eval
 
     def __repr__(self):
         return f"Function: {self.name.strip()}{self.args}"
-
-    @staticmethod
-    def parse_function_by_index(func_call: str) -> Tuple[str, List[Any], int]:
-        """
-        Given a function of the form "FUNC(arg1, ..., argn)", parse the function
-        into a corresponding function name and list of arguments that can be
-        fed into the functions.Function() constructor. Note that this will
-        recursively create function objets out of arguments that take the form of
-        a parsable function. 
-
-        Args:
-            func_call (str): String function to parse
-
-        Returns:
-            Tuple[str, List[Any], int]: Function name, list of corresponding arguments,
-            and amount of charactes parsed on the given recursive layer.
-        """
-        accumulator = ""
-        head = ""
-        i = 0
-        writing_head = True
-        while True:
-            curr = func_call[i]
-            if curr == "(":
-                if writing_head:
-                    head = accumulator
-                    accumulator = ""
-                    args = []
-                    writing_head = False
-                else:
-                    sub_head = accumulator
-                    accumulator = ""
-                    _, sub_args, d = Function.parse_function_by_index(func_call[i:])
-                    i += d
-                    args.append(Function(sub_head.strip().upper(), sub_args))
-            elif curr == ",":
-                accumulator = accumulator.strip()
-                if len(accumulator) > 0:
-                    args.append(accumulator)
-                    accumulator = ""
-            elif curr == ")":
-                accumulator = accumulator.strip()
-                if len(accumulator) > 0:
-                    args.append(accumulator)
-                    accumulator = ""
-                break
-            else:
-                accumulator += curr
-            i += 1
-        return head, args, i
 
 
 class FunctionDirectory:
     """
     Directory of callable functions for a workbook object. 
     """
+
     def __init__(self):
         # Function name -> callable function
         self.directory: Dict[str, Callable[[List[Any]], Any]] = {
@@ -91,6 +43,11 @@ class FunctionDirectory:
             "IFERROR": self.if_error
         }
 
+        self.lazy_functions = set("IF", "IFERROR", "CHOOSE")
+
+    def get_function_keys(self):
+        return self.directory.keys()
+
     def call_function(self, func_name: str, args: List):
         try:
             return self.directory[func_name](args)
@@ -104,8 +61,6 @@ class FunctionDirectory:
                 cell_error.CellErrorType.TYPE_ERROR, "Invalid argument count")
         found_false = False
         for arg in args:
-            if isinstance(arg, Function):
-                arg = self.call_function(arg.name, arg.args)
             arg_eval = string_conversions.check_for_true_arg(arg)
             if isinstance(arg_eval, cell_error.CellError):
                 return arg_eval
@@ -119,8 +74,6 @@ class FunctionDirectory:
                 cell_error.CellErrorType.TYPE_ERROR, "Invalid argument count")
         found_true = False
         for arg in args:
-            if isinstance(arg, Function):
-                arg = self.call_function(arg.name, arg.args)
             arg_eval = string_conversions.check_for_true_arg(arg)
             if isinstance(arg_eval, cell_error.CellError):
                 return arg_eval
@@ -133,8 +86,6 @@ class FunctionDirectory:
             return cell_error.CellError(
                 cell_error.CellErrorType.TYPE_ERROR, "Invalid argument count")
         arg = args[0]
-        if isinstance(arg, Function):
-            arg = self.call_function(arg.name, arg.args)
         arg_eval = string_conversions.check_for_true_arg(arg)
         if isinstance(arg_eval, cell_error.CellError):
             return arg_eval
@@ -146,8 +97,6 @@ class FunctionDirectory:
                 cell_error.CellErrorType.TYPE_ERROR, "Invalid argument count")
         true_cnt = 0
         for arg in args:
-            if isinstance(arg, Function):
-                arg = self.call_function(arg.name, arg.args)
             arg_eval = string_conversions.check_for_true_arg(arg)
             if isinstance(arg_eval, cell_error.CellError):
                 return arg_eval

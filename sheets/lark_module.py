@@ -314,78 +314,101 @@ class FormulaEvaluator(lark.visitors.Interpreter):
             return self.__bool_cmpr(left, right, lambda x, y: x <= y, '<=')
         assert False, 'Unexpected operator: ' + operator
 
-    @visit_children_decor
     def function(self, values):
-        name = values[0]
+        name = values.children[0].strip().upper()
+        func = function.Function(name, [], False)
+        if name not in self.wb.function_directory.get_function_keys():
+            return cell_error.CellError(cell_error.CellErrorType.BAD_NAME, "Invalid function name")
+        if name in self.wb.function_directory.lazy_functions:
+            func.lazy_eval = True
         args = []
-        if len(values) > 1:
-            args = values[1:]
-        # name, args, _ = functions.Function.parse_function_by_index(values[0])
-        func = functions.Function(name.strip().upper(), args)
-        if func.name == "IF":
-            if len(func.args) not in [2, 3]:
-                return cell_error.CellError(
-                    cell_error.CellErrorType.TYPE_ERROR, "Invalid argument count")
-            # Evaluate the first argument completely
-            func.args[0], error_found = self.__evaluate_and_solve_arg(func, 0)
-            if error_found:
-                return error_found
-            func.args[0] = string_conversions.check_for_true_arg(func.args[0])
-            # Lazy evaluation -> only evaluate the value that we are using
-            # Condition is true -> Evaluate the first value
-            if func.args[0]:
-                func.args[1], error_found = self.__evaluate_and_solve_arg(
-                    func, 1)
-            # Condition is false -> if a second value exists, evaluate it. Otherwise, use False.
-            elif len(func.args) > 2:
-                func.args[2], error_found = self.__evaluate_and_solve_arg(
-                    func, 2)
-            else:
-                func.args.append(False)
-            if error_found:
-                return error_found
-        elif func.name == "IFERROR":
-            if len(func.args) not in [1, 2]:
-                return cell_error.CellError(
-                    cell_error.CellErrorType.TYPE_ERROR, "Invalid argument count")
-            with self.__ignore_error_literals():
-                func.args[0], error_found = self.__evaluate_and_solve_arg(
-                    func, 0)
-            if error_found or isinstance(func.args[0], cell_error.CellError):
-                if len(func.args) == 2:
-                    func.args[1], error_found = self.__evaluate_and_solve_arg(
-                        func, 1)
-                    if error_found:
-                        return error_found
-                else:
-                    func.args.append("")
-        else:
-            func.args, error_found = self.__evaluate_function_arguments(
-                func.args)
-        if error_found and func.name != "ISERROR":
-            return error_found
-        if func.name == "ISERROR":
-            if len(func.args) != 1:
-                return cell_error.CellError(
-                    cell_error.CellErrorType.TYPE_ERROR, "Invalid argument count")
-            if isinstance(func.args[0], str):
+        if name not in ["IF", "IFERROR", "CHOOSE"]:
+            for child in values.children[1:]:
                 try:
-                    get_tree(self.parser, "=" + func.args[0])
+                    res = self.visit(child)
+                    args.append(res)
                 except lark.exceptions.UnexpectedInput:
                     return cell_error.CellError(
                         cell_error.CellErrorType.PARSE_ERROR, "Input cannot be parsed")
-        elif func.name == "INDIRECT":
-            if len(func.args) != 1:
+        elif name == "ISERROR":
+            pass
+        else:  # lazy evaluation
+            try:
+                res = self.visit(values.children[1])
+                if string_conversions.check_for_true_arg(res):
+                    args.append(self.visit(values.children[2]))
+                elif len(values.children) > 2:
+                    args.append(self.visit)
+
+            except lark.exceptions.UnexpectedInput:
                 return cell_error.CellError(
-                    cell_error.CellErrorType.TYPE_ERROR, "Invalid argument count")
-            if not isinstance(func.args[0], str) \
-                or not string_conversions.check_valid_location(func.args[0]) \
-                    or isinstance(func.args[0], unitialized_value.UninitializedValue):
-                return cell_error.CellError(
-                    cell_error.CellErrorType.BAD_REFERENCE, "Bad reference")
-            func.args[0] = self.visit(
-                get_tree(self.parser, "=" + func.args[0]))
-        return self.wb.function_directory.call_function(func.name, func.args)
+                    cell_error.CellErrorType.PARSE_ERROR, "Input cannot be parsed")
+        # name, args, _ = functions.Function.parse_function_by_index(values[0])
+            # func = functions.Function(name.strip().upper(), args)
+            # if func.name == "IF":
+            #     if len(func.args) not in [2, 3]:
+            #         return cell_error.CellError(
+            #             cell_error.CellErrorType.TYPE_ERROR, "Invalid argument count")
+            #     # Evaluate the first argument completely
+            #     func.args[0], error_found = self.__evaluate_and_solve_arg(func, 0)
+            #     if error_found:
+            #         return error_found
+            #     func.args[0] = string_conversions.check_for_true_arg(func.args[0])
+            #     # Lazy evaluation -> only evaluate the value that we are using
+            #     # Condition is true -> Evaluate the first value
+            #     if func.args[0]:
+            #         func.args[1], error_found = self.__evaluate_and_solve_arg(
+            #             func, 1)
+            #     # Condition is false -> if a second value exists, evaluate it. Otherwise, use False.
+            #     elif len(func.args) > 2:
+            #         func.args[2], error_found = self.__evaluate_and_solve_arg(
+            #             func, 2)
+            #     else:
+            #         func.args.append(False)
+            #     if error_found:
+            #         return error_found
+            # elif func.name == "IFERROR":
+            #     if len(func.args) not in [1, 2]:
+            #         return cell_error.CellError(
+            #             cell_error.CellErrorType.TYPE_ERROR, "Invalid argument count")
+            #     with self.__ignore_error_literals():
+            #         func.args[0], error_found = self.__evaluate_and_solve_arg(
+            #             func, 0)
+            #     if error_found or isinstance(func.args[0], cell_error.CellError):
+            #         if len(func.args) == 2:
+            #             func.args[1], error_found = self.__evaluate_and_solve_arg(
+            #                 func, 1)
+            #             if error_found:
+            #                 return error_found
+            #         else:
+            #             func.args.append("")
+            # else:
+            #     func.args, error_found = self.__evaluate_function_arguments(
+            #         func.args)
+            # if error_found and func.name != "ISERROR":
+            #     return error_found
+            # if func.name == "ISERROR":
+            #     if len(func.args) != 1:
+            #         return cell_error.CellError(
+            #             cell_error.CellErrorType.TYPE_ERROR, "Invalid argument count")
+            #     if isinstance(func.args[0], str):
+            #         try:
+            #             get_tree(self.parser, "=" + func.args[0])
+            #         except lark.exceptions.UnexpectedInput:
+            #             return cell_error.CellError(
+            #                 cell_error.CellErrorType.PARSE_ERROR, "Input cannot be parsed")
+            # elif func.name == "INDIRECT":
+            #     if len(func.args) != 1:
+            #         return cell_error.CellError(
+            #             cell_error.CellErrorType.TYPE_ERROR, "Invalid argument count")
+            #     if not isinstance(func.args[0], str) \
+            #         or not string_conversions.check_valid_location(func.args[0]) \
+            #             or isinstance(func.args[0], unitialized_value.UninitializedValue):
+            #         return cell_error.CellError(
+            #             cell_error.CellErrorType.BAD_REFERENCE, "Bad reference")
+            #     func.args[0] = self.visit(
+            #         get_tree(self.parser, "=" + func.args[0]))
+        return self.wb.function_directory.call_function(name, args)
 
     @visit_children_decor
     def cell(self, values):
