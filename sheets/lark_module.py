@@ -269,18 +269,14 @@ class FormulaEvaluator(lark.visitors.Interpreter):
                 return cell_error.CellError(
                     cell_error.CellErrorType.TYPE_ERROR, "Invalid argument count")
             # Evaluate the first argument completely
-            [condition], error_found = self.evaluate_function_arguments([func.args[0]])     
-            # condition = condition[0]       
+            [condition], error_found = self.evaluate_function_arguments([func.args[0]])  
             if error_found: 
                 return error_found
             # If the first argument is a function, fully solve the function for a literal value
             if isinstance(condition, functions.Function): 
-                condition = self.wb.function_directory.call_function(condition.name, condition.args)
-            # Check if our solved condition is False or a False equivalent
-            if functions.check_for_true_arg(condition):
-                func.args[0] = True 
-            else:
-                func.args[0] = False
+                condition = self.wb.function_directory.call_function(
+                    condition.name, condition.args)
+            func.args[0] = functions.check_for_true_arg(condition)
             # Lazy evaluation -> only evaluate the value that we are using
             # Condition is true -> Evaluate the first value
             if func.args[0]:
