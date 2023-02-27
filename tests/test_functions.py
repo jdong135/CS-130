@@ -145,6 +145,40 @@ class FunctionTests(unittest.TestCase):
     #     wb.set_cell_contents("sheet1", "A1", "'tru")
     #     wb.set_cell_contents("sheet1", "B1", "=AND(A1 & \"e\")")
 
+    def test_xor(self):
+        wb = sheets.Workbook()
+        wb.new_sheet()
+        wb.set_cell_contents("sheet1", "A1", "=XOR(1, 0)")
+        wb.set_cell_contents("sheet1", "A2", "=XOR (1, 0,  1)")
+        wb.set_cell_contents("sheet1", "A3", "=XOR(1, 0, 1, AND(1 , 0))")
+        wb.set_cell_contents("sheet1", "A4", "=XOR (1, 0,  1, AND(1, XOR(1, 0, 1 , 1, 0), 1))")
+        self.assertEqual(wb.get_cell_value("sheet1", "A1"), True)
+        self.assertEqual(wb.get_cell_value("sheet1", "A2"), False)
+        self.assertEqual(wb.get_cell_value("sheet1", "A3"), False)
+        self.assertEqual(wb.get_cell_value("sheet1", "A4"), True)
+
+    def test_or(self):
+        wb = sheets.Workbook()
+        wb.new_sheet()
+        wb.set_cell_contents("sheet1", "A1", "=OR(1, 0, 0)")
+        wb.set_cell_contents("sheet1", "A2", "=OR(0, 0, 0)")
+        wb.set_cell_contents("sheet1", "A3", "=OR(AND(True, true, 1, 5, -3), 0, FALSE)")
+        self.assertEqual(wb.get_cell_value("sheet1", "A1"), True)
+        self.assertEqual(wb.get_cell_value("sheet1", "A2"), False)
+        self.assertEqual(wb.get_cell_value("sheet1", "A3"), True)
+
+    def test_not(self):
+        wb = sheets.Workbook()
+        wb.new_sheet()
+        wb.new_sheet()
+        wb.set_cell_contents("sheet1", "A1", "=NOT(0)")
+        wb.set_cell_contents("sheet1", "A2", "=NOT(1)")
+        wb.set_cell_contents("sheet2", "A3", "=OR(XOR(1, 0, True), 0, NOT(True))")
+        wb.set_cell_contents("sheet1", "A3", "=NOT(sheet2!A3)")
+        self.assertEqual(wb.get_cell_value("sheet1", "A1"), True)
+        self.assertEqual(wb.get_cell_value("sheet1", "A2"), False)
+        self.assertEqual(wb.get_cell_value("sheet1",  "A3"), True)
+
 
 if __name__ == "__main__":
     unittest.main()

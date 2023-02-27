@@ -1,7 +1,7 @@
 """Module containing functionality to parse spreadsheet formulas."""
 import decimal
 import re
-from typing import Any, Union
+from typing import Any, Union, Tuple
 from functools import lru_cache
 from typing import List
 import lark
@@ -131,6 +131,13 @@ class FormulaEvaluator(lark.visitors.Interpreter):
         if len(errs) > 0:
             return errs[min(list(errs.keys()))]
         return False
+
+    def __evaluate_and_solve_arg(self, func, i) -> Tuple[Any, Union[bool, cell_error.CellError]]:
+        [val], error_found = self.evaluate_function_arguments([func.args[i]])
+        if not error_found and isinstance(val, functions.Function):
+            val = self.wb.function_directory.call_function(
+                val.name, val.args)
+        return val, error_found     
 
     @visit_children_decor
     def add_expr(self, values):
@@ -269,59 +276,33 @@ class FormulaEvaluator(lark.visitors.Interpreter):
                 return cell_error.CellError(
                     cell_error.CellErrorType.TYPE_ERROR, "Invalid argument count")
             # Evaluate the first argument completely
-            [condition], error_found = self.evaluate_function_arguments([
-                                                                        func.args[0]])
+            func.args[0], error_found = self.__evaluate_and_solve_arg(func, 0)
             if error_found:
                 return error_found
-            # If the first argument is a function, fully solve the function for a literal value
-            if isinstance(condition, functions.Function):
-                condition = self.wb.function_directory.call_function(
-                    condition.name, condition.args)
-            func.args[0] = functions.check_for_true_arg(condition)
+            func.args[0] = functions.check_for_true_arg(func.args[0])
             # Lazy evaluation -> only evaluate the value that we are using
             # Condition is true -> Evaluate the first value
             if func.args[0]:
-                [val], error_found = self.evaluate_function_arguments([
-                                                                      func.args[1]])
-                if error_found:
-                    return error_found
-                if isinstance(val, functions.Function):
-                    val = self.wb.function_directory.call_function(
-                        val.name, val.args)
-                func.args[1] = val
+                func.args[1], error_found = self.__evaluate_and_solve_arg(func, 1)
             # Condition is false -> if a second value exists, evaluate it. Otherwise, use False.
             elif len(func.args) > 2:
-                logger.info(f'second arg: {func.args[2]}')
-                [val], error_found = self.evaluate_function_arguments([
-                                                                      func.args[2]])
-                if error_found:
-                    return error_found
-                if isinstance(val, functions.Function):
-                    val = self.wb.function_directory.call_function(
-                        val.name, val.args)
-                func.args[2] = val
+                func.args[2], error_found = self.__evaluate_and_solve_arg(func, 2)
             else:
                 func.args.append(False)
+            if error_found:
+                return error_found
         elif func.name == "IFERROR":
             if len(func.args) not in [1, 2]:
                 return cell_error.CellError(
                     cell_error.CellErrorType.TYPE_ERROR, "Invalid argument count")
-            [condition], error_found = self.evaluate_function_arguments([
-                                                                        func.args[0]])
-            if isinstance(condition, functions.Function) and not error_found:
-                condition = self.wb.function_directory.call_function(
-                    condition.name, condition.args)
-            func.args[0] = condition
-            if error_found or isinstance(condition, cell_error.CellError):
+            func.args[0], error_found = self.__evaluate_and_solve_arg(func, 0)
+            if error_found:
+                return error_found
+            if error_found or isinstance(func.args[0], cell_error.CellError):
                 if len(func.args) == 2:
-                    [val], error_found = self.evaluate_function_arguments([
-                                                                          func.args[1]])
+                    func.args[1], error_found = self.__evaluate_and_solve_arg(func, 1)
                     if error_found:
                         return error_found
-                    if isinstance(val, functions.Function):
-                        val = self.wb.function_directory.call_function(
-                            val.name, val.args)
-                    func.args[1] = val
                 else:
                     func.args.append("")
         else:
