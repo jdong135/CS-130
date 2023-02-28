@@ -13,6 +13,7 @@ class Function:
     """
     Representation of functions as a grouping of a string name and list of arguments.
     """
+
     def __init__(self, name: str, args: List[Any], lazy_eval):
         self.name = name
         self.args = args

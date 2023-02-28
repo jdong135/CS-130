@@ -4,6 +4,7 @@ Test for implementation of Lark Module formula Evaluator
 
 import unittest
 from context import sheets
+import decimal
 
 
 class FunctionTests(unittest.TestCase):
@@ -187,6 +188,18 @@ class FunctionTests(unittest.TestCase):
         wb.new_sheet()
         wb.set_cell_contents("sheet1", "A1", '=IFERROR("#REF!", 1)')
         self.assertEqual(wb.get_cell_value('sheet1', 'A1'), "#REF!")
+
+    def test_indirect_concat(self):
+        wb = sheets.Workbook()
+        wb.new_sheet()
+        wb.set_cell_contents("sheet1", "A5", '5')
+        wb.set_cell_contents("sheet1", "B5", '62')
+        wb.set_cell_contents("sheet1", "B1", '=indirect("B" & A5)')
+        self.assertEqual(wb.get_cell_value(
+            'sheet1', 'b1'), decimal.Decimal(62))
+        wb.set_cell_contents("sheet1", "B1", '=indirect("A" & A5)')
+        self.assertEqual(wb.get_cell_value(
+            'sheet1', 'b1'), decimal.Decimal(5))
 
 
 if __name__ == "__main__":

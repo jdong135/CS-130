@@ -232,7 +232,6 @@ class FormulaEvaluator(lark.visitors.Interpreter):
 
     @visit_children_decor
     def unary_op(self, values):
-        logger.info(values)
         potential_error = self.__check_for_error(values, 1)
         if potential_error:
             return potential_error
@@ -267,7 +266,6 @@ class FormulaEvaluator(lark.visitors.Interpreter):
 
     @visit_children_decor
     def bool_expr(self, values):
-        logger.info(values)
         potential_error = self.__check_for_error(values, 0, 2)
         if potential_error:
             return potential_error
@@ -316,8 +314,7 @@ class FormulaEvaluator(lark.visitors.Interpreter):
             return self.__bool_cmpr(left, right, lambda x, y: x <= y, '<=')
         assert False, 'Unexpected operator: ' + operator
 
-    def function(self, values):        
-        logger.info(values)
+    def function(self, values):
         name = values.children[0].strip().upper()
         func = functions.Function(name, [], False)
         if name not in self.wb.function_directory.get_function_keys():
@@ -327,13 +324,13 @@ class FormulaEvaluator(lark.visitors.Interpreter):
         if not func.lazy_eval:
             for child in values.children[1:]:
                 func.args.append(self.visit(child))
-        else:  # lazy evaluation  
+        else:  # lazy evaluation
             if func.name == "IF":
-                logger.info(values.children[1:])
                 if len(values.children[1:]) not in [2, 3]:
                     return cell_error.CellError(
-                        cell_error.CellErrorType.TYPE_ERROR, "Invalid argument count")                
-                condition = string_conversions.check_for_true_arg(self.visit(values.children[1]))
+                        cell_error.CellErrorType.TYPE_ERROR, "Invalid argument count")
+                condition = string_conversions.check_for_true_arg(
+                    self.visit(values.children[1]))
                 if isinstance(condition, cell_error.CellError):
                     return condition
                 elif condition:
@@ -354,23 +351,31 @@ class FormulaEvaluator(lark.visitors.Interpreter):
                     func.args.append(self.visit(values.children[2]))
                 else:
                     func.args.append("")
-            # elif func.name == "INDIRECT":
-            #     if len(func.args) != 1:
-            #         return cell_error.CellError(
-            #             cell_error.CellErrorType.TYPE_ERROR, "Invalid argument count")
-            #     if not isinstance(func.args[0], str) \
-            #         or not string_conversions.check_valid_location(func.args[0]) \
-            #             or isinstance(func.args[0], unitialized_value.UninitializedValue):
-            #         return cell_error.CellError(
-            #             cell_error.CellErrorType.BAD_REFERENCE, "Bad reference")
-            #     func.args[0] = self.visit(
-            #         get_tree(self.parser, "=" + func.args[0]))
-        logger.info(f"arg: {func.args}")
+            elif func.name == "CHOOSE":
+                if len(func.args) < 2:
+                    return cell_error.CellError(
+                        cell_error.CellErrorType.TYPE_ERROR, "Invalid argument count")
+                #  If index is not an integer, or is 0 or less,
+                #  or is beyond the end of the value list, then a TYPE_ERROR is produced.
+                # CHOOSE(CHOOSE, IDX, VAL1, VAL2)
+                if not isinstance(values.children[1], int)\
+                        or values.children[1] <= 0 or values.children[0] > len(values.children) - 2:
+                    return cell_error.CellError(cell_error.CellErrorType.TYPE_ERROR)
+        if func.name == "INDIRECT":
+            if len(func.args) != 1:
+                return cell_error.CellError(
+                    cell_error.CellErrorType.TYPE_ERROR, "Invalid argument count")
+            if not isinstance(func.args[0], str) \
+                or not string_conversions.check_valid_location(func.args[0]) \
+                    or isinstance(func.args[0], unitialized_value.UninitializedValue):
+                return cell_error.CellError(
+                    cell_error.CellErrorType.BAD_REFERENCE, "Bad reference")
+            func.args[0] = self.visit(
+                get_tree(self.parser, "=" + func.args[0]))
         return self.wb.function_directory.call_function(func)
 
     @visit_children_decor
     def cell(self, values):
-        logger.info(f"cell ref in {values}")
         # handle different input formats for value
         if len(values) > 1:  # =[sheet]![col][row]
             sheet_name = self.__check_sheet_name(values[0].value)
@@ -497,13 +502,10 @@ def evaluate_expr(workbook, curr_cell, sheetname: str,
     evaluator = FormulaEvaluator(workbook, sheet, curr_cell)
     parser = open_grammar()
     evaluator.parser = parser
-    logger.info(f"contents: {contents}")
     try:
         tree = get_tree(parser, contents)
     except UnexpectedInput:
-        logger.info("unexpected input")
         return evaluator, cell_error.CellError(
             cell_error.CellErrorType.PARSE_ERROR, "parse error")
-    logger.info(f"tree: {tree}")
     value = evaluator.visit(tree)
     return evaluator, value
