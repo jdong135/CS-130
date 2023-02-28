@@ -333,9 +333,12 @@ class FormulaEvaluator(lark.visitors.Interpreter):
                 if len(values.children[1:]) not in [2, 3]:
                     return cell_error.CellError(
                         cell_error.CellErrorType.TYPE_ERROR, "Invalid argument count")                
-                if string_conversions.check_for_true_arg(self.visit(values.children[1])):
+                condition = string_conversions.check_for_true_arg(self.visit(values.children[1]))
+                if isinstance(condition, cell_error.CellError):
+                    return condition
+                elif condition:
                     func.args.append(self.visit(values.children[2]))
-                elif len(values.children) > 2:
+                elif len(values.children) == 3:
                     func.args.append(values.children[3])
                 else:
                     func.args.append(False)
@@ -347,22 +350,10 @@ class FormulaEvaluator(lark.visitors.Interpreter):
                     res = self.visit(values.children[1])
                 if not isinstance(res, cell_error.CellError):
                     func.args.append(res)
-                elif len(values.children[1:]) > 1:
+                elif len(values.children[1:]) == 2:
                     func.args.append(self.visit(values.children[2]))
                 else:
                     func.args.append("")
-            # if error_found and func.name != "ISERROR":
-            #     return error_found
-            # if func.name == "ISERROR":
-            #     if len(func.args) != 1:
-            #         return cell_error.CellError(
-            #             cell_error.CellErrorType.TYPE_ERROR, "Invalid argument count")
-            #     if isinstance(func.args[0], str):
-            #         try:
-            #             get_tree(self.parser, "=" + func.args[0])
-            #         except lark.exceptions.UnexpectedInput:
-            #             return cell_error.CellError(
-            #                 cell_error.CellErrorType.PARSE_ERROR, "Input cannot be parsed")
             # elif func.name == "INDIRECT":
             #     if len(func.args) != 1:
             #         return cell_error.CellError(
@@ -510,7 +501,7 @@ def evaluate_expr(workbook, curr_cell, sheetname: str,
     try:
         tree = get_tree(parser, contents)
     except UnexpectedInput:
-        logger.info("here")
+        logger.info("unexpected input")
         return evaluator, cell_error.CellError(
             cell_error.CellErrorType.PARSE_ERROR, "parse error")
     logger.info(f"tree: {tree}")
