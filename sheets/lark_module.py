@@ -317,6 +317,7 @@ class FormulaEvaluator(lark.visitors.Interpreter):
         assert False, 'Unexpected operator: ' + operator
 
     def function(self, values):        
+        logger.info(values)
         name = values.children[0].strip().upper()
         func = functions.Function(name, [], False)
         if name not in self.wb.function_directory.get_function_keys():
@@ -373,6 +374,7 @@ class FormulaEvaluator(lark.visitors.Interpreter):
             #             cell_error.CellErrorType.BAD_REFERENCE, "Bad reference")
             #     func.args[0] = self.visit(
             #         get_tree(self.parser, "=" + func.args[0]))
+        logger.info(f"arg: {func.args}")
         return self.wb.function_directory.call_function(func)
 
     @visit_children_decor

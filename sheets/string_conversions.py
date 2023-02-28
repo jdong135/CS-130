@@ -208,9 +208,7 @@ def check_for_true_arg(arg: Any) -> Union[bool, cell_error.CellError]:
     if isinstance(arg, bool) and not arg:
         return False
     if isinstance(arg, cell_error.CellError):
-        if arg.get_type() == cell_error.CellErrorType.BAD_REFERENCE:
-            return cell_error.CellError(
-                cell_error.CellErrorType.BAD_REFERENCE, "bad reference")
+        return arg
     elif isinstance(arg, decimal.Decimal):
         if arg == decimal.Decimal(0):
             return False

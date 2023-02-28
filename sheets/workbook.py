@@ -544,21 +544,19 @@ class Workbook:
                     if self.__call_notify:
                         self.__generate_notifications([existing_cell])
                     return
-            # updating cells that depend on existing cell only if the value is updated
-            if val_updated:
-                circular, cell_dependents = topo_sort(
-                    existing_cell, self.adjacency_list)
-                if not circular:
-                    for dependent in cell_dependents[1:]:
-                        self.__set_cell_value_and_type(dependent)
-                else:  # everything in the cycle should have an error value
-                    for dependent in cell_dependents:
-                        dependent.set_fields(value=cell_error.CellError(
-                            cell_error.CellErrorType.CIRCULAR_REFERENCE, "circular reference"))
-                self.__update_extent(spreadsheet, location, False)
-                # include the existing cell iff its value is updated
-                if self.__call_notify:
-                    self.__generate_notifications(cell_dependents)
+            circular, cell_dependents = topo_sort(
+                existing_cell, self.adjacency_list)
+            if not circular:
+                for dependent in cell_dependents[1:]:
+                    self.__set_cell_value_and_type(dependent)
+            else:  # everything in the cycle should have an error value
+                for dependent in cell_dependents:
+                    dependent.set_fields(value=cell_error.CellError(
+                        cell_error.CellErrorType.CIRCULAR_REFERENCE, "circular reference"))
+            self.__update_extent(spreadsheet, location, False)
+            # include the existing cell iff its value is updated
+            if self.__call_notify and val_updated:
+                self.__generate_notifications(cell_dependents)
         else:  # if cell does not exist (create contents)
             new_cell = cell.Cell(spreadsheet, location, contents, None, None)
             self.__set_cell_value_and_type(new_cell)
