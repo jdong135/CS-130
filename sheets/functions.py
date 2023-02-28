@@ -42,15 +42,14 @@ class FunctionDirectory:
             "IF": self.if_func,
             "IFERROR": self.if_error
         }
-
-        self.lazy_functions = set("IF", "IFERROR", "CHOOSE")
+        self.lazy_functions = set(["IF", "IFERROR", "CHOOSE"])
 
     def get_function_keys(self):
         return self.directory.keys()
 
-    def call_function(self, func_name: str, args: List):
+    def call_function(self, func: Function):
         try:
-            return self.directory[func_name](args)
+            return self.directory[func.name](func.args)
         except KeyError:
             return cell_error.CellError(
                 cell_error.CellErrorType.BAD_NAME, "Invalid Function name")
@@ -124,6 +123,7 @@ class FunctionDirectory:
         return False
 
     def is_error(self, args: List):
+        logger.info(args)
         if len(args) != 1:
             return cell_error.CellError(
                 cell_error.CellErrorType.TYPE_ERROR, "Invalid argument count")
@@ -141,11 +141,7 @@ class FunctionDirectory:
         return args[0]
 
     def if_func(self, args: List):
-        logger.info(args)
-        return args[1] if args[0] else args[2]
+        return args[0]
 
     def if_error(self, args: List):
-        logger.info(args)
-        if isinstance(args[0], cell_error.CellError):
-            return args[1]
         return args[0]

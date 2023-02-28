@@ -5,7 +5,7 @@ from typing import Any, Union, Tuple, Callable
 from functools import lru_cache
 from typing import List
 import lark
-from contextlib import contextmanager
+from contextlib import contextmanager, suppress
 from lark.visitors import visit_children_decor
 from lark.exceptions import UnexpectedInput
 from sheets import cell_error, cell, string_conversions, unitialized_value, functions
@@ -232,6 +232,7 @@ class FormulaEvaluator(lark.visitors.Interpreter):
 
     @visit_children_decor
     def unary_op(self, values):
+        logger.info(values)
         potential_error = self.__check_for_error(values, 1)
         if potential_error:
             return potential_error
@@ -266,6 +267,7 @@ class FormulaEvaluator(lark.visitors.Interpreter):
 
     @visit_children_decor
     def bool_expr(self, values):
+        logger.info(values)
         potential_error = self.__check_for_error(values, 0, 2)
         if potential_error:
             return potential_error
@@ -314,77 +316,40 @@ class FormulaEvaluator(lark.visitors.Interpreter):
             return self.__bool_cmpr(left, right, lambda x, y: x <= y, '<=')
         assert False, 'Unexpected operator: ' + operator
 
-    def function(self, values):
+    def function(self, values):        
         name = values.children[0].strip().upper()
-        func = function.Function(name, [], False)
+        func = functions.Function(name, [], False)
         if name not in self.wb.function_directory.get_function_keys():
             return cell_error.CellError(cell_error.CellErrorType.BAD_NAME, "Invalid function name")
         if name in self.wb.function_directory.lazy_functions:
             func.lazy_eval = True
-        args = []
-        if name not in ["IF", "IFERROR", "CHOOSE"]:
+        if not func.lazy_eval:
             for child in values.children[1:]:
-                try:
-                    res = self.visit(child)
-                    args.append(res)
-                except lark.exceptions.UnexpectedInput:
+                func.args.append(self.visit(child))
+        else:  # lazy evaluation  
+            if func.name == "IF":
+                logger.info(values.children[1:])
+                if len(values.children[1:]) not in [2, 3]:
                     return cell_error.CellError(
-                        cell_error.CellErrorType.PARSE_ERROR, "Input cannot be parsed")
-        elif name == "ISERROR":
-            pass
-        else:  # lazy evaluation
-            try:
-                res = self.visit(values.children[1])
-                if string_conversions.check_for_true_arg(res):
-                    args.append(self.visit(values.children[2]))
+                        cell_error.CellErrorType.TYPE_ERROR, "Invalid argument count")                
+                if string_conversions.check_for_true_arg(self.visit(values.children[1])):
+                    func.args.append(self.visit(values.children[2]))
                 elif len(values.children) > 2:
-                    args.append(self.visit)
-
-            except lark.exceptions.UnexpectedInput:
-                return cell_error.CellError(
-                    cell_error.CellErrorType.PARSE_ERROR, "Input cannot be parsed")
-        # name, args, _ = functions.Function.parse_function_by_index(values[0])
-            # func = functions.Function(name.strip().upper(), args)
-            # if func.name == "IF":
-            #     if len(func.args) not in [2, 3]:
-            #         return cell_error.CellError(
-            #             cell_error.CellErrorType.TYPE_ERROR, "Invalid argument count")
-            #     # Evaluate the first argument completely
-            #     func.args[0], error_found = self.__evaluate_and_solve_arg(func, 0)
-            #     if error_found:
-            #         return error_found
-            #     func.args[0] = string_conversions.check_for_true_arg(func.args[0])
-            #     # Lazy evaluation -> only evaluate the value that we are using
-            #     # Condition is true -> Evaluate the first value
-            #     if func.args[0]:
-            #         func.args[1], error_found = self.__evaluate_and_solve_arg(
-            #             func, 1)
-            #     # Condition is false -> if a second value exists, evaluate it. Otherwise, use False.
-            #     elif len(func.args) > 2:
-            #         func.args[2], error_found = self.__evaluate_and_solve_arg(
-            #             func, 2)
-            #     else:
-            #         func.args.append(False)
-            #     if error_found:
-            #         return error_found
-            # elif func.name == "IFERROR":
-            #     if len(func.args) not in [1, 2]:
-            #         return cell_error.CellError(
-            #             cell_error.CellErrorType.TYPE_ERROR, "Invalid argument count")
-            #     with self.__ignore_error_literals():
-            #         func.args[0], error_found = self.__evaluate_and_solve_arg(
-            #             func, 0)
-            #     if error_found or isinstance(func.args[0], cell_error.CellError):
-            #         if len(func.args) == 2:
-            #             func.args[1], error_found = self.__evaluate_and_solve_arg(
-            #                 func, 1)
-            #             if error_found:
-            #                 return error_found
-            #         else:
-            #             func.args.append("")
-            # else:
-            #     func.args, error_found = self.__evaluate_function_arguments(
-            #         func.args)
+                    func.args.append(values.children[3])
+                else:
+                    func.args.append(False)
+            elif func.name == "IFERROR":
+                if len(values.children[1:]) not in [1, 2]:
+                    return cell_error.CellError(
+                        cell_error.CellErrorType.TYPE_ERROR, "Invalid argument count")
+                with self.__ignore_error_literals():
+                    res = self.visit(values.children[1])
+                if not isinstance(res, cell_error.CellError):
+                    func.args.append(res)
+                elif len(values.children[1:]) > 1:
+                    func.args.append(self.visit(values.children[2]))
+                else:
+                    func.args.append("")
             # if error_found and func.name != "ISERROR":
             #     return error_found
             # if func.name == "ISERROR":
@@ -408,10 +373,11 @@ class FormulaEvaluator(lark.visitors.Interpreter):
             #             cell_error.CellErrorType.BAD_REFERENCE, "Bad reference")
             #     func.args[0] = self.visit(
             #         get_tree(self.parser, "=" + func.args[0]))
-        return self.wb.function_directory.call_function(name, args)
+        return self.wb.function_directory.call_function(func)
 
     @visit_children_decor
     def cell(self, values):
+        logger.info(f"cell ref in {values}")
         # handle different input formats for value
         if len(values) > 1:  # =[sheet]![col][row]
             sheet_name = self.__check_sheet_name(values[0].value)
@@ -538,10 +504,13 @@ def evaluate_expr(workbook, curr_cell, sheetname: str,
     evaluator = FormulaEvaluator(workbook, sheet, curr_cell)
     parser = open_grammar()
     evaluator.parser = parser
+    logger.info(f"contents: {contents}")
     try:
         tree = get_tree(parser, contents)
     except UnexpectedInput:
+        logger.info("here")
         return evaluator, cell_error.CellError(
             cell_error.CellErrorType.PARSE_ERROR, "parse error")
+    logger.info(f"tree: {tree}")
     value = evaluator.visit(tree)
     return evaluator, value
