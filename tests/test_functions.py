@@ -183,11 +183,19 @@ class FunctionTests(unittest.TestCase):
         self.assertEqual(wb.get_cell_value("sheet1", "A2"), False)
         self.assertEqual(wb.get_cell_value("sheet1", "A3"), True)
 
-    def test_iferror_ref_literal_quotes(self):
+    def test_iferror_ref_literal_and_non_literal_quotes(self):
         wb = sheets.Workbook()
         wb.new_sheet()
         wb.set_cell_contents("sheet1", "A1", '=IFERROR("#REF!", 1)')
         self.assertEqual(wb.get_cell_value('sheet1', 'A1'), "#REF!")
+        wb.set_cell_contents("sheet1", "A2", "=IFERROR(#REF!, 1)")
+        self.assertEqual(wb.get_cell_value("sheet1", "a2"), decimal.Decimal(1))
+
+    def test_iferror_ref_literal(self):
+        wb = sheets.Workbook()
+        wb.new_sheet()
+        wb.set_cell_contents("sheet1", "A1", '=IFERROR(#REF!, 1)')
+        self.assertEqual(wb.get_cell_value('sheet1', 'A1'), decimal.Decimal(1))
 
     def test_iferror_ref_literal(self):
         wb = sheets.Workbook()
@@ -206,6 +214,56 @@ class FunctionTests(unittest.TestCase):
         wb.set_cell_contents("sheet1", "B1", '=indirect("A" & A5)')
         self.assertEqual(wb.get_cell_value(
             'sheet1', 'b1'), decimal.Decimal(5))
+        
+    def test_if_lazy_eval(self):
+        wb = sheets.Workbook()
+        wb.new_sheet()
+        wb.set_cell_contents("sheet1", "B1", '=1/0')
+        wb.set_cell_contents("sheet1", "a1", '=if(1, C1, B1)')
+        self.assertEqual(wb.get_cell_value(
+            'sheet1', 'a1'), decimal.Decimal(0)) 
+    
+    def test_update_circ_ref_error(self):
+        wb = sheets.Workbook()
+        wb.new_sheet()
+        wb.set_cell_contents("sheet1", "a1", '=ISERROR(B1)')
+        wb.set_cell_contents("sheet1", "b1", '=ISERROR(C1)')
+        wb.set_cell_contents("sheet1", "b1", '=ISERROR(A1)')
+        value_a = wb.get_cell_value('sheet1', 'A1')
+        self.assertTrue(isinstance(value_a, sheets.cell_error.CellError))
+        self.assertTrue(value_a.get_type() ==
+                        sheets.cell_error.CellErrorType.CIRCULAR_REFERENCE)
+        value_b = wb.get_cell_value('sheet1', 'B1')
+        self.assertTrue(isinstance(value_b, sheets.cell_error.CellError))
+        self.assertTrue(value_b.get_type() ==
+                        sheets.cell_error.CellErrorType.CIRCULAR_REFERENCE)
+        
+    def test_indirect_circ_ref1(self):
+        wb = sheets.Workbook()
+        wb.new_sheet()
+        wb.set_cell_contents("sheet1", "A1", "=B1")
+        wb.set_cell_contents("sheet1", "B1", "=INDIRECT(\"A1\")")
+        self.assertEqual(wb.get_cell_value("Sheet1", "A1").get_type(
+        ), sheets.cell_error.CellErrorType.CIRCULAR_REFERENCE)
+        self.assertEqual(wb.get_cell_value("Sheet1", "B1").get_type(
+        ), sheets.cell_error.CellErrorType.CIRCULAR_REFERENCE)
+
+    def test_indirect_circ_ref2(self):
+        wb = sheets.Workbook()
+        wb.new_sheet()
+        wb.set_cell_contents("sheet1", "A1", "=B1")
+        wb.set_cell_contents("sheet1", "B1", "=INDIRECT(A1)")
+        self.assertEqual(wb.get_cell_value("Sheet1", "A1").get_type(
+        ), sheets.cell_error.CellErrorType.CIRCULAR_REFERENCE)
+        self.assertEqual(wb.get_cell_value("Sheet1", "B1").get_type(
+        ), sheets.cell_error.CellErrorType.CIRCULAR_REFERENCE)
+    
+    def test_lazy_if_ignore_circ_ref(self):
+        wb = sheets.Workbook()
+        wb.new_sheet()
+        wb.set_cell_contents("sheet1", "A1", "=IF(A2, B1, C1)")
+        wb.set_cell_contents("sheet1", "B1", "=A1")
+        wb.set_cell_contents("sheet1", "A2", "FALSE")
 
     def test_indirect_cell_ref_err(self):
         wb = sheets.Workbook()
