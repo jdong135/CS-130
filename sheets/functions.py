@@ -41,7 +41,8 @@ class FunctionDirectory:
             "VERSION": self.version,
             "INDIRECT": self.indirect,
             "IF": self.if_func,
-            "IFERROR": self.if_error
+            "IFERROR": self.if_error,
+            "CHOOSE": self.choose
         }
         self.lazy_functions = set(["IF", "IFERROR", "CHOOSE"])
 
@@ -145,4 +146,7 @@ class FunctionDirectory:
         return args[0]
 
     def if_error(self, args: List):
+        return args[0]
+
+    def choose(self, args: List):
         return args[0]

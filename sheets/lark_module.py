@@ -352,15 +352,16 @@ class FormulaEvaluator(lark.visitors.Interpreter):
                 else:
                     func.args.append("")
             elif func.name == "CHOOSE":
-                if len(func.args) < 2:
+                if len(values.children) < 3:
                     return cell_error.CellError(
                         cell_error.CellErrorType.TYPE_ERROR, "Invalid argument count")
-                #  If index is not an integer, or is 0 or less,
-                #  or is beyond the end of the value list, then a TYPE_ERROR is produced.
-                # CHOOSE(CHOOSE, IDX, VAL1, VAL2)
-                if not isinstance(values.children[1], int)\
-                        or values.children[1] <= 0 or values.children[0] > len(values.children) - 2:
-                    return cell_error.CellError(cell_error.CellErrorType.TYPE_ERROR)
+                index = self.visit(values.children[1])
+                if isinstance(index, cell_error.CellError):
+                    return cell_error.CellError(cell_error.CellErrorType.TYPE_ERROR, "Invalid index")
+                if not isinstance(index, decimal.Decimal) or index <= 0 or index > len(values.children) - 2:
+                    return cell_error.CellError(cell_error.CellErrorType.TYPE_ERROR, "Invalid index")
+                func.args = [self.visit(values.children[int(index) + 1])]
+                logger.info(func.args)
         if func.name == "INDIRECT":
             if len(func.args) != 1:
                 return cell_error.CellError(
