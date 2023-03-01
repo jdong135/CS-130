@@ -335,8 +335,8 @@ class FormulaEvaluator(lark.visitors.Interpreter):
                     return condition
                 elif condition:
                     func.args.append(self.visit(values.children[2]))
-                elif len(values.children) == 3:
-                    func.args.append(values.children[3])
+                elif len(values.children[1:]) == 3:
+                    func.args.append(self.visit(values.children[3]))
                 else:
                     func.args.append(False)
             elif func.name == "IFERROR":
