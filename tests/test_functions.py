@@ -327,6 +327,78 @@ class FunctionTests(unittest.TestCase):
         wb.set_cell_contents('sheet1', 'b1', '=AND(a1)')
         self.assertTrue(wb.get_cell_value('sheet1', 'b1').get_type()
                         == sheets.cell_error.CellErrorType.BAD_REFERENCE)
+        
+    def test_empty_cell_arg_if(self):
+        wb = sheets.Workbook()
+        wb.new_sheet()
+        wb.set_cell_contents("sheet1", "B1", "=IF(TRUE, A1)")
+        wb.set_cell_contents("sheet1", "C1", "=IF(FALSE, A1)")
+        self.assertEqual(wb.get_cell_value("sheet1", "B1"), decimal.Decimal(0))
+        self.assertEqual(wb.get_cell_value("sheet1", "C1"), False)
+
+    def test_empty_cell_arg_exact(self):
+        wb = sheets.Workbook()
+        wb.new_sheet()
+        wb.set_cell_contents("sheet1", "B1", "'")
+        wb.set_cell_contents("sheet1", "C1", "=EXACT(A1, B1)")
+        self.assertEqual(wb.get_cell_value("sheet1", "C1"), True)    
+
+    def test_SCC_in_iserror1(self):
+        wb = sheets.Workbook()
+        wb.new_sheet()
+        wb.set_cell_contents("sheet1", "A1", "=B1")
+        wb.set_cell_contents("sheet1", "B1", "=A1")
+        wb.set_cell_contents("sheet1", "C1", "=ISERROR(B1)")
+        self.assertEqual(wb.get_cell_value("sheet1", "C1"), True)    
+
+    def test_SCC_in_iserror2(self):
+        wb = sheets.Workbook()
+        wb.new_sheet()
+        wb.set_cell_contents("sheet1", "A1", "=ISERROR(B1)")
+        wb.set_cell_contents("sheet1", "B1", "=ISERROR(A1)")
+        wb.set_cell_contents("sheet1", "C1", "=ISERROR(B1)")
+        self.assertEqual(wb.get_cell_value("Sheet1", "A1").get_type(
+        ), sheets.cell_error.CellErrorType.CIRCULAR_REFERENCE)
+        self.assertEqual(wb.get_cell_value("Sheet1", "B1").get_type(
+        ), sheets.cell_error.CellErrorType.CIRCULAR_REFERENCE)
+        self.assertEqual(wb.get_cell_value("sheet1", "C1"), True)
+
+    def test_if_update_to_circ_ref1(self):
+        wb = sheets.Workbook()
+        wb.new_sheet()
+        wb.set_cell_contents("sheet1", "A1", "=IF(A2, B1, C1)")
+        wb.set_cell_contents("sheet1", "A2", "FALSE")
+        wb.set_cell_contents("sheet1", "B1", "=A1")
+        wb.set_cell_contents("sheet1", "C1", "5")
+        self.assertEqual(wb.get_cell_value("sheet1", "A1"), decimal.Decimal(5))
+        self.assertEqual(wb.get_cell_value("sheet1", "B1"), decimal.Decimal(5))        
+        wb.set_cell_contents("sheet1", "A2", "TRUE")
+        value_a = wb.get_cell_value("sheet1", "A1")
+        value_b = wb.get_cell_value("sheet1", "B1")
+        self.assertTrue(isinstance(value_a, sheets.cell_error.CellError))
+        self.assertTrue(value_a.get_type() ==
+                        sheets.cell_error.CellErrorType.CIRCULAR_REFERENCE)
+        value_b = wb.get_cell_value('sheet1', 'B1')
+        self.assertTrue(isinstance(value_b, sheets.cell_error.CellError))
+        self.assertTrue(value_b.get_type() ==
+                        sheets.cell_error.CellErrorType.CIRCULAR_REFERENCE)
+
+    def test_iferror_circ_ref(self):
+        wb = sheets.Workbook()
+        wb.new_sheet()
+        wb.set_cell_contents("Sheet1", "A1", "=ISERROR(A1)")
+        self.assertEqual(wb.get_cell_value("Sheet1", "A1").get_type(
+        ), sheets.cell_error.CellErrorType.CIRCULAR_REFERENCE)      
+
+    def test_nested_indirect_exact(self):
+        wb = sheets.Workbook()
+        wb.new_sheet()
+        wb.set_cell_contents("Sheet1", "A1", "D")
+        wb.set_cell_contents("Sheet1", "B1", "'1")
+        wb.set_cell_contents(
+            "Sheet1", "C1", "=EXACT(\"HELLO\", \"HELL\" & INDIRECT(A1 & B1))")
+        wb.set_cell_contents("Sheet1", "D1", "O")
+        self.assertEqual(wb.get_cell_value("sheet1", "C1"), True)   
 
 
 if __name__ == "__main__":
