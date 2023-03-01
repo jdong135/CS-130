@@ -335,8 +335,8 @@ class FormulaEvaluator(lark.visitors.Interpreter):
                     return condition
                 elif condition:
                     func.args.append(self.visit(values.children[2]))
-                elif len(values.children) == 3:
-                    func.args.append(values.children[3])
+                elif len(values.children[1:]) == 3:
+                    func.args.append(self.visit(values.children[3]))
                 else:
                     func.args.append(False)
             elif func.name == "IFERROR":
@@ -358,21 +358,34 @@ class FormulaEvaluator(lark.visitors.Interpreter):
                 index = self.visit(values.children[1])
                 if isinstance(index, cell_error.CellError):
                     return cell_error.CellError(cell_error.CellErrorType.TYPE_ERROR, "Invalid index")
-                if not isinstance(index, decimal.Decimal) or index <= 0 or index > len(values.children) - 2:
+                if not isinstance(index, decimal.Decimal) or index <= 0 or index + 2 > len(values.children):
                     return cell_error.CellError(cell_error.CellErrorType.TYPE_ERROR, "Invalid index")
                 func.args = [self.visit(values.children[int(index) + 1])]
-                logger.info(func.args)
         if func.name == "INDIRECT":
             if len(func.args) != 1:
                 return cell_error.CellError(
                     cell_error.CellErrorType.TYPE_ERROR, "Invalid argument count")
-            if not isinstance(func.args[0], str) \
-                or not string_conversions.check_valid_location(func.args[0]) \
-                    or isinstance(func.args[0], unitialized_value.UninitializedValue):
+            if isinstance(func.args[0], unitialized_value.UninitializedValue):
                 return cell_error.CellError(
                     cell_error.CellErrorType.BAD_REFERENCE, "Bad reference")
-            func.args[0] = self.visit(
-                get_tree(self.parser, "=" + func.args[0]))
+            if not isinstance(func.args[0], str):
+                return cell_error.CellError(
+                    cell_error.CellErrorType.BAD_REFERENCE, "Bad reference")
+            else:
+                if not string_conversions.check_valid_location(func.args[0]):
+                    return cell_error.CellError(
+                        cell_error.CellErrorType.BAD_REFERENCE, "Bad reference")
+                cell_ref = self.visit(
+                    get_tree(self.parser, "=" + func.args[0]))
+                logger.info(type(cell_ref))
+                func.args[0] = cell_ref
+            # if not isinstance(func.args[0], str) \
+            #     or not string_conversions.check_valid_location(func.args[0]) \
+            #         or isinstance(func.args[0], unitialized_value.UninitializedValue):
+            #     return cell_error.CellError(
+            #         cell_error.CellErrorType.BAD_REFERENCE, "Bad reference")
+            # func.args[0] = self.visit(
+            #     get_tree(self.parser, "=" + func.args[0]))
         return self.wb.function_directory.call_function(func)
 
     @visit_children_decor

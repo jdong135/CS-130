@@ -183,11 +183,17 @@ class FunctionTests(unittest.TestCase):
         self.assertEqual(wb.get_cell_value("sheet1", "A2"), False)
         self.assertEqual(wb.get_cell_value("sheet1", "A3"), True)
 
-    def test_iferror_ref_literal(self):
+    def test_iferror_ref_literal_quotes(self):
         wb = sheets.Workbook()
         wb.new_sheet()
         wb.set_cell_contents("sheet1", "A1", '=IFERROR("#REF!", 1)')
         self.assertEqual(wb.get_cell_value('sheet1', 'A1'), "#REF!")
+
+    def test_iferror_ref_literal(self):
+        wb = sheets.Workbook()
+        wb.new_sheet()
+        wb.set_cell_contents("sheet1", "A1", '=IFERROR(#REF!, 1)')
+        self.assertEqual(wb.get_cell_value('sheet1', 'A1'), decimal.Decimal(1))
 
     def test_indirect_concat(self):
         wb = sheets.Workbook()
@@ -200,6 +206,69 @@ class FunctionTests(unittest.TestCase):
         wb.set_cell_contents("sheet1", "B1", '=indirect("A" & A5)')
         self.assertEqual(wb.get_cell_value(
             'sheet1', 'b1'), decimal.Decimal(5))
+
+    def test_indirect_cell_ref_err(self):
+        wb = sheets.Workbook()
+        wb.new_sheet()
+        wb.set_cell_contents("sheet1", "a1", '=indirect(123)')
+        self.assertTrue(wb.get_cell_value('sheet1', 'a1').get_type()
+                        == sheets.cell_error.CellErrorType.BAD_REFERENCE)
+        wb.set_cell_contents("sheet1", "a2", '=indirect(A20)')
+        self.assertTrue(wb.get_cell_value('sheet1', 'a2').get_type()
+                        == sheets.cell_error.CellErrorType.BAD_REFERENCE)
+        wb.set_cell_contents("sheet1", "a3", '=100')
+        wb.set_cell_contents("sheet1", "a4", '=indirect(a3)')
+        self.assertTrue(wb.get_cell_value('sheet1', 'a4').get_type()
+                        == sheets.cell_error.CellErrorType.BAD_REFERENCE)
+
+    def test_invalid_commas_in_func(self):
+        wb = sheets.Workbook()
+        wb.new_sheet()
+        wb.set_cell_contents("sheet1", "a1", '=AND(,)')
+        wb.set_cell_contents("sheet1", "a2", '=AND(,1)')
+        wb.set_cell_contents("sheet1", "a3", '=AND(1,)')
+        wb.set_cell_contents("sheet1", "a4", '=AND(,1,)')
+        wb.set_cell_contents("sheet1", "a5", '=AND(1, , 1)')
+        self.assertTrue(wb.get_cell_value('sheet1', 'a1').get_type()
+                        == sheets.cell_error.CellErrorType.PARSE_ERROR)
+        self.assertTrue(wb.get_cell_value('sheet1', 'a2').get_type()
+                        == sheets.cell_error.CellErrorType.PARSE_ERROR)
+        self.assertTrue(wb.get_cell_value('sheet1', 'a3').get_type()
+                        == sheets.cell_error.CellErrorType.PARSE_ERROR)
+        self.assertTrue(wb.get_cell_value('sheet1', 'a4').get_type()
+                        == sheets.cell_error.CellErrorType.PARSE_ERROR)
+        self.assertTrue(wb.get_cell_value('sheet1', 'a5').get_type()
+                        == sheets.cell_error.CellErrorType.PARSE_ERROR)
+
+    def test_boolean_function_equality(self):
+        wb = sheets.Workbook()
+        wb.new_sheet()
+        wb.set_cell_contents("sheet1", "a1", '=False == AND(TRUE, false)')
+        self.assertEqual(wb.get_cell_value('sheet1', 'a1'), True)
+
+    def test_ignore_whitespace_after_func(self):
+        wb = sheets.Workbook()
+        wb.new_sheet()
+        wb.set_cell_contents("sheet1", "a1", '=AND   (1, 1)')
+        self.assertEqual(wb.get_cell_value('sheet1', 'a1'), True)
+
+    def test_ref_to_bad_name(self):
+        wb = sheets.Workbook()
+        wb.new_sheet()
+        wb.set_cell_contents("sheet1", "a1", '=FUNCTION(1, 1)')
+        self.assertTrue(wb.get_cell_value('sheet1', 'a1').get_type()
+                        == sheets.cell_error.CellErrorType.BAD_NAME)
+        wb.set_cell_contents('sheet1', 'a2', '=A1')
+        self.assertTrue(wb.get_cell_value('sheet1', 'a2').get_type()
+                        == sheets.cell_error.CellErrorType.BAD_NAME)
+
+    def test_AND_of_ref_err(self):
+        wb = sheets.Workbook()
+        wb.new_sheet()
+        wb.set_cell_contents("sheet1", "a1", '=sheet5!a1')
+        wb.set_cell_contents('sheet1', 'b1', '=AND(a1)')
+        self.assertTrue(wb.get_cell_value('sheet1', 'b1').get_type()
+                        == sheets.cell_error.CellErrorType.BAD_REFERENCE)
 
 
 if __name__ == "__main__":

@@ -182,7 +182,7 @@ def check_valid_location(location: str) -> bool:
         bool: if the input location is in-bounds.
     """
     # Ensure a letter and number is specified
-    if not re.match(r"\$?[A-Za-z]+\$?[1-9][0-9]*", location):
+    if not re.match(r'(?<!")\$?[A-Za-z]+\$?[1-9][0-9]*(?!")', location):
         return False
     col, row = str_to_tuple(location)
     if col > 475254 or row > 9999:

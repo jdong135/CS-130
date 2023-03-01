@@ -341,7 +341,9 @@ class Workbook:
                     # Locations can be specified as A1, sheet1!A1, or 'sheet1'!A1
                     # sheetname: \'[^']*\'! OR [A-Za-z_][A-Za-z0-9_]*!
                     sheetname_pattern = r"\'[^']*\'!|[A-Za-z_][A-Za-z0-9_]*!"
-                    cell_pattern = r"\$?[A-Za-z]+\$?[1-9][0-9]*"
+                    # cell_pattern = r"\$?[A-Za-z]+\$?[1-9][0-9]*"
+                    # Ensure cell locatoins are not wrapped in double quotes
+                    cell_pattern = r'(?<!")\$?[A-Za-z]+\$?[1-9][0-9]*(?!")'
                     # ?: Specifies we don't want to keep the matched sheetname
                     pattern = f"(?:{sheetname_pattern})?({cell_pattern})"
                     locations = re.findall(pattern, contents)
