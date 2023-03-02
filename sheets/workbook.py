@@ -566,7 +566,7 @@ class Workbook:
                 if len(island) > 1:
                     for c in island:
                         cell_dependents.append(c)
-                        c.set_fields(value=cell_error.CellError(
+                        c.set_fields(value=cell_error.CellError(\
                         cell_error.CellErrorType.CIRCULAR_REFERENCE, \
                             "circular reference"))
                 else:
@@ -574,6 +574,19 @@ class Workbook:
                     cell_dependents.append(c)
                     if c != existing_cell:
                         self.__set_cell_value_and_type(c)
+            tarjanoutput = tarjan.tarjan(existing_cell, self.adjacency_list)
+            tarjanoutput = tarjanoutput[::-1]
+            for island in tarjanoutput:
+                if len(island) > 1:
+                    for c in island:
+                        c.set_fields(value=cell_error.CellError(\
+                        cell_error.CellErrorType.CIRCULAR_REFERENCE, \
+                            "circular reference"))
+                else:
+                    c = island[0]
+                    if c != existing_cell:
+                        self.__set_cell_value_and_type(c)
+
             self.__update_extent(spreadsheet, location, False)
             # include the existing cell iff its value is updated
             if self.__call_notify and val_updated:
