@@ -214,15 +214,15 @@ class FunctionTests(unittest.TestCase):
         wb.set_cell_contents("sheet1", "B1", '=indirect("A" & A5)')
         self.assertEqual(wb.get_cell_value(
             'sheet1', 'b1'), decimal.Decimal(5))
-        
+
     def test_if_lazy_eval(self):
         wb = sheets.Workbook()
         wb.new_sheet()
         wb.set_cell_contents("sheet1", "B1", '=1/0')
         wb.set_cell_contents("sheet1", "a1", '=if(1, C1, B1)')
         self.assertEqual(wb.get_cell_value(
-            'sheet1', 'a1'), decimal.Decimal(0)) 
-    
+            'sheet1', 'a1'), decimal.Decimal(0))
+
     def test_update_circ_ref_error(self):
         wb = sheets.Workbook()
         wb.new_sheet()
@@ -237,7 +237,7 @@ class FunctionTests(unittest.TestCase):
         self.assertTrue(isinstance(value_b, sheets.cell_error.CellError))
         self.assertTrue(value_b.get_type() ==
                         sheets.cell_error.CellErrorType.CIRCULAR_REFERENCE)
-        
+
     def test_indirect_circ_ref1(self):
         wb = sheets.Workbook()
         wb.new_sheet()
@@ -257,7 +257,7 @@ class FunctionTests(unittest.TestCase):
         ), sheets.cell_error.CellErrorType.CIRCULAR_REFERENCE)
         self.assertEqual(wb.get_cell_value("Sheet1", "B1").get_type(
         ), sheets.cell_error.CellErrorType.CIRCULAR_REFERENCE)
-    
+
     def test_lazy_if_ignore_circ_ref(self):
         wb = sheets.Workbook()
         wb.new_sheet()
@@ -327,7 +327,7 @@ class FunctionTests(unittest.TestCase):
         wb.set_cell_contents('sheet1', 'b1', '=AND(a1)')
         self.assertTrue(wb.get_cell_value('sheet1', 'b1').get_type()
                         == sheets.cell_error.CellErrorType.BAD_REFERENCE)
-        
+
     def test_empty_cell_arg_if(self):
         wb = sheets.Workbook()
         wb.new_sheet()
@@ -341,7 +341,7 @@ class FunctionTests(unittest.TestCase):
         wb.new_sheet()
         wb.set_cell_contents("sheet1", "B1", "'")
         wb.set_cell_contents("sheet1", "C1", "=EXACT(A1, B1)")
-        self.assertEqual(wb.get_cell_value("sheet1", "C1"), True)    
+        self.assertEqual(wb.get_cell_value("sheet1", "C1"), True)
 
     def test_SCC_in_iserror1(self):
         wb = sheets.Workbook()
@@ -349,7 +349,7 @@ class FunctionTests(unittest.TestCase):
         wb.set_cell_contents("sheet1", "A1", "=B1")
         wb.set_cell_contents("sheet1", "B1", "=A1")
         wb.set_cell_contents("sheet1", "C1", "=ISERROR(B1)")
-        self.assertEqual(wb.get_cell_value("sheet1", "C1"), True)    
+        self.assertEqual(wb.get_cell_value("sheet1", "C1"), True)
 
     def test_SCC_in_iserror2(self):
         wb = sheets.Workbook()
@@ -371,7 +371,7 @@ class FunctionTests(unittest.TestCase):
         wb.set_cell_contents("sheet1", "B1", "=A1")
         wb.set_cell_contents("sheet1", "C1", "5")
         self.assertEqual(wb.get_cell_value("sheet1", "A1"), decimal.Decimal(5))
-        self.assertEqual(wb.get_cell_value("sheet1", "B1"), decimal.Decimal(5))        
+        self.assertEqual(wb.get_cell_value("sheet1", "B1"), decimal.Decimal(5))
         wb.set_cell_contents("sheet1", "A2", "TRUE")
         value_a = wb.get_cell_value("sheet1", "A1")
         value_b = wb.get_cell_value("sheet1", "B1")
@@ -388,7 +388,7 @@ class FunctionTests(unittest.TestCase):
         wb.new_sheet()
         wb.set_cell_contents("Sheet1", "A1", "=ISERROR(A1)")
         self.assertEqual(wb.get_cell_value("Sheet1", "A1").get_type(
-        ), sheets.cell_error.CellErrorType.CIRCULAR_REFERENCE)      
+        ), sheets.cell_error.CellErrorType.CIRCULAR_REFERENCE)
 
     def test_nested_indirect_exact(self):
         wb = sheets.Workbook()
@@ -398,16 +398,133 @@ class FunctionTests(unittest.TestCase):
         wb.set_cell_contents(
             "Sheet1", "C1", "=EXACT(\"HELLO\", \"HELL\" & INDIRECT(A1 & B1))")
         wb.set_cell_contents("Sheet1", "D1", "O")
-        self.assertEqual(wb.get_cell_value("sheet1", "C1"), True)   
+        self.assertEqual(wb.get_cell_value("sheet1", "C1"), True)
 
     def test_iserror_circref_multiple_types(self):
         wb = sheets.Workbook()
         wb.new_sheet()
         wb.set_cell_contents("sheet1", "A1", "=ISERROR(A1)")
         self.assertEqual(wb.get_cell_value("Sheet1", "A1").get_type(
-        ), sheets.cell_error.CellErrorType.CIRCULAR_REFERENCE)      
+        ), sheets.cell_error.CellErrorType.CIRCULAR_REFERENCE)
         wb.set_cell_contents("sheet1", "B1", "=ISERROR(A1)")
-        self.assertEqual(wb.get_cell_value("sheet1", "B1"), True)  
+        self.assertEqual(wb.get_cell_value("sheet1", "B1"), True)
+
+    def test_iserror_non_participating_circref(self):
+        wb = sheets.Workbook()
+        wb.new_sheet()
+        # Order 1: A -> B -> C
+        wb.set_cell_contents("sheet1", "A1", "=B1")
+        wb.set_cell_contents("sheet1", "B1", "=A1")
+        wb.set_cell_contents("sheet1", "C1", "=ISERROR(B1)")
+        self.assertEqual(wb.get_cell_value("Sheet1", "A1").get_type(
+        ), sheets.cell_error.CellErrorType.CIRCULAR_REFERENCE)
+        self.assertEqual(wb.get_cell_value("Sheet1", "B1").get_type(
+        ), sheets.cell_error.CellErrorType.CIRCULAR_REFERENCE)
+        self.assertEqual(wb.get_cell_value("sheet1", "C1"), True)
+        # Order 2: A -> C -> B
+        wb.set_cell_contents("sheet1", "A2", "=B2")
+        wb.set_cell_contents("sheet1", "C2", "=ISERROR(B2)")
+        wb.set_cell_contents("sheet1", "B2", "=A2")
+        self.assertEqual(wb.get_cell_value("Sheet1", "A2").get_type(
+        ), sheets.cell_error.CellErrorType.CIRCULAR_REFERENCE)
+        self.assertEqual(wb.get_cell_value("Sheet1", "B2").get_type(
+        ), sheets.cell_error.CellErrorType.CIRCULAR_REFERENCE)
+        self.assertEqual(wb.get_cell_value("sheet1", "C2"), True)
+        # Order 3: B -> A -> C
+        wb.set_cell_contents("sheet1", "B3", "=A3")
+        wb.set_cell_contents("sheet1", "A3", "=B3")
+        wb.set_cell_contents("sheet1", "C3", "=ISERROR(B3)")
+        self.assertEqual(wb.get_cell_value("Sheet1", "A3").get_type(
+        ), sheets.cell_error.CellErrorType.CIRCULAR_REFERENCE)
+        self.assertEqual(wb.get_cell_value("Sheet1", "B3").get_type(
+        ), sheets.cell_error.CellErrorType.CIRCULAR_REFERENCE)
+        self.assertEqual(wb.get_cell_value("sheet1", "C3"), True)
+        # Order 4: B -> C -> A
+        wb.set_cell_contents("sheet1", "B4", "=A4")
+        wb.set_cell_contents("sheet1", "C4", "=ISERROR(B4)")
+        wb.set_cell_contents("sheet1", "A4", "=B4")
+        self.assertEqual(wb.get_cell_value("Sheet1", "A4").get_type(
+        ), sheets.cell_error.CellErrorType.CIRCULAR_REFERENCE)
+        self.assertEqual(wb.get_cell_value("Sheet1", "B4").get_type(
+        ), sheets.cell_error.CellErrorType.CIRCULAR_REFERENCE)
+        self.assertEqual(wb.get_cell_value("sheet1", "C4"), True)
+        # Order 5: C -> A -> B
+        wb.set_cell_contents("sheet1", "C5", "=ISERROR(B5)")
+        wb.set_cell_contents("sheet1", "A5", "=B5")
+        wb.set_cell_contents("sheet1", "B5", "=A5")
+        self.assertEqual(wb.get_cell_value("Sheet1", "A5").get_type(
+        ), sheets.cell_error.CellErrorType.CIRCULAR_REFERENCE)
+        self.assertEqual(wb.get_cell_value("Sheet1", "B5").get_type(
+        ), sheets.cell_error.CellErrorType.CIRCULAR_REFERENCE)
+        self.assertEqual(wb.get_cell_value("sheet1", "C5"), True)
+        # Order 6: C -> B -> A
+        wb.set_cell_contents("sheet1", "C6", "=ISERROR(B6)")
+        wb.set_cell_contents("sheet1", "B6", "=A6")
+        wb.set_cell_contents("sheet1", "A6", "=B6")
+        self.assertEqual(wb.get_cell_value("Sheet1", "A6").get_type(
+        ), sheets.cell_error.CellErrorType.CIRCULAR_REFERENCE)
+        self.assertEqual(wb.get_cell_value("Sheet1", "B6").get_type(
+        ), sheets.cell_error.CellErrorType.CIRCULAR_REFERENCE)
+        self.assertEqual(wb.get_cell_value("sheet1", "C6"), True)
+
+    def test_three_iserror_two_circref(self):
+        wb = sheets.Workbook()
+        wb.new_sheet()
+        # Order 1: A -> B -> C
+        wb.set_cell_contents("sheet1", "A1", "=ISERROR(B1)")
+        wb.set_cell_contents("sheet1", "B1", "=ISERROR(A1)")
+        wb.set_cell_contents("sheet1", "C1", "=ISERROR(B1)")
+        self.assertEqual(wb.get_cell_value("Sheet1", "A1").get_type(
+        ), sheets.cell_error.CellErrorType.CIRCULAR_REFERENCE)
+        self.assertEqual(wb.get_cell_value("Sheet1", "B1").get_type(
+        ), sheets.cell_error.CellErrorType.CIRCULAR_REFERENCE)
+        self.assertEqual(wb.get_cell_value("sheet1", "C1"), True)
+        # Order 2: A -> C -> B
+        wb.set_cell_contents("sheet1", "A2", "=ISERROR(B2)")
+        wb.set_cell_contents("sheet1", "C2", "=ISERROR(B2)")
+        wb.set_cell_contents("sheet1", "B2", "=ISERROR(A2)")
+        self.assertEqual(wb.get_cell_value("Sheet1", "A2").get_type(
+        ), sheets.cell_error.CellErrorType.CIRCULAR_REFERENCE)
+        self.assertEqual(wb.get_cell_value("Sheet1", "B2").get_type(
+        ), sheets.cell_error.CellErrorType.CIRCULAR_REFERENCE)
+        self.assertEqual(wb.get_cell_value("sheet1", "C2"), True)
+        # Order 3: B -> A -> C
+        wb.set_cell_contents("sheet1", "B3", "=ISERROR(A3)")
+        wb.set_cell_contents("sheet1", "A3", "=ISERROR(B3)")
+        wb.set_cell_contents("sheet1", "C3", "=ISERROR(B3)")
+        self.assertEqual(wb.get_cell_value("Sheet1", "A3").get_type(
+        ), sheets.cell_error.CellErrorType.CIRCULAR_REFERENCE)
+        self.assertEqual(wb.get_cell_value("Sheet1", "B3").get_type(
+        ), sheets.cell_error.CellErrorType.CIRCULAR_REFERENCE)
+        self.assertEqual(wb.get_cell_value("sheet1", "C3"), True)
+        # Order 4: B -> C -> A
+        wb.set_cell_contents("sheet1", "B4", "=ISERROR(A4)")
+        wb.set_cell_contents("sheet1", "C4", "=ISERROR(B4)")
+        wb.set_cell_contents("sheet1", "A4", "=ISERROR(B4)")
+        self.assertEqual(wb.get_cell_value("Sheet1", "A4").get_type(
+        ), sheets.cell_error.CellErrorType.CIRCULAR_REFERENCE)
+        self.assertEqual(wb.get_cell_value("Sheet1", "B4").get_type(
+        ), sheets.cell_error.CellErrorType.CIRCULAR_REFERENCE)
+        self.assertEqual(wb.get_cell_value("sheet1", "C4"), True)
+        # Order 5: C -> A -> B
+        wb.set_cell_contents("sheet1", "C5", "=ISERROR(B5)")
+        wb.set_cell_contents("sheet1", "A5", "=ISERROR(B5)")
+        wb.set_cell_contents("sheet1", "B5", "=ISERROR(A5)")
+        self.assertEqual(wb.get_cell_value("Sheet1", "A5").get_type(
+        ), sheets.cell_error.CellErrorType.CIRCULAR_REFERENCE)
+        self.assertEqual(wb.get_cell_value("Sheet1", "B5").get_type(
+        ), sheets.cell_error.CellErrorType.CIRCULAR_REFERENCE)
+        self.assertEqual(wb.get_cell_value("sheet1", "C5"), True)
+        # Order 6: C -> B -> A
+        wb.set_cell_contents("sheet1", "C6", "=ISERROR(B6)")
+        wb.set_cell_contents("sheet1", "A6", "=ISERROR(B6)")
+        wb.set_cell_contents("sheet1", "B6", "=ISERROR(A6)")
+        self.assertEqual(wb.get_cell_value("Sheet1", "A6").get_type(
+        ), sheets.cell_error.CellErrorType.CIRCULAR_REFERENCE)
+        self.assertEqual(wb.get_cell_value("Sheet1", "B6").get_type(
+        ), sheets.cell_error.CellErrorType.CIRCULAR_REFERENCE)
+        self.assertEqual(wb.get_cell_value("sheet1", "C6"), True)
+
 
 if __name__ == "__main__":
     unittest.main()
