@@ -60,3 +60,7 @@ class CellError:
 
     def __repr__(self) -> str:
         return self.__str__()
+
+    def __lt__(self, other):
+        assert isinstance(other, CellError)
+        return self._error_type.value < other._error_type.value

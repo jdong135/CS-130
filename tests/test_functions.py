@@ -527,6 +527,69 @@ class FunctionTests(unittest.TestCase):
         ), sheets.cell_error.CellErrorType.CIRCULAR_REFERENCE)
         self.assertEqual(wb.get_cell_value("sheet1", "C6"), True)
 
+    def test_bad_name_propagation(self):
+        wb = sheets.Workbook()
+        wb.new_sheet()
+        wb.set_cell_contents("sheet1", "A1", "=BADFUNCNAME(A2)")
+        wb.set_cell_contents("sheet1", "A2", "=A1")
+        self.assertTrue(wb.get_cell_value('sheet1', 'a1').get_type()
+                        == sheets.cell_error.CellErrorType.BAD_NAME)
+        self.assertTrue(wb.get_cell_value('sheet1', 'a2').get_type()
+                        == sheets.cell_error.CellErrorType.BAD_NAME)
+        
+    def test_move_indirect_reference(self):
+        wb = sheets.Workbook()
+        wb.new_sheet()
+        wb.set_cell_contents("sheet1", "A1", "=INDIRECT(B$1)")
+        wb.set_cell_contents("sheet1", "B1", "C1")
+        wb.set_cell_contents("sheet1", "C1", "=5")
+        wb.move_cells("sheet1", "A1", "A1", "A2")
+        self.assertEqual(wb.get_cell_value("sheet1", "A2"), decimal.Decimal(5))
+
+    def test_logic_error_propagation(self):
+        wb = sheets.Workbook()
+        wb.new_sheet()
+        wb.set_cell_contents("sheet1", "A1", "=NOT(AND(1, 2, XOR(1, 2, (OR(1, 1/0)), 1)))")
+        self.assertEqual(wb.get_cell_value('sheet1', 'a1').get_type(
+        ), sheets.cell_error.CellErrorType.DIVIDE_BY_ZERO)
+
+    def test_exact_error_propagation(self):
+        wb = sheets.Workbook()
+        wb.new_sheet()
+        wb.set_cell_contents("sheet1", "A1", "=EXACT(#REF!, #REF!)")
+        wb.set_cell_contents("sheet1", "A2", "=EXACT(#REF!, #ERROR!)")
+        wb.set_cell_contents("sheet1", "A3", "=EXACT(#ERROR!, #REF!)")
+        self.assertEqual(wb.get_cell_value('sheet1', 'a1').get_type(
+        ), sheets.cell_error.CellErrorType.BAD_REFERENCE)
+        self.assertEqual(wb.get_cell_value('sheet1', 'a2').get_type(
+        ), sheets.cell_error.CellErrorType.PARSE_ERROR)
+        self.assertEqual(wb.get_cell_value('sheet1', 'a3').get_type(
+        ), sheets.cell_error.CellErrorType.PARSE_ERROR)
+
+    def test_isblank_ignore_error(self):
+        wb = sheets.Workbook()
+        wb.new_sheet()
+        wb.set_cell_contents("sheet1", "A1", "=ISBLANK(#REF!)")
+        wb.set_cell_contents("sheet1", "A2", "=ISBLANK(1 + 1 + 1 / (1 - 1))")
+        wb.set_cell_contents("sheet1", "B3", "=sheet2!a1")
+        wb.set_cell_contents("sheet1", "A3", "=ISBLANK(B3)")
+        self.assertEqual(wb.get_cell_value("sheet1", "A1"), False)
+        self.assertEqual(wb.get_cell_value("sheet1", "A2"), False)   
+        self.assertEqual(wb.get_cell_value("sheet1", "A3"), False)
+
+    def test_indirect_multiple_cases(self):
+        wb = sheets.Workbook()
+        wb.new_sheet()
+        wb.set_cell_contents("sheet1", "A2", "A3")
+        wb.set_cell_contents("sheet1", "A3", "=5")
+        wb.set_cell_contents("sheet1", "A1", "=INDIRECT(A2)")
+        self.assertEqual(wb.get_cell_value("sheet1", "A1"), decimal.Decimal(5))
+        wb.set_cell_contents("sheet1", "A1", "=INDIRECT(\"A2\")")        
+        self.assertEqual(wb.get_cell_value("sheet1", "A1"), "A3")
+        wb.set_cell_contents("sheet1", "A1", "=INDIRECT(A4)")  
+        self.assertTrue(wb.get_cell_value('sheet1', 'A1').get_type()
+                        == sheets.cell_error.CellErrorType.BAD_REFERENCE)
+
 
 if __name__ == "__main__":
     unittest.main()
