@@ -2,12 +2,15 @@
 Test for implementation of Lark Module formula Evaluator
 """
 
+import decimal
 import unittest
 from context import sheets
-import decimal
 
 
 class FunctionTests(unittest.TestCase):
+    """
+    Tests for Functions in lark
+    """
     def test_bad_func_name(self):
         wb = sheets.Workbook()
         wb.new_sheet()
@@ -191,17 +194,17 @@ class FunctionTests(unittest.TestCase):
         wb.set_cell_contents("sheet1", "A2", "=IFERROR(#REF!, 1)")
         self.assertEqual(wb.get_cell_value("sheet1", "a2"), decimal.Decimal(1))
 
-    def test_iferror_ref_literal(self):
+    def test_iferror_ref_literal1(self):
         wb = sheets.Workbook()
         wb.new_sheet()
         wb.set_cell_contents("sheet1", "A1", '=IFERROR(#REF!, 1)')
         self.assertEqual(wb.get_cell_value('sheet1', 'A1'), decimal.Decimal(1))
 
-    def test_iferror_ref_literal(self):
+    def test_iferror_ref_literal2(self):
         wb = sheets.Workbook()
         wb.new_sheet()
-        wb.set_cell_contents("sheet1", "A1", '=IFERROR(#REF!, 1)')
-        self.assertEqual(wb.get_cell_value('sheet1', 'A1'), decimal.Decimal(1))
+        wb.set_cell_contents("sheet1", "A1", '=IFERROR("#REF!", 1)')
+        self.assertEqual(wb.get_cell_value('sheet1', 'A1'), "#REF!")
 
     def test_indirect_concat(self):
         wb = sheets.Workbook()
@@ -536,7 +539,7 @@ class FunctionTests(unittest.TestCase):
                         == sheets.cell_error.CellErrorType.BAD_NAME)
         self.assertTrue(wb.get_cell_value('sheet1', 'a2').get_type()
                         == sheets.cell_error.CellErrorType.BAD_NAME)
-        
+
     def test_move_indirect_reference(self):
         wb = sheets.Workbook()
         wb.new_sheet()
@@ -574,7 +577,7 @@ class FunctionTests(unittest.TestCase):
         wb.set_cell_contents("sheet1", "B3", "=sheet2!a1")
         wb.set_cell_contents("sheet1", "A3", "=ISBLANK(B3)")
         self.assertEqual(wb.get_cell_value("sheet1", "A1"), False)
-        self.assertEqual(wb.get_cell_value("sheet1", "A2"), False)   
+        self.assertEqual(wb.get_cell_value("sheet1", "A2"), False)
         self.assertEqual(wb.get_cell_value("sheet1", "A3"), False)
 
     def test_indirect_multiple_cases(self):
@@ -584,9 +587,9 @@ class FunctionTests(unittest.TestCase):
         wb.set_cell_contents("sheet1", "A3", "=5")
         wb.set_cell_contents("sheet1", "A1", "=INDIRECT(A2)")
         self.assertEqual(wb.get_cell_value("sheet1", "A1"), decimal.Decimal(5))
-        wb.set_cell_contents("sheet1", "A1", "=INDIRECT(\"A2\")")        
+        wb.set_cell_contents("sheet1", "A1", "=INDIRECT(\"A2\")")     
         self.assertEqual(wb.get_cell_value("sheet1", "A1"), "A3")
-        wb.set_cell_contents("sheet1", "A1", "=INDIRECT(A4)")  
+        wb.set_cell_contents("sheet1", "A1", "=INDIRECT(A4)")
         self.assertTrue(wb.get_cell_value('sheet1', 'A1').get_type()
                         == sheets.cell_error.CellErrorType.BAD_REFERENCE)
 
@@ -611,10 +614,10 @@ class FunctionTests(unittest.TestCase):
         wb.set_cell_contents("sheet1", "A3", "A2")
         wb.set_cell_contents("sheet1", "A4", "=INDIRECT(A3) + 1")
         self.assertEqual(
-            wb.get_cell_value("sheet1", "A4"), decimal.Decimal("1.4"))      
-        wb.copy_cells("sheet1", "A2", "A4", "B2") 
+            wb.get_cell_value("sheet1", "A4"), decimal.Decimal("1.4"))
+        wb.copy_cells("sheet1", "A2", "A4", "B2")
         self.assertEqual(wb.get_cell_value('sheet1', 'B2').get_type(
-        ), sheets.cell_error.CellErrorType.DIVIDE_BY_ZERO) 
+        ), sheets.cell_error.CellErrorType.DIVIDE_BY_ZERO)
         self.assertEqual(
             wb.get_cell_value("sheet1", "B4"), decimal.Decimal("1.4"))
 
@@ -650,6 +653,6 @@ class FunctionTests(unittest.TestCase):
         self.assertEqual(wb.get_cell_value("sheet1", "A1"), False)
         wb.set_cell_contents("sheet1", "B1", "=C1")
         self.assertEqual(wb.get_cell_value("sheet1", "A1"), True)
-        
+
 if __name__ == "__main__":
     unittest.main()

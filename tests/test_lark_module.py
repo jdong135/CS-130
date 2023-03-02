@@ -405,7 +405,7 @@ class LarkModuleTests(unittest.TestCase):
         self.assertTrue(isinstance(value, sheets.cell_error.CellError))
         self.assertTrue(value.get_type() ==
                         sheets.cell_error.CellErrorType.PARSE_ERROR)
-        
+
     def test_update_to_circ_ref(self):
         wb = sheets.Workbook()
         wb.new_sheet()

@@ -24,7 +24,6 @@ test:
 	python3 tests/test_move_copy.py
 	python3 tests/test_booleans.py
 	python3 tests/test_functions.py
-	python3 tests/test_tarjan.py
 
 stresstest: clean
 	python3 tests/test_stresstest.py

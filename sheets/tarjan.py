@@ -1,13 +1,8 @@
 """This module topologically sorts a graph of Cells."""
 import enum
-from typing import Tuple, Dict, List
+from typing import Dict, List
 from sheets.cell import Cell
-import logging
-logging.basicConfig(filename="logs/lark_module.log",
-                    format='%(asctime)s %(message)s',
-                    filemode='w')
-logger = logging.getLogger()
-logger.setLevel(logging.DEBUG)
+
 
 class DFSState(enum.Enum):
     """

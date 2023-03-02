@@ -7,8 +7,7 @@ import cProfile
 import pstats
 import re  # pylint: disable=unused-import
 from context import sheets
-import json
-import os.path
+
 
 def make_test_json_files(cols, rows):
     wb = sheets.Workbook()
@@ -45,7 +44,7 @@ def stress_move(self, rows, cols):
         c = sheets.string_conversions.num_to_col(y)
         for i in range(1, rows):
             wb.set_cell_contents("sheet1", f"{c}{i}", f"This is {c}{i}")
-    pc.enable()  
+    pc.enable()
     wb.move_cells("sheet1", "A1", f"{c}{i}", "B2")
     pc.disable()
     self.assertEqual(wb.get_cell_value("sheet1", "B2"), "This is A1")
@@ -63,7 +62,7 @@ def stress_copy_sheet(self, rows, cols):
         c = sheets.string_conversions.num_to_col(y)
         for i in range(1, rows):
             wb.set_cell_contents("sheet1", f"{c}{i}", f"This is {c}{i}")
-    pc.enable()  
+    pc.enable()
     _, name = wb.copy_sheet("sheet1")
     pc.disable()
     self.assertEqual(name, "sheet1_1")
@@ -73,7 +72,6 @@ def stress_copy_sheet(self, rows, cols):
         p = pstats.Stats(
             f'logs/test_copy_sheet_{rows}_{cols}.stats', stream=stream)
         p.sort_stats(pstats.SortKey.CUMULATIVE).print_stats()
-
 
 
 class Bulk_Change_Contents_Tests(unittest.TestCase):
@@ -94,21 +92,7 @@ class Bulk_Change_Contents_Tests(unittest.TestCase):
         stress_copy_sheet(self, 500, 10)
         stress_copy_sheet(self, 1000, 10)
         stress_copy_sheet(self, 1500, 10)
-        
-    
 
 
 if __name__ == "__main__":
-    # c0 = 50
-    # i0 = 2500
-    # if not os.path.isfile(f"test-data/stresstest_load_{c0}_{i0}.json"):
-    #     make_test_json_files(c0, i0)
-    # c1 = 100
-    # i1 = 2500
-    # if not os.path.isfile(f"test-data/stresstest_load_{c1}_{i1}.json"):
-    #     make_test_json_files(c1, i1)
-    # c2 = 200
-    # i2 = 2500
-    # if not os.path.isfile(f"test-data/stresstest_load_{c2}_{i2}.json"):
-    #     make_test_json_files(c2, i2)
     unittest.main()

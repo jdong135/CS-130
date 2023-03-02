@@ -7,6 +7,9 @@ from context import sheets
 
 
 class BooleanTests(unittest.TestCase):
+    """
+    Tests for booleans in lark module.
+    """
     def test_basic_bool_inputs(self):
         wb = sheets.Workbook()
         wb.new_sheet()
