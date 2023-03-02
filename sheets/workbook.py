@@ -140,10 +140,7 @@ class Workbook:
             if evaluator:
                 relies_on = evaluator.calling_cell_relies_on
         elif string_conversions.is_bool_expr(cell_contents):
-            if string_conversions.is_true_expr(cell_contents):
-                val = True
-            else:
-                val = False
+            val = bool(string_conversions.is_true_expr(cell_contents))
             cell_type = cell.CellType.BOOLEAN
         elif string_conversions.is_number(cell_contents):
             stripped = string_conversions.strip_zeros(cell_contents)
