@@ -14,7 +14,7 @@ class Function:
     Representation of functions as a grouping of a string name and list of arguments.
     """
 
-    def __init__(self, name: str, args: List[Any], lazy_eval):
+    def __init__(self, name: str, args: List[Any], lazy_eval: bool):
         self.name = name
         self.args = args
         self.lazy_eval = lazy_eval
@@ -109,6 +109,14 @@ class FunctionDirectory:
         if len(args) != 2:
             return cell_error.CellError(
                 cell_error.CellErrorType.TYPE_ERROR, "Invalid argument count")
+        error_found_0 = isinstance(args[0], cell_error.CellError)
+        error_found_1 = isinstance(args[1], cell_error.CellError)
+        if error_found_0:
+            if error_found_1:
+                return args[0] if args[0] < args[1] else args[1]
+            return error_found_0
+        if error_found_1:
+            return error_found_1
         return str(args[0]) == str(args[1])
 
     def is_blank(self, args: List):
