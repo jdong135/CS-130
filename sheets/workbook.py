@@ -7,7 +7,7 @@ import json
 import re
 from contextlib import contextmanager, suppress
 from sheets import cell, topo_sort, cell_error, lark_module, sheet, \
-    string_conversions, unitialized_value
+    string_conversions, unitialized_value, tarjan
 from sheets.functions import FunctionDirectory
 
 import logging
@@ -546,15 +546,34 @@ class Workbook:
                     if self.__call_notify:
                         self.__generate_notifications([existing_cell])
                     return
-            circular, cell_dependents = topo_sort(
-                existing_cell, self.adjacency_list)
-            if not circular:
-                for dependent in cell_dependents[1:]:
-                    self.__set_cell_value_and_type(dependent)
-            else:  # everything in the cycle should have an error value
-                for dependent in cell_dependents:
-                    dependent.set_fields(value=cell_error.CellError(
-                        cell_error.CellErrorType.CIRCULAR_REFERENCE, "circular reference"))
+            # circular, cell_dependents = topo_sort(
+            #     existing_cell, self.adjacency_list)
+            # if not circular:
+            #     for dependent in cell_dependents[1:]:
+            #         self.__set_cell_value_and_type(dependent)
+            # else:  # everything in the cycle should have an error value
+            #     for dependent in cell_dependents:
+            #         dependent.set_fields(value=cell_error.CellError(
+            #             cell_error.CellErrorType.CIRCULAR_REFERENCE, "circular reference"))
+            tarjanoutput = tarjan.tarjan(existing_cell, self.adjacency_list)
+            tarjanoutput = tarjanoutput[::-1]
+            # logger.info('new set cell contents call')
+            # for componenet in tarjanoutput:
+            #     for c in componenet:
+            #         logger.info(c.location)
+            cell_dependents = []
+            for island in tarjanoutput:
+                if len(island) > 1:
+                    for c in island:
+                        cell_dependents.append(c)
+                        c.set_fields(value=cell_error.CellError(
+                        cell_error.CellErrorType.CIRCULAR_REFERENCE, \
+                            "circular reference"))
+                else:
+                    c = island[0]
+                    cell_dependents.append(c)
+                    if c != existing_cell:
+                        self.__set_cell_value_and_type(c)
             self.__update_extent(spreadsheet, location, False)
             # include the existing cell iff its value is updated
             if self.__call_notify and val_updated:

@@ -7,13 +7,19 @@ import string
 import random
 import decimal
 from context import sheets
-from utils import store_stdout, restore_stdout
+from utils import store_stdout, restore_stdout, sort_notify_list
 
 MAX_SHEETS_TEST = 100
 MAX_STR_LEN_TEST = 100
 MAX_ROW_COL_SIZE = 100
 INVALID_CHARS = ["¿", "\"", "░", "😀", "\n", "\t"]
 
+import logging
+logging.basicConfig(filename="logs/lark_module.log",
+                    format='%(asctime)s %(message)s',
+                    filemode='w')
+logger = logging.getLogger()
+logger.setLevel(logging.DEBUG)
 
 class WorkbookNewSheet(unittest.TestCase):
     """
@@ -647,9 +653,7 @@ class WorkbookNotifyCellsChanged(unittest.TestCase):
         wb.notify_cells_changed(on_cells_changed)
         wb.set_cell_contents("Sheet1", "A1", "=5")
         output = restore_stdout(new_stdo, sys_out)
-        expected = "[('Sheet1', 'A1'), ('Sheet1', 'B1'), ('Sheet1', 'C1'), " \
-            "('Sheet1', 'C2'), ('Sheet1', 'B2'), ('Sheet1', 'C3'), " \
-            "('Sheet1', 'C4')]\n"
+        expected = "[('Sheet1', 'A1'), ('Sheet1', 'B2'), ('Sheet1', 'C4'), ('Sheet1', 'C3'), ('Sheet1', 'B1'), ('Sheet1', 'C2'), ('Sheet1', 'C1')]\n"
         self.assertEqual(expected, output)
 
     def test_delete_notify1(self):
@@ -736,6 +740,8 @@ class WorkbookNotifyCellsChanged(unittest.TestCase):
         ), sheets.cell_error.CellErrorType.CIRCULAR_REFERENCE)
         expected = "[('Sheet1', 'A1')]\n[('sheet1_1', 'A1'), ('Sheet1', 'A1')]\n"
         self.assertEqual(expected, output)
+
+
 
 
 if __name__ == "__main__":

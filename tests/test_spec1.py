@@ -404,7 +404,7 @@ class Spec1_Tests(unittest.TestCase):
         wb.set_cell_contents("sheet1", "A1", "=5")
         output = new_stdo.getvalue()
         sys.stdout = sys_out
-        expected = "[('Sheet1', 'A1'), ('Sheet1', 'A2'), ('Sheet1', 'A3'), " \
+        expected = "[('Sheet1', 'A1'), ('Sheet1', 'A3'), ('Sheet1', 'A2'), "\
             "('Sheet1', 'A4'), ('Sheet1', 'A5'), ('Sheet1', 'A6')]\n"
         self.assertEqual(expected, output)
 
@@ -429,7 +429,7 @@ class Spec1_Tests(unittest.TestCase):
         wb.set_cell_contents("sheet1", "A1", "=5")
         output = new_stdo.getvalue()
         sys.stdout = sys_out
-        expected = "[('Sheet1', 'A1'), ('Sheet2', 'A2'), ('Sheet1', 'A3'), " \
+        expected = "[('Sheet1', 'A1'), ('Sheet1', 'A3'), ('Sheet2', 'A2'), "\
             "('Sheet3', 'A4'), ('Sheet2', 'A5'), ('Sheet3', 'A6')]\n"
         self.assertEqual(expected, output)
 
