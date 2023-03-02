@@ -26,7 +26,7 @@ class Cell:
 
     def __hash__(self):
         """Hash based off of the cell's sheet's id and the cell's location"""
-        return hash((str(self.sheet.uuid), str(self.uuid)))
+        return hash((self.sheet.uuid, self.uuid))
 
     def __init__(self, sheet, location: str, contents: str, value: str, cell_type: CellType):
         """
@@ -45,6 +45,7 @@ class Cell:
         self.value = value
         self.cell_type = cell_type
         self.uuid = uuid.uuid1()
+        self.lazy = False
 
     def set_fields(self, **kwargs) -> None:
         """
