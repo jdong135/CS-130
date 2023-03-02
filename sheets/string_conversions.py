@@ -2,11 +2,12 @@
 Module containing functions involving converting strings between ints,
 errors, and numbers. Also contains method to strip zeros from string num. 
 """
+import re
 import decimal
 from typing import Tuple, Any, Union
 from functools import cache
 from sheets import cell_error, unitialized_value
-import re
+
 
 
 ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
@@ -158,17 +159,11 @@ def strip_evaluation(evaluation):
 
 
 def is_bool_expr(expr: str):
-    if expr.lower() == "false" or expr.lower() == "true":
-        return True
-    else:
-        return False
+    return bool(expr.lower() == "false" or expr.lower() == "true")
 
 
 def is_true_expr(expr: str):
-    if expr.lower() == "true":
-        return True
-    else:
-        return False
+    return bool(expr.lower() == "true")
 
 
 def check_valid_location(location: str) -> bool:
@@ -209,13 +204,13 @@ def check_for_true_arg(arg: Any) -> Union[bool, cell_error.CellError]:
         return False
     if isinstance(arg, cell_error.CellError):
         return arg
-    elif isinstance(arg, decimal.Decimal):
+    if isinstance(arg, decimal.Decimal):
         if arg == decimal.Decimal(0):
             return False
-    elif isinstance(arg, str) and is_number(arg):
+    if isinstance(arg, str) and is_number(arg):
         if decimal.Decimal(arg) == decimal.Decimal(0):
             return False
-    elif isinstance(arg, str):
+    if isinstance(arg, str):
         if arg.lower() == "false":
             return False
         if arg.lower() != "true":

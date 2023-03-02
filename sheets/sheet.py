@@ -1,8 +1,7 @@
 """Class that stores Cell objects that are all in the same spreadsheet."""
 import uuid
 from typing import Dict
-import re
-from sheets import string_conversions, cell
+from sheets import cell
 
 
 class Sheet:

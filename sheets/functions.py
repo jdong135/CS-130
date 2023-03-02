@@ -1,13 +1,13 @@
 from typing import List, Dict, Callable, Any, Tuple, Union
 from decimal import Decimal
 from sheets import cell_error, string_conversions, unitialized_value, version
+
 import logging
-logging.basicConfig(filename="logs/lark_module.log",
+logging.basicConfig(filename="logs/results.log",
                     format='%(asctime)s %(message)s',
                     filemode='w')
 logger = logging.getLogger()
 logger.setLevel(logging.DEBUG)
-
 
 class Function:
     """
@@ -124,11 +124,12 @@ class FunctionDirectory:
             return cell_error.CellError(
                 cell_error.CellErrorType.TYPE_ERROR, "Invalid argument count")
         value = args[0]
+        logger.info(value)
         if value == "" or value == Decimal(0):
             return False
         if isinstance(value, unitialized_value.UninitializedValue):
             return True
-        if isinstance(value, bool) and value == False:
+        if isinstance(value, bool) and value is False:
             return False
         return False
 
@@ -141,7 +142,7 @@ class FunctionDirectory:
                 if args[0].circref_type:
                     args[0].circref_type = False
                     return args[0]
-                elif args[0].circref_type == False or args[0].circref_type == None:
+                if args[0].circref_type is False or args[0].circref_type is None:
                     return True
             return True
         return False
@@ -150,7 +151,7 @@ class FunctionDirectory:
         if len(args) != 0:
             return cell_error.CellError(
                 cell_error.CellErrorType.TYPE_ERROR, "Invalid argument count")
-        return version.version
+        return version.version # pylint: disable=no-member
 
     def indirect(self, args: List):
         return args[0]
