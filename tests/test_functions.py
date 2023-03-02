@@ -400,6 +400,14 @@ class FunctionTests(unittest.TestCase):
         wb.set_cell_contents("Sheet1", "D1", "O")
         self.assertEqual(wb.get_cell_value("sheet1", "C1"), True)   
 
+    def test_iserror_circref_multiple_types(self):
+        wb = sheets.Workbook()
+        wb.new_sheet()
+        wb.set_cell_contents("sheet1", "A1", "=ISERROR(A1)")
+        self.assertEqual(wb.get_cell_value("Sheet1", "A1").get_type(
+        ), sheets.cell_error.CellErrorType.CIRCULAR_REFERENCE)      
+        wb.set_cell_contents("sheet1", "B1", "=ISERROR(A1)")
+        self.assertEqual(wb.get_cell_value("sheet1", "B1"), True)  
 
 if __name__ == "__main__":
     unittest.main()
