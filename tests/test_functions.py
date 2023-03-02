@@ -650,6 +650,25 @@ class FunctionTests(unittest.TestCase):
         self.assertEqual(wb.get_cell_value("sheet1", "A1"), False)
         wb.set_cell_contents("sheet1", "B1", "=C1")
         self.assertEqual(wb.get_cell_value("sheet1", "A1"), True)
+
+    def test_iferror_in_if(self):
+        wb = sheets.Workbook()
+        wb.new_sheet()
+        wb.set_cell_contents("sheet1", "A1", "=IF(A2, IFERROR(A2, B1), C1)")
+        wb.set_cell_contents("sheet1", "B1", "=A1")
+        wb.set_cell_contents("sheet1", "C1", "=5")
+        self.assertEqual(wb.get_cell_value("sheet1", "A1"), decimal.Decimal(5))
+        self.assertEqual(wb.get_cell_value("sheet1", "B1"), decimal.Decimal(5))
+        wb.set_cell_contents("sheet1", "A2", "=1")
+        self.assertEqual(wb.get_cell_value("sheet1", "A1"), decimal.Decimal(1))
+        self.assertEqual(wb.get_cell_value("sheet1", "B1"), decimal.Decimal(1))
+        wb.set_cell_contents("sheet1", "A2", "=1/0")
+        self.assertEqual(wb.get_cell_value("Sheet1", "A1").get_type(
+        ), sheets.cell_error.CellErrorType.DIVIDE_BY_ZERO)
+        self.assertEqual(wb.get_cell_value("Sheet1", "A2").get_type(
+        ), sheets.cell_error.CellErrorType.DIVIDE_BY_ZERO)
+        self.assertEqual(wb.get_cell_value("Sheet1", "B1").get_type(
+        ), sheets.cell_error.CellErrorType.DIVIDE_BY_ZERO)
         
 if __name__ == "__main__":
     unittest.main()
