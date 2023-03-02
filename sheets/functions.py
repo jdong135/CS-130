@@ -1,3 +1,6 @@
+"""
+Implementation of simple Function object and FunctionDirectory for the Workbook class. 
+"""
 from typing import List, Dict, Callable, Any
 from decimal import Decimal
 from sheets import cell_error, string_conversions, unitialized_value, version

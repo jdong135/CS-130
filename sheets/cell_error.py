@@ -39,7 +39,7 @@ class CellError:
         self._detail = detail
         self._exception = exception
         # True: Calling cell has initialized a circular reference itself
-        # False: Calling cell has inherited a circular reference via argument or propagation. It 
+        # False: Calling cell has inherited a circular reference via argument or propagation. It
         # points to a cell that contains a circular reference
         self.circref_type = False
 

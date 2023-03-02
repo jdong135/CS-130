@@ -13,14 +13,11 @@ class DFSState(enum.Enum):
 
 def tarjan(cell, graph: Dict[Cell, List[Cell]]) -> List[List[Cell]]:
     ret = []
-
     idx = 0
-    
     stack = []
     stack_set = set()
     index_dict = {}
     lowlink_dict = {}
-
     call_stack = [(cell, DFSState.NEW_RECURSIVE_CALL, 0)]
     call_set = set([(cell, DFSState.NEW_RECURSIVE_CALL, 0)])
 
@@ -62,4 +59,4 @@ def tarjan(cell, graph: Dict[Cell, List[Cell]]) -> List[List[Cell]]:
                 stack_set.remove(w)
                 scc.append(w)
             ret.append(scc)
-    return ret      
+    return ret

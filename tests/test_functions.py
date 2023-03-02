@@ -593,7 +593,7 @@ class FunctionTests(unittest.TestCase):
         wb.set_cell_contents("sheet1", "A3", "=5")
         wb.set_cell_contents("sheet1", "A1", "=INDIRECT(A2)")
         self.assertEqual(wb.get_cell_value("sheet1", "A1"), decimal.Decimal(5))
-        wb.set_cell_contents("sheet1", "A1", "=INDIRECT(\"A2\")")     
+        wb.set_cell_contents("sheet1", "A1", "=INDIRECT(\"A2\")")
         self.assertEqual(wb.get_cell_value("sheet1", "A1"), "A3")
         wb.set_cell_contents("sheet1", "A1", "=INDIRECT(A4)")
         self.assertTrue(wb.get_cell_value('sheet1', 'A1').get_type()
@@ -720,6 +720,6 @@ class FunctionTests(unittest.TestCase):
         wb.set_cell_contents("sheet1", "B1", "TRUE")
         self.assertEqual(wb.get_cell_value("Sheet1", "A1").get_type(
         ), sheets.cell_error.CellErrorType.BAD_NAME)
-        
+
 if __name__ == "__main__":
     unittest.main()
