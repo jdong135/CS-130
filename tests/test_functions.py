@@ -672,6 +672,6 @@ class FunctionTests(unittest.TestCase):
         ), sheets.cell_error.CellErrorType.DIVIDE_BY_ZERO)
         self.assertEqual(wb.get_cell_value("Sheet1", "B1").get_type(
         ), sheets.cell_error.CellErrorType.DIVIDE_BY_ZERO)
-        
+
 if __name__ == "__main__":
     unittest.main()
