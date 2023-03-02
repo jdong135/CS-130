@@ -38,6 +38,7 @@ class CellError:
         self._error_type = error_type
         self._detail = detail
         self._exception = exception
+        self.circref_type = False
 
     def get_type(self) -> CellErrorType:
         ''' The category of the cell error. '''

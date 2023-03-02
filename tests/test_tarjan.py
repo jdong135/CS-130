@@ -55,7 +55,6 @@ class TestSCC(unittest.TestCase):
         s = s[::-1]
         for l in s:
             lst = [i.location for i in l]
-            logger.info(lst)
 
 if __name__ == "__main__":
     unittest.main()

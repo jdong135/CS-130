@@ -124,9 +124,10 @@ class FormulaEvaluator(lark.visitors.Interpreter):
                         errs[cell_error.CellErrorType.PARSE_ERROR.value] = cell_error.CellError(
                             cell_error.CellErrorType.PARSE_ERROR, "parsing error")
                     case cell_error.CellErrorType.CIRCULAR_REFERENCE:
+                        ce = cell_error.CellError(cell_error.CellErrorType.CIRCULAR_REFERENCE, "circular reference")
+                        ce.circref_type = values[i].circref_type
                         errs[cell_error.CellErrorType.CIRCULAR_REFERENCE.value] = \
-                            cell_error.CellError(
-                            cell_error.CellErrorType.CIRCULAR_REFERENCE, "circular reference")
+                            ce
                     case cell_error.CellErrorType.BAD_REFERENCE:
                         errs[cell_error.CellErrorType.BAD_REFERENCE.value] = cell_error.CellError(
                             cell_error.CellErrorType.BAD_REFERENCE, "bad reference")
@@ -377,7 +378,6 @@ class FormulaEvaluator(lark.visitors.Interpreter):
                         cell_error.CellErrorType.BAD_REFERENCE, "Bad reference")
                 cell_ref = self.visit(
                     get_tree(self.parser, "=" + func.args[0]))
-                logger.info(type(cell_ref))
                 func.args[0] = cell_ref
             # if not isinstance(func.args[0], str) \
             #     or not string_conversions.check_valid_location(func.args[0]) \
@@ -409,8 +409,11 @@ class FormulaEvaluator(lark.visitors.Interpreter):
             return cell_error.CellError(cell_error.CellErrorType.BAD_REFERENCE, "invalid location")
         if self.calling_cell and self.calling_cell.sheet.name.lower() == sheet_name \
                 and self.calling_cell.location == location:
-            return cell_error.CellError(
+            ce =  cell_error.CellError(
                 cell_error.CellErrorType.CIRCULAR_REFERENCE, "circular reference")
+            logger.info("here")
+            ce.circref_type = True
+            return ce
 
         # no cell in this location yet
         if location not in sheet.cells:
@@ -468,8 +471,10 @@ class FormulaEvaluator(lark.visitors.Interpreter):
                 return cell_error.CellError(
                     cell_error.CellErrorType.PARSE_ERROR, "input error")
             case "#CIRCREF!":
-                return cell_error.CellError(
+                ce = cell_error.CellError(
                     cell_error.CellErrorType.CIRCULAR_REFERENCE, "input error")
+                ce.circref_type = False
+                return ce
             case "#REF!":
                 return cell_error.CellError(
                     cell_error.CellErrorType.BAD_REFERENCE, "input error")

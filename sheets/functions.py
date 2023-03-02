@@ -125,13 +125,16 @@ class FunctionDirectory:
         return False
 
     def is_error(self, args: List):
-        logger.info(args)
         if len(args) != 1:
             return cell_error.CellError(
                 cell_error.CellErrorType.TYPE_ERROR, "Invalid argument count")
         if isinstance(args[0], cell_error.CellError):
             if args[0].get_type() == cell_error.CellErrorType.CIRCULAR_REFERENCE:
-                return args[0]
+                if args[0].circref_type:
+                    args[0].circref_type = False
+                    return args[0]
+                elif args[0].circref_type == False or args[0].circref_type == None:
+                    return True
             return True
         return False
 
