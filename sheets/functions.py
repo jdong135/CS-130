@@ -108,9 +108,9 @@ class FunctionDirectory:
         if error_found_0:
             if error_found_1:
                 return args[0] if args[0] < args[1] else args[1]
-            return error_found_0
+            return args[0]
         if error_found_1:
-            return error_found_1
+            return args[1]
         return str(args[0]) == str(args[1])
 
     def is_blank(self, args: List):
