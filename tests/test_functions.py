@@ -366,10 +366,9 @@ class FunctionTests(unittest.TestCase):
     def test_if_update_to_circ_ref1(self):
         wb = sheets.Workbook()
         wb.new_sheet()
-        wb.set_cell_contents("sheet1", "A1", "=IF(A2, B1, C1)")
-        wb.set_cell_contents("sheet1", "A2", "FALSE")
-        wb.set_cell_contents("sheet1", "B1", "=A1")
         wb.set_cell_contents("sheet1", "C1", "5")
+        wb.set_cell_contents("sheet1", "B1", "=A1")
+        wb.set_cell_contents("sheet1", "A1", "=IF(A2, B1, C1)")
         self.assertEqual(wb.get_cell_value("sheet1", "A1"), decimal.Decimal(5))
         self.assertEqual(wb.get_cell_value("sheet1", "B1"), decimal.Decimal(5))
         wb.set_cell_contents("sheet1", "A2", "TRUE")
@@ -382,6 +381,9 @@ class FunctionTests(unittest.TestCase):
         self.assertTrue(isinstance(value_b, sheets.cell_error.CellError))
         self.assertTrue(value_b.get_type() ==
                         sheets.cell_error.CellErrorType.CIRCULAR_REFERENCE)
+        wb.set_cell_contents("sheet1", "A2", "FALSE")
+        self.assertEqual(wb.get_cell_value("sheet1", "A1"), decimal.Decimal(5))
+        self.assertEqual(wb.get_cell_value("sheet1", "B1"), decimal.Decimal(5))
 
     def test_iferror_circ_ref(self):
         wb = sheets.Workbook()

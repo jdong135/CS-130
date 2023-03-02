@@ -557,10 +557,6 @@ class Workbook:
             #             cell_error.CellErrorType.CIRCULAR_REFERENCE, "circular reference"))
             tarjanoutput = tarjan.tarjan(existing_cell, self.adjacency_list)
             tarjanoutput = tarjanoutput[::-1]
-            # logger.info('new set cell contents call')
-            # for componenet in tarjanoutput:
-            #     for c in componenet:
-            #         logger.info(c.location)
             cell_dependents = []
             for island in tarjanoutput:
                 if len(island) > 1:
