@@ -684,5 +684,42 @@ class FunctionTests(unittest.TestCase):
         self.assertEqual(wb.get_cell_value("Sheet1", "B1").get_type(
         ), sheets.cell_error.CellErrorType.DIVIDE_BY_ZERO)
 
+    def test_exact_empty_strings(self):
+        wb = sheets.Workbook()
+        wb.new_sheet()
+        wb.set_cell_contents("sheet1", "A1", "=EXACT(\"\", \"\")")
+        self.assertEqual(wb.get_cell_value("sheet1", "A1"), True)
+        wb.set_cell_contents("sheet1", "A1", "=EXACT(\"\", B1)")
+        self.assertEqual(wb.get_cell_value("sheet1", "A1"), True)
+        wb.set_cell_contents("sheet1", "A1", "=EXACT(\"\" & \"\", B1)")
+        self.assertEqual(wb.get_cell_value("sheet1", "A1"), True)
+        wb.set_cell_contents("sheet1", "A1", "=EXACT(\"\" & \"\", B1 & C1)")
+        self.assertEqual(wb.get_cell_value("sheet1", "A1"), True)
+
+    def test_exact_nested_if(self):
+        wb = sheets.Workbook()
+        wb.new_sheet()
+        wb.set_cell_contents("sheet1", "A1", "=EXACT(IF(B1, C1, D1), IF(B2, C2, D2))")
+        wb.set_cell_contents("sheet1", "C1", "dog")
+        wb.set_cell_contents("sheet1", "C2", "=BADFUNC(1)")
+        wb.set_cell_contents("sheet1", "D1", "=1/0")
+        wb.set_cell_contents("sheet1", "D2", "dog")
+        #       |   C   |   D   |
+        #   1   |dog    |#DIV/0!
+        #   2   |#NAME? |dog
+        wb.set_cell_contents("sheet1", "B1", "FALSE")
+        wb.set_cell_contents("sheet1", "B2", "FALSE")
+        self.assertEqual(wb.get_cell_value("Sheet1", "A1").get_type(
+        ), sheets.cell_error.CellErrorType.DIVIDE_BY_ZERO)
+        wb.set_cell_contents("sheet1", "B1", "TRUE")
+        self.assertEqual(wb.get_cell_value("sheet1", "A1"), True)
+        wb.set_cell_contents("sheet1", "B1", "FALSE")
+        wb.set_cell_contents("sheet1", "B2", "TRUE")
+        self.assertEqual(wb.get_cell_value("Sheet1", "A1").get_type(
+        ), sheets.cell_error.CellErrorType.BAD_NAME)
+        wb.set_cell_contents("sheet1", "B1", "TRUE")
+        self.assertEqual(wb.get_cell_value("Sheet1", "A1").get_type(
+        ), sheets.cell_error.CellErrorType.BAD_NAME)
+        
 if __name__ == "__main__":
     unittest.main()
