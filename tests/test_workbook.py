@@ -7,7 +7,7 @@ import string
 import random
 import decimal
 from context import sheets
-from utils import store_stdout, restore_stdout, sort_notify_list
+from utils import store_stdout, restore_stdout
 
 MAX_SHEETS_TEST = 100
 MAX_STR_LEN_TEST = 100

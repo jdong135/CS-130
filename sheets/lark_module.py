@@ -1,22 +1,20 @@
 """Module containing functionality to parse spreadsheet formulas."""
 import decimal
 import re
-from typing import Any, Union, Tuple, Callable
+from typing import Any, Union, Callable
 from functools import lru_cache
-from typing import List
+from contextlib import contextmanager
 import lark
-from contextlib import contextmanager, suppress
 from lark.visitors import visit_children_decor
 from lark.exceptions import UnexpectedInput
 from sheets import cell_error, cell, string_conversions, unitialized_value, functions
 
 import logging
-logging.basicConfig(filename="logs/lark_module.log",
+logging.basicConfig(filename="logs/results.log",
                     format='%(asctime)s %(message)s',
                     filemode='w')
 logger = logging.getLogger()
 logger.setLevel(logging.DEBUG)
-
 
 class FormulaEvaluator(lark.visitors.Interpreter):
     """
@@ -124,7 +122,8 @@ class FormulaEvaluator(lark.visitors.Interpreter):
                         errs[cell_error.CellErrorType.PARSE_ERROR.value] = cell_error.CellError(
                             cell_error.CellErrorType.PARSE_ERROR, "parsing error")
                     case cell_error.CellErrorType.CIRCULAR_REFERENCE:
-                        ce = cell_error.CellError(cell_error.CellErrorType.CIRCULAR_REFERENCE, "circular reference")
+                        ce = cell_error.CellError(
+                            cell_error.CellErrorType.CIRCULAR_REFERENCE, "circular reference")
                         ce.circref_type = values[i].circref_type
                         errs[cell_error.CellErrorType.CIRCULAR_REFERENCE.value] = \
                             ce
@@ -144,60 +143,20 @@ class FormulaEvaluator(lark.visitors.Interpreter):
             return errs[min(list(errs.keys()))]
         return False
 
-    def __evaluate_function_arguments(self, args_list: List[str]) -> Tuple[List[Any], Union[bool, cell_error.CellError]]:
-        """
-        Evaluate all arguments of a function and any composed function.
-
-        Args:
-            args_list (List[str]): List of string arguments
-
-        Returns:
-            Tuple[List[Any], bool | CellError]: Tuple containing a list of evaluated arguments
-            and if a CellError is present in the evaluation. If an error is present, the error 
-            with highest priority is returned. If no CellError is detected, this field is False.
-        """
-        error_found = False
-        for i in range(len(args_list)):
-            arg = args_list[i]
-            if isinstance(arg, functions.Function):
-                arg.args, temp_err = self.__evaluate_function_arguments(
-                    arg.args)
-                # We only overwrite with new errors if we haven't already found one
-                # We don't want to make error_found false again if we've already found an error
-                if not error_found:
-                    error_found = temp_err
-            else:
-                try:
-                    tree = get_tree(self.parser, "=" + arg)
-                    arg = self.visit(tree)
-                except lark.exceptions.UnexpectedInput:
-                    continue
-            args_list[i] = arg
-        # If no error has been found, check each arg for cell error instance
-        if not error_found:
-            error_found = self.__check_for_error(args_list)
-        return args_list, error_found
-
-    def __evaluate_and_solve_arg(self, func, i) -> Tuple[Any, Union[bool, cell_error.CellError]]:
-        [val], error_found = self.__evaluate_function_arguments([func.args[i]])
-        if not error_found and isinstance(val, functions.Function):
-            val = self.wb.function_directory.call_function(
-                val.name, val.args)
-        return val, error_found
-
     def __bool_cmpr(self, left: Any, right: Any,
                     operand: Callable[[str, str], bool], string_op: str) -> bool:
         # booleans > strings > numbers
-        if type(left) == type(right):
+        if type(left) == type(right):  # pylint: disable=unidiomatic-typecheck
             return operand(left, right)
         if isinstance(left, bool):
-            return True if string_op in ['>', '>='] else False
+            return string_op in ['>', '>=']
         if isinstance(left, str):
             if isinstance(right, decimal.Decimal):
-                return True if string_op in ['>', '>='] else False
-            return False if string_op in ['>', '>='] else True
+                return string_op in ['>', '>=']
+            return string_op not in ['>', '>=']
         if isinstance(left, decimal.Decimal):
-            return False if string_op in ['>', '>='] else True
+            return string_op not in ['>', '>=']
+        assert False, "Unrecognized inputs"
 
     @visit_children_decor
     def add_expr(self, values):
@@ -301,17 +260,17 @@ class FormulaEvaluator(lark.visitors.Interpreter):
                 right = decimal.Decimal(0)
             elif isinstance(left, bool):
                 right = False
-        if operator == "=" or operator == "==":
+        if operator in ("=", "=="):
             return left == right
-        elif operator == "<>" or operator == "!=":
+        if operator in ("<>", "!="):
             return left != right
-        elif operator == ">":
+        if operator == ">":
             return self.__bool_cmpr(left, right, lambda x, y: x > y, '>')
-        elif operator == ">=":
+        if operator == ">=":
             return self.__bool_cmpr(left, right, lambda x, y: x >= y, '>=')
-        elif operator == "<":
+        if operator == "<":
             return self.__bool_cmpr(left, right, lambda x, y: x < y, '<')
-        elif operator == "<=":
+        if operator == "<=":
             return self.__bool_cmpr(left, right, lambda x, y: x <= y, '<=')
         assert False, 'Unexpected operator: ' + operator
 
@@ -334,7 +293,7 @@ class FormulaEvaluator(lark.visitors.Interpreter):
                     self.visit(values.children[1]))
                 if isinstance(condition, cell_error.CellError):
                     return condition
-                elif condition:
+                if condition:
                     func.args.append(self.visit(values.children[2]))
                 elif len(values.children[1:]) == 3:
                     func.args.append(self.visit(values.children[3]))
@@ -358,9 +317,12 @@ class FormulaEvaluator(lark.visitors.Interpreter):
                         cell_error.CellErrorType.TYPE_ERROR, "Invalid argument count")
                 index = self.visit(values.children[1])
                 if isinstance(index, cell_error.CellError):
-                    return cell_error.CellError(cell_error.CellErrorType.TYPE_ERROR, "Invalid index")
-                if not isinstance(index, decimal.Decimal) or index <= 0 or index + 2 > len(values.children):
-                    return cell_error.CellError(cell_error.CellErrorType.TYPE_ERROR, "Invalid index")
+                    return cell_error.CellError(
+                        cell_error.CellErrorType.TYPE_ERROR, "Invalid index")
+                if not isinstance(index, decimal.Decimal
+                                  ) or index <= 0 or index + 2 > len(values.children):
+                    return cell_error.CellError(
+                        cell_error.CellErrorType.TYPE_ERROR, "Invalid index")
                 func.args = [self.visit(values.children[int(index) + 1])]
         if func.name == "INDIRECT":
             if len(func.args) != 1:
@@ -372,20 +334,14 @@ class FormulaEvaluator(lark.visitors.Interpreter):
             if not isinstance(func.args[0], str):
                 return cell_error.CellError(
                     cell_error.CellErrorType.BAD_REFERENCE, "Bad reference")
-            else:
-                if not string_conversions.check_valid_location(func.args[0]):
-                    return cell_error.CellError(
-                        cell_error.CellErrorType.BAD_REFERENCE, "Bad reference")
-                cell_ref = self.visit(
-                    get_tree(self.parser, "=" + func.args[0]))
-                func.args[0] = cell_ref
-            # if not isinstance(func.args[0], str) \
-            #     or not string_conversions.check_valid_location(func.args[0]) \
-            #         or isinstance(func.args[0], unitialized_value.UninitializedValue):
-            #     return cell_error.CellError(
-            #         cell_error.CellErrorType.BAD_REFERENCE, "Bad reference")
-            # func.args[0] = self.visit(
-            #     get_tree(self.parser, "=" + func.args[0]))
+            if not string_conversions.check_valid_location(func.args[0]):
+                return cell_error.CellError(
+                    cell_error.CellErrorType.BAD_REFERENCE, "Bad reference")
+            cell_ref = self.visit(
+                get_tree(self.parser, "=" + func.args[0]))
+            func.args[0] = cell_ref
+        elif func.name == "ISBLANK":
+            pass
         return self.wb.function_directory.call_function(func)
 
     @visit_children_decor
@@ -411,7 +367,6 @@ class FormulaEvaluator(lark.visitors.Interpreter):
                 and self.calling_cell.location == location:
             ce =  cell_error.CellError(
                 cell_error.CellErrorType.CIRCULAR_REFERENCE, "circular reference")
-            logger.info("here")
             ce.circref_type = True
             return ce
 

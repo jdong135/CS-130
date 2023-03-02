@@ -10,12 +10,6 @@ from sheets import cell, topo_sort, cell_error, lark_module, sheet, \
     string_conversions, unitialized_value, tarjan
 from sheets.functions import FunctionDirectory
 
-import logging
-logging.basicConfig(filename="logs/lark_module.log",
-                    format='%(asctime)s %(message)s',
-                    filemode='w')
-logger = logging.getLogger()
-logger.setLevel(logging.DEBUG)
 
 ALLOWED_PUNC = set([".", "?", "!", ",", ":", ";", "@", "#",
                     "$", "%", "^", "&", "*", "(", ")", "-", "_"])
@@ -546,15 +540,7 @@ class Workbook:
                     if self.__call_notify:
                         self.__generate_notifications([existing_cell])
                     return
-            # circular, cell_dependents = topo_sort(
-            #     existing_cell, self.adjacency_list)
-            # if not circular:
-            #     for dependent in cell_dependents[1:]:
-            #         self.__set_cell_value_and_type(dependent)
-            # else:  # everything in the cycle should have an error value
-            #     for dependent in cell_dependents:
-            #         dependent.set_fields(value=cell_error.CellError(
-            #             cell_error.CellErrorType.CIRCULAR_REFERENCE, "circular reference"))
+            # Update adjacency list
             tarjanoutput = tarjan.tarjan(existing_cell, self.adjacency_list)
             tarjanoutput = tarjanoutput[::-1]
             cell_dependents = []
@@ -564,6 +550,7 @@ class Workbook:
                     for d, neighbors in self.adjacency_list.items():
                         if c in neighbors and d not in relies_on:
                             neighbors.remove(c)
+            # Handle circular references
             tarjanoutput = tarjan.tarjan(existing_cell, self.adjacency_list)
             tarjanoutput = tarjanoutput[::-1]
             for island in tarjanoutput:
@@ -578,7 +565,6 @@ class Workbook:
                     cell_dependents.append(c)
                     if c != existing_cell:
                         self.__set_cell_value_and_type(c)
-
             self.__update_extent(spreadsheet, location, False)
             # include the existing cell iff its value is updated
             if self.__call_notify and val_updated:
