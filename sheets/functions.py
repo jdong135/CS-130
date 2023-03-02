@@ -130,6 +130,8 @@ class FunctionDirectory:
             return cell_error.CellError(
                 cell_error.CellErrorType.TYPE_ERROR, "Invalid argument count")
         if isinstance(args[0], cell_error.CellError):
+            if args[0].get_type() == cell_error.CellErrorType.CIRCULAR_REFERENCE:
+                return args[0]
             return True
         return False
 
