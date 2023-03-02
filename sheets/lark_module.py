@@ -224,14 +224,12 @@ class FormulaEvaluator(lark.visitors.Interpreter):
         if potential_error:
             return potential_error
         left, operator, right = values
-        ###
         if isinstance(left, str):
             left = left.lower()
             if left == "true":
                 left = True
             elif left == "false":
                 left = False
-        ##
         elif isinstance(left, unitialized_value.UninitializedValue):
             if isinstance(right, str):
                 left = ""
@@ -239,14 +237,12 @@ class FormulaEvaluator(lark.visitors.Interpreter):
                 left = decimal.Decimal(0)
             elif isinstance(right, bool):
                 left = False
-        # ASK DONNIE
         if isinstance(right, str):
             right = right.lower()
             if right == "true":
                 right = True
             elif right == "false":
                 right = False
-        ###
         elif isinstance(right, unitialized_value.UninitializedValue):
             if isinstance(left, str):
                 right = ""

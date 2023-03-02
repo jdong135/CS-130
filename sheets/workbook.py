@@ -541,15 +541,6 @@ class Workbook:
                     if self.__call_notify:
                         self.__generate_notifications([existing_cell])
                     return
-            # circular, cell_dependents = topo_sort(
-            #     existing_cell, self.adjacency_list)
-            # if not circular:
-            #     for dependent in cell_dependents[1:]:
-            #         self.__set_cell_value_and_type(dependent)
-            # else:  # everything in the cycle should have an error value
-            #     for dependent in cell_dependents:
-            #         dependent.set_fields(value=cell_error.CellError(
-            #             cell_error.CellErrorType.CIRCULAR_REFERENCE, "circular reference"))
             tarjanoutput = tarjan.tarjan(existing_cell, self.adjacency_list)
             tarjanoutput = tarjanoutput[::-1]
             cell_dependents = []

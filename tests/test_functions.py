@@ -5,6 +5,7 @@ Test for implementation of Lark Module formula Evaluator
 import decimal
 import unittest
 from context import sheets
+from utils import store_stdout, restore_stdout, sort_notify_list, on_cells_changed
 
 
 class FunctionTests(unittest.TestCase):
@@ -367,6 +368,7 @@ class FunctionTests(unittest.TestCase):
         self.assertEqual(wb.get_cell_value("sheet1", "C1"), True)
 
     def test_if_update_to_circ_ref1(self):
+        new_stdo, sys_out = store_stdout()
         wb = sheets.Workbook()
         wb.new_sheet()
         wb.set_cell_contents("sheet1", "C1", "5")
@@ -384,9 +386,13 @@ class FunctionTests(unittest.TestCase):
         self.assertTrue(isinstance(value_b, sheets.cell_error.CellError))
         self.assertTrue(value_b.get_type() ==
                         sheets.cell_error.CellErrorType.CIRCULAR_REFERENCE)
+        wb.notify_cells_changed(on_cells_changed)
         wb.set_cell_contents("sheet1", "A2", "FALSE")
         self.assertEqual(wb.get_cell_value("sheet1", "A1"), decimal.Decimal(5))
         self.assertEqual(wb.get_cell_value("sheet1", "B1"), decimal.Decimal(5))
+        output = sort_notify_list(restore_stdout(new_stdo, sys_out))
+        expected = ["'Sheet1', 'A1'", "'Sheet1', 'A2'", "'Sheet1', 'B1'"]
+        self.assertEqual(expected, output)
 
     def test_iferror_circ_ref(self):
         wb = sheets.Workbook()
@@ -643,6 +649,7 @@ class FunctionTests(unittest.TestCase):
         self.assertEqual(wb.get_cell_value("sheet1", "B1"), decimal.Decimal(1))
 
     def test_isblank_cell_refs(self):
+        new_stdo, sys_out = store_stdout()
         wb = sheets.Workbook()
         wb.new_sheet()
         wb.set_cell_contents("sheet1", "A1", "=ISBLANK(B1)")
@@ -651,8 +658,12 @@ class FunctionTests(unittest.TestCase):
         self.assertEqual(wb.get_cell_value("sheet1", "A1"), False)
         wb.set_cell_contents("sheet1", "B1", "FALSE")
         self.assertEqual(wb.get_cell_value("sheet1", "A1"), False)
+        wb.notify_cells_changed(on_cells_changed)
         wb.set_cell_contents("sheet1", "B1", "=C1")
         self.assertEqual(wb.get_cell_value("sheet1", "A1"), True)
+        output = sort_notify_list(restore_stdout(new_stdo, sys_out))
+        expected = ["'Sheet1', 'A1'", "'Sheet1', 'B1'"]
+        self.assertEqual(expected, output)
 
     def test_iferror_in_if(self):
         wb = sheets.Workbook()

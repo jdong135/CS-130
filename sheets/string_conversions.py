@@ -9,7 +9,6 @@ from functools import cache
 from sheets import cell_error, unitialized_value
 
 
-
 ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 COMPARISON_OPERATORS = ["=", "==", "<>", "!=", ">", "<", ">=", "<="]
 
