@@ -1,4 +1,4 @@
-from typing import List, Dict, Callable, Any, Tuple, Union
+from typing import List, Dict, Callable, Any
 from decimal import Decimal
 from sheets import cell_error, string_conversions, unitialized_value, version
 
@@ -124,7 +124,6 @@ class FunctionDirectory:
             return cell_error.CellError(
                 cell_error.CellErrorType.TYPE_ERROR, "Invalid argument count")
         value = args[0]
-        logger.info(value)
         if value == "" or value == Decimal(0):
             return False
         if isinstance(value, unitialized_value.UninitializedValue):

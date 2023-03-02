@@ -385,10 +385,12 @@ class FormulaEvaluator(lark.visitors.Interpreter):
                 self.calling_cell)
         self.calling_cell_relies_on.append(sheet.cells[location])
         # cell exists at location but is empty
-        if not sheet.cells[location].value and not isinstance(sheet.cells[location].value, bool):
-            ret_val = unitialized_value.UninitializedValue()
+        val = sheet.cells[location].value
+        if not val and not isinstance(val, bool):
+            ret_val = val \
+                if val == decimal.Decimal(0) else unitialized_value.UninitializedValue()
         else:
-            ret_val = sheet.cells[location].value
+            ret_val = val
         return ret_val
 
     def parens(self, tree):

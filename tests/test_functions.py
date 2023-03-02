@@ -639,5 +639,17 @@ class FunctionTests(unittest.TestCase):
         self.assertEqual(wb.get_cell_value("sheet1", "A1"), decimal.Decimal(1))
         self.assertEqual(wb.get_cell_value("sheet1", "B1"), decimal.Decimal(1))
 
+    def test_isblank_cell_refs(self):
+        wb = sheets.Workbook()
+        wb.new_sheet()
+        wb.set_cell_contents("sheet1", "A1", "=ISBLANK(B1)")
+        self.assertEqual(wb.get_cell_value("sheet1", "A1"), True)
+        wb.set_cell_contents("sheet1", "B1", "=0")
+        self.assertEqual(wb.get_cell_value("sheet1", "A1"), False)
+        wb.set_cell_contents("sheet1", "B1", "FALSE")
+        self.assertEqual(wb.get_cell_value("sheet1", "A1"), False)
+        wb.set_cell_contents("sheet1", "B1", "=C1")
+        self.assertEqual(wb.get_cell_value("sheet1", "A1"), True)
+        
 if __name__ == "__main__":
     unittest.main()
