@@ -326,6 +326,7 @@ class FormulaEvaluator(lark.visitors.Interpreter):
             for child in values.children[1:]:
                 func.args.append(self.visit(child))
         else:  # lazy evaluation
+            self.calling_cell.lazy = True
             if func.name == "IF":
                 if len(values.children[1:]) not in [2, 3]:
                     return cell_error.CellError(

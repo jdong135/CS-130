@@ -127,6 +127,7 @@ class Workbook:
             bool: if the value of the calling cell changed
         """
         cell_contents = calling_cell.contents
+        calling_cell.lazy = False
         relies_on = []
         # determine the new type of our cell and set its value accordingly
         if not cell_contents or len(cell_contents) == 0:
@@ -546,24 +547,16 @@ class Workbook:
                     if self.__call_notify:
                         self.__generate_notifications([existing_cell])
                     return
-            # circular, cell_dependents = topo_sort(
-            #     existing_cell, self.adjacency_list)
-            # if not circular:
-            #     for dependent in cell_dependents[1:]:
-            #         self.__set_cell_value_and_type(dependent)
-            # else:  # everything in the cycle should have an error value
-            #     for dependent in cell_dependents:
-            #         dependent.set_fields(value=cell_error.CellError(
-            #             cell_error.CellErrorType.CIRCULAR_REFERENCE, "circular reference"))
             tarjanoutput = tarjan.tarjan(existing_cell, self.adjacency_list)
             tarjanoutput = tarjanoutput[::-1]
             cell_dependents = []
             for island in tarjanoutput:
                 for c in island:
                     relies_on, _ = self.__set_cell_value_and_type(c)
-                    for d, neighbors in self.adjacency_list.items():
-                        if c in neighbors and d not in relies_on:
-                            neighbors.remove(c)
+                    if c.lazy:
+                        for d, neighbors in self.adjacency_list.items():
+                            if c in neighbors and d not in relies_on:
+                                neighbors.remove(c)
             tarjanoutput = tarjan.tarjan(existing_cell, self.adjacency_list)
             tarjanoutput = tarjanoutput[::-1]
             for island in tarjanoutput:
