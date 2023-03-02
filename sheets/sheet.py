@@ -1,8 +1,7 @@
 """Class that stores Cell objects that are all in the same spreadsheet."""
 import uuid
 from typing import Dict
-import re
-from sheets import string_conversions, cell
+from sheets import cell
 
 
 class Sheet:
@@ -33,23 +32,3 @@ class Sheet:
         # {'A1': Cell} UPPERCASE location to cell
         self.cells: Dict[str, cell.Cell] = {}
         self.uuid: uuid.UUID = uuid.uuid1()
-
-    def check_valid_location(self, location: str) -> bool:
-        """
-        Determine if a cell location is witin the range of ZZZZ9999.
-
-        Args:
-            location (str): string location on the sheet.
-
-        Returns:
-            bool: if the input location is in-bounds.
-        """
-        # Ensure a letter and number is specified
-        if not re.match(r"\$?[A-Za-z]+\$?[1-9][0-9]*", location):
-            return False
-        col, row = string_conversions.str_to_tuple(location)
-        if col > 475254 or row > 9999:
-            return False
-        if len(location.strip()) != len(location):
-            return False
-        return True

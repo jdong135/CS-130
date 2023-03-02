@@ -39,6 +39,7 @@
 // Base values
 
 ?base : cell
+      | function
       | ERROR_VALUE             -> error
       | NUMBER                  -> number
       | STRING                  -> string
@@ -46,6 +47,8 @@
       | "(" expression ")"      -> parens
 
 cell : (_sheetname "!")? CELLREF
+
+function: FUNC "(" (expression ("," expression)*)? ")"
 
 _sheetname : SHEET_NAME | QUOTED_SHEET_NAME
 
@@ -85,3 +88,7 @@ STRING: /\"[^"]*\"/
 // (?i) means case insensitive
 // ^ and $ ensure the whole string matches
 BOOLEAN: ("true"i | "false"i)
+
+// Function: func_name(arg1, ..., argn)
+// FUNC: /[A-Za-z_][A-Za-z0-9_]*\s*\((?:[^()]|\((?:[^()]|\([^()]*\))*\))*\)/
+FUNC: /[A-Za-z_][A-Za-z0-9_]*\s*/

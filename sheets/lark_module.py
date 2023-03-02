@@ -1,12 +1,13 @@
 """Module containing functionality to parse spreadsheet formulas."""
 import decimal
 import re
-from typing import Any, Union
+from typing import Any, Union, Callable
 from functools import lru_cache
+from contextlib import contextmanager
 import lark
 from lark.visitors import visit_children_decor
 from lark.exceptions import UnexpectedInput
-from sheets import cell_error, cell, string_conversions, unitialized_value
+from sheets import cell_error, cell, string_conversions, unitialized_value, functions
 
 
 class FormulaEvaluator(lark.visitors.Interpreter):
@@ -21,6 +22,17 @@ class FormulaEvaluator(lark.visitors.Interpreter):
         self.sheet = sheet
         self.calling_cell = calling_cell
         self.calling_cell_relies_on = []
+        self.parser = None
+        self.__convert_literal_to_error = True
+
+    @contextmanager
+    def __ignore_error_literals(self):
+        """
+        Disable automatic conversions of error equivalent literals to CellError objects
+        """
+        self.__convert_literal_to_error = False
+        yield
+        self.__convert_literal_to_error = True
 
     def __check_sheet_name(self, sheet_name) -> Union[str, cell_error.CellError]:
         """
@@ -86,7 +98,8 @@ class FormulaEvaluator(lark.visitors.Interpreter):
 
         Args:
             values (List): array of input values for artithmetic evaluation
-            args: indices of values array to check for cell error instances
+            args: indices of values array to check for cell error instances. If no arguments are
+            provided, check the whole array.
 
         Returns:
             bool or CellError: return self.error if an error is found. Otherwise, return false
@@ -94,6 +107,8 @@ class FormulaEvaluator(lark.visitors.Interpreter):
         errs = {}  # {int error enum : CellError object}
         for arg in args:
             assert isinstance(arg, int)
+        if len(args) == 0:
+            args = range(len(values))
         for i in args:
             if isinstance(values[i], cell_error.CellError):
                 match values[i].get_type():
@@ -101,9 +116,11 @@ class FormulaEvaluator(lark.visitors.Interpreter):
                         errs[cell_error.CellErrorType.PARSE_ERROR.value] = cell_error.CellError(
                             cell_error.CellErrorType.PARSE_ERROR, "parsing error")
                     case cell_error.CellErrorType.CIRCULAR_REFERENCE:
-                        errs[cell_error.CellErrorType.CIRCULAR_REFERENCE.value] = \
-                            cell_error.CellError(
+                        ce = cell_error.CellError(
                             cell_error.CellErrorType.CIRCULAR_REFERENCE, "circular reference")
+                        ce.circref_type = values[i].circref_type
+                        errs[cell_error.CellErrorType.CIRCULAR_REFERENCE.value] = \
+                            ce
                     case cell_error.CellErrorType.BAD_REFERENCE:
                         errs[cell_error.CellErrorType.BAD_REFERENCE.value] = cell_error.CellError(
                             cell_error.CellErrorType.BAD_REFERENCE, "bad reference")
@@ -119,6 +136,21 @@ class FormulaEvaluator(lark.visitors.Interpreter):
         if len(errs) > 0:
             return errs[min(list(errs.keys()))]
         return False
+
+    def __bool_cmpr(self, left: Any, right: Any,
+                    operand: Callable[[str, str], bool], string_op: str) -> bool:
+        # booleans > strings > numbers
+        if type(left) == type(right):  # pylint: disable=unidiomatic-typecheck
+            return operand(left, right)
+        if isinstance(left, bool):
+            return string_op in ['>', '>=']
+        if isinstance(left, str):
+            if isinstance(right, decimal.Decimal):
+                return string_op in ['>', '>=']
+            return string_op not in ['>', '>=']
+        if isinstance(left, decimal.Decimal):
+            return string_op not in ['>', '>=']
+        assert False, "Unrecognized inputs"
 
     @visit_children_decor
     def add_expr(self, values):
@@ -192,14 +224,12 @@ class FormulaEvaluator(lark.visitors.Interpreter):
         if potential_error:
             return potential_error
         left, operator, right = values
-        ###
         if isinstance(left, str):
             left = left.lower()
             if left == "true":
                 left = True
             elif left == "false":
                 left = False
-        ##
         elif isinstance(left, unitialized_value.UninitializedValue):
             if isinstance(right, str):
                 left = ""
@@ -207,14 +237,12 @@ class FormulaEvaluator(lark.visitors.Interpreter):
                 left = decimal.Decimal(0)
             elif isinstance(right, bool):
                 left = False
-        # ASK DONNIE
         if isinstance(right, str):
             right = right.lower()
             if right == "true":
                 right = True
             elif right == "false":
                 right = False
-        ###
         elif isinstance(right, unitialized_value.UninitializedValue):
             if isinstance(left, str):
                 right = ""
@@ -222,32 +250,90 @@ class FormulaEvaluator(lark.visitors.Interpreter):
                 right = decimal.Decimal(0)
             elif isinstance(left, bool):
                 right = False
-        if operator == "=" or operator == "==":
+        if operator in ("=", "=="):
             return left == right
-        elif operator == "<>" or operator == "!=":
+        if operator in ("<>", "!="):
             return left != right
-        elif operator == ">":
-            return self.bool_cmpr(left, right, lambda x, y: x > y, '>')
-        elif operator == ">=":
-            return self.bool_cmpr(left, right, lambda x, y: x >= y, '>=')
-        elif operator == "<":
-            return self.bool_cmpr(left, right, lambda x, y: x < y, '<')
-        elif operator == "<=":
-            return self.bool_cmpr(left, right, lambda x, y: x <= y, '<=')
+        if operator == ">":
+            return self.__bool_cmpr(left, right, lambda x, y: x > y, '>')
+        if operator == ">=":
+            return self.__bool_cmpr(left, right, lambda x, y: x >= y, '>=')
+        if operator == "<":
+            return self.__bool_cmpr(left, right, lambda x, y: x < y, '<')
+        if operator == "<=":
+            return self.__bool_cmpr(left, right, lambda x, y: x <= y, '<=')
         assert False, 'Unexpected operator: ' + operator
 
-    def bool_cmpr(self, left, right, operand, string_op):
-        # booleans > strings > numbers
-        if type(left) == type(right):
-            return operand(left, right)
-        if isinstance(left, bool):
-            return True if string_op in ['>', '>='] else False
-        if isinstance(left, str):
-            if isinstance(right, decimal.Decimal):
-                return True if string_op in ['>', '>='] else False
-            return False if string_op in ['>', '>='] else True
-        if isinstance(left, decimal.Decimal):
-            return False if string_op in ['>', '>='] else True
+    def function(self, values):
+        name = values.children[0].strip().upper()
+        func = functions.Function(name, [], False)
+        if name not in self.wb.function_directory.get_function_keys():
+            return cell_error.CellError(cell_error.CellErrorType.BAD_NAME, "Invalid function name")
+        if name in self.wb.function_directory.lazy_functions:
+            func.lazy_eval = True
+        if not func.lazy_eval:
+            for child in values.children[1:]:
+                func.args.append(self.visit(child))
+        else:  # lazy evaluation
+            self.calling_cell.lazy = True
+            if func.name == "IF":
+                if len(values.children[1:]) not in [2, 3]:
+                    return cell_error.CellError(
+                        cell_error.CellErrorType.TYPE_ERROR, "Invalid argument count")
+                condition = string_conversions.check_for_true_arg(
+                    self.visit(values.children[1]))
+                if isinstance(condition, cell_error.CellError):
+                    return condition
+                if condition:
+                    func.args.append(self.visit(values.children[2]))
+                elif len(values.children[1:]) == 3:
+                    func.args.append(self.visit(values.children[3]))
+                else:
+                    func.args.append(False)
+            elif func.name == "IFERROR":
+                if len(values.children[1:]) not in [1, 2]:
+                    return cell_error.CellError(
+                        cell_error.CellErrorType.TYPE_ERROR, "Invalid argument count")
+                with self.__ignore_error_literals():
+                    res = self.visit(values.children[1])
+                if not isinstance(res, cell_error.CellError):
+                    func.args.append(res)
+                elif len(values.children[1:]) == 2:
+                    func.args.append(self.visit(values.children[2]))
+                else:
+                    func.args.append("")
+            elif func.name == "CHOOSE":
+                if len(values.children) < 3:
+                    return cell_error.CellError(
+                        cell_error.CellErrorType.TYPE_ERROR, "Invalid argument count")
+                index = self.visit(values.children[1])
+                if isinstance(index, cell_error.CellError):
+                    return cell_error.CellError(
+                        cell_error.CellErrorType.TYPE_ERROR, "Invalid index")
+                if not isinstance(index, decimal.Decimal
+                                  ) or index <= 0 or index + 2 > len(values.children):
+                    return cell_error.CellError(
+                        cell_error.CellErrorType.TYPE_ERROR, "Invalid index")
+                func.args = [self.visit(values.children[int(index) + 1])]
+        if func.name == "INDIRECT":
+            if len(func.args) != 1:
+                return cell_error.CellError(
+                    cell_error.CellErrorType.TYPE_ERROR, "Invalid argument count")
+            if isinstance(func.args[0], unitialized_value.UninitializedValue):
+                return cell_error.CellError(
+                    cell_error.CellErrorType.BAD_REFERENCE, "Bad reference")
+            if not isinstance(func.args[0], str):
+                return cell_error.CellError(
+                    cell_error.CellErrorType.BAD_REFERENCE, "Bad reference")
+            if not string_conversions.check_valid_location(func.args[0]):
+                return cell_error.CellError(
+                    cell_error.CellErrorType.BAD_REFERENCE, "Bad reference")
+            cell_ref = self.visit(
+                get_tree(self.parser, "=" + func.args[0]))
+            func.args[0] = cell_ref
+        elif func.name == "ISBLANK":
+            pass
+        return self.wb.function_directory.call_function(func)
 
     @visit_children_decor
     def cell(self, values):
@@ -266,12 +352,14 @@ class FormulaEvaluator(lark.visitors.Interpreter):
             return cell_error.CellError(
                 cell_error.CellErrorType.BAD_REFERENCE, "sheet name not found")
         sheet = self.wb.spreadsheets[sheet_name]
-        if not sheet.check_valid_location(location):
+        if not string_conversions.check_valid_location(location):
             return cell_error.CellError(cell_error.CellErrorType.BAD_REFERENCE, "invalid location")
         if self.calling_cell and self.calling_cell.sheet.name.lower() == sheet_name \
                 and self.calling_cell.location == location:
-            return cell_error.CellError(
+            ce =  cell_error.CellError(
                 cell_error.CellErrorType.CIRCULAR_REFERENCE, "circular reference")
+            ce.circref_type = True
+            return ce
 
         # no cell in this location yet
         if location not in sheet.cells:
@@ -287,10 +375,13 @@ class FormulaEvaluator(lark.visitors.Interpreter):
             self.wb.adjacency_list[sheet.cells[location]].append(
                 self.calling_cell)
         self.calling_cell_relies_on.append(sheet.cells[location])
-        if not sheet.cells[location].value:  # cell exists at location but is empty
-            ret_val = unitialized_value.UninitializedValue()
+        # cell exists at location but is empty
+        val = sheet.cells[location].value
+        if not val and not isinstance(val, bool):
+            ret_val = val \
+                if val == decimal.Decimal(0) else unitialized_value.UninitializedValue()
         else:
-            ret_val = sheet.cells[location].value
+            ret_val = val
         return ret_val
 
     def parens(self, tree):
@@ -310,9 +401,10 @@ class FormulaEvaluator(lark.visitors.Interpreter):
 
     def string(self, tree):
         value = tree.children[0].value[1:-1]
-        potential_error = string_conversions.str_to_error(value)
-        if potential_error:
-            return potential_error
+        if self.__convert_literal_to_error:
+            potential_error = string_conversions.str_to_error(value)
+            if potential_error:
+                return potential_error
         return value
 
     def boolean(self, tree):
@@ -327,8 +419,10 @@ class FormulaEvaluator(lark.visitors.Interpreter):
                 return cell_error.CellError(
                     cell_error.CellErrorType.PARSE_ERROR, "input error")
             case "#CIRCREF!":
-                return cell_error.CellError(
+                ce = cell_error.CellError(
                     cell_error.CellErrorType.CIRCULAR_REFERENCE, "input error")
+                ce.circref_type = False
+                return ce
             case "#REF!":
                 return cell_error.CellError(
                     cell_error.CellErrorType.BAD_REFERENCE, "input error")
@@ -354,8 +448,8 @@ def get_tree(parser: lark.Lark, contents: str) -> lark.ParseTree:
     return parser.parse(contents)
 
 
-def evaluate_expr(workbook, curr_cell, sheetname: str, contents: str) \
-        -> tuple[FormulaEvaluator, Any]:
+def evaluate_expr(workbook, curr_cell, sheetname: str,
+                  contents: str) -> tuple[FormulaEvaluator, Any]:
     """
     Evaluate a provided expression using the lark formula parser and evaluator.
 
@@ -374,6 +468,7 @@ def evaluate_expr(workbook, curr_cell, sheetname: str, contents: str) \
     sheet = workbook.spreadsheets[sheetname.lower()]
     evaluator = FormulaEvaluator(workbook, sheet, curr_cell)
     parser = open_grammar()
+    evaluator.parser = parser
     try:
         tree = get_tree(parser, contents)
     except UnexpectedInput:

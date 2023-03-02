@@ -7,7 +7,9 @@ import json
 import re
 from contextlib import contextmanager, suppress
 from sheets import cell, topo_sort, cell_error, lark_module, sheet, \
-    string_conversions, unitialized_value
+    string_conversions, unitialized_value, tarjan
+from sheets.functions import FunctionDirectory
+
 
 ALLOWED_PUNC = set([".", "?", "!", ",", ":", ";", "@", "#",
                     "$", "%", "^", "&", "*", "(", ")", "-", "_"])
@@ -32,6 +34,8 @@ class Workbook:
         # Whether we should call __generate_notifications() in set_cell_contents()
         # Pertinent in move_cells() and copy_cells() where cells are updated multiple times
         self.__call_notify: bool = True
+        # Directory of defined functions callable within cells
+        self.function_directory: FunctionDirectory = FunctionDirectory()
 
     @contextmanager
     def __disable_notify_calls(self):
@@ -117,6 +121,7 @@ class Workbook:
             bool: if the value of the calling cell changed
         """
         cell_contents = calling_cell.contents
+        calling_cell.lazy = False
         relies_on = []
         # determine the new type of our cell and set its value accordingly
         if not cell_contents or len(cell_contents) == 0:
@@ -135,10 +140,7 @@ class Workbook:
             if evaluator:
                 relies_on = evaluator.calling_cell_relies_on
         elif string_conversions.is_bool_expr(cell_contents):
-            if string_conversions.is_true_expr(cell_contents):
-                val = True
-            else:
-                val = False
+            val = bool(string_conversions.is_true_expr(cell_contents))
             cell_type = cell.CellType.BOOLEAN
         elif string_conversions.is_number(cell_contents):
             stripped = string_conversions.strip_zeros(cell_contents)
@@ -331,7 +333,9 @@ class Workbook:
                     # Locations can be specified as A1, sheet1!A1, or 'sheet1'!A1
                     # sheetname: \'[^']*\'! OR [A-Za-z_][A-Za-z0-9_]*!
                     sheetname_pattern = r"\'[^']*\'!|[A-Za-z_][A-Za-z0-9_]*!"
-                    cell_pattern = r"\$?[A-Za-z]+\$?[1-9][0-9]*"
+                    # cell_pattern = r"\$?[A-Za-z]+\$?[1-9][0-9]*"
+                    # Ensure cell locatoins are not wrapped in double quotes
+                    cell_pattern = r'(?<!")\$?[A-Za-z]+\$?[1-9][0-9]*(?!")'
                     # ?: Specifies we don't want to keep the matched sheetname
                     pattern = f"(?:{sheetname_pattern})?({cell_pattern})"
                     locations = re.findall(pattern, contents)
@@ -355,7 +359,7 @@ class Workbook:
                             new_loc += str(row)
                         else:
                             new_loc += row
-                        if not spreadsheet.check_valid_location(new_loc):
+                        if not string_conversions.check_valid_location(new_loc):
                             new_loc = "#REF!"
                         # Note that re.escape ensures we can properly search for $ in loc
                         # Normally, you'd have to escape $A$1 like \$A\$1
@@ -505,7 +509,7 @@ class Workbook:
         if sheet_name.lower() not in self.spreadsheets:
             raise KeyError("Specified sheet name not found")
         spreadsheet = self.spreadsheets[sheet_name.lower()]
-        if not spreadsheet.check_valid_location(location):
+        if not string_conversions.check_valid_location(location):
             raise ValueError(f"Cell location {location} is invalid")
         if contents:
             contents = contents.strip()
@@ -534,21 +538,34 @@ class Workbook:
                     if self.__call_notify:
                         self.__generate_notifications([existing_cell])
                     return
-            # updating cells that depend on existing cell only if the value is updated
-            if val_updated:
-                circular, cell_dependents = topo_sort(
-                    existing_cell, self.adjacency_list)
-                if not circular:
-                    for dependent in cell_dependents[1:]:
-                        self.__set_cell_value_and_type(dependent)
-                else:  # everything in the cycle should have an error value
-                    for dependent in cell_dependents:
-                        dependent.set_fields(value=cell_error.CellError(
-                            cell_error.CellErrorType.CIRCULAR_REFERENCE, "circular reference"))
-                self.__update_extent(spreadsheet, location, False)
-                # include the existing cell iff its value is updated
-                if self.__call_notify:
-                    self.__generate_notifications(cell_dependents)
+            tarjanoutput = tarjan.tarjan(existing_cell, self.adjacency_list)
+            tarjanoutput = tarjanoutput[::-1]
+            cell_dependents = []
+            for island in tarjanoutput:
+                for c in island:
+                    relies_on, _ = self.__set_cell_value_and_type(c)
+                    if c.lazy:
+                        for d, neighbors in self.adjacency_list.items():
+                            if c in neighbors and d not in relies_on:
+                                neighbors.remove(c)
+            tarjanoutput = tarjan.tarjan(existing_cell, self.adjacency_list)
+            tarjanoutput = tarjanoutput[::-1]
+            for island in tarjanoutput:
+                if len(island) > 1:
+                    for c in island:
+                        cell_dependents.append(c)
+                        c.set_fields(value=cell_error.CellError(\
+                        cell_error.CellErrorType.CIRCULAR_REFERENCE, \
+                            "circular reference"))
+                else:
+                    c = island[0]
+                    cell_dependents.append(c)
+                    if c != existing_cell:
+                        self.__set_cell_value_and_type(c)
+            self.__update_extent(spreadsheet, location, False)
+            # include the existing cell iff its value is updated
+            if self.__call_notify and val_updated:
+                self.__generate_notifications(cell_dependents)
         else:  # if cell does not exist (create contents)
             new_cell = cell.Cell(spreadsheet, location, contents, None, None)
             self.__set_cell_value_and_type(new_cell)
@@ -579,7 +596,7 @@ class Workbook:
         if sheet_name.lower() not in self.spreadsheets:
             raise KeyError("Specified sheet name not found")
         spreadsheet = self.spreadsheets[sheet_name.lower()]
-        if not spreadsheet.check_valid_location(location):
+        if not string_conversions.check_valid_location(location):
             raise ValueError(f"Cell location {location} is invalid")
         if location in spreadsheet.cells:
             return spreadsheet.cells[location].contents
@@ -609,7 +626,7 @@ class Workbook:
         if sheet_name.lower() not in self.spreadsheets:
             raise KeyError("Specified sheet name not found")
         spreadsheet = self.spreadsheets[sheet_name.lower()]
-        if not spreadsheet.check_valid_location(location):
+        if not string_conversions.check_valid_location(location):
             raise ValueError(f"Cell location {location} is invalid")
         if location in spreadsheet.cells:
             if isinstance(spreadsheet.cells[location].value, unitialized_value.UninitializedValue):
@@ -882,7 +899,7 @@ class Workbook:
             raise KeyError(f"{sheet_name} is invalid")
         spreadsheet = self.spreadsheets[sheet_name.lower()]
         for location in [start_location, end_location, to_location]:
-            if not spreadsheet.check_valid_location(location):
+            if not string_conversions.check_valid_location(location):
                 raise ValueError(f"Cell location {location} is invalid")
         if not to_sheet:
             to_sheet = sheet_name
@@ -937,7 +954,7 @@ class Workbook:
             raise KeyError(f"{sheet_name} is invalid")
         spreadsheet = self.spreadsheets[sheet_name.lower()]
         for location in [start_location, end_location, to_location]:
-            if not spreadsheet.check_valid_location(location):
+            if not string_conversions.check_valid_location(location):
                 raise ValueError(f"Cell location {location} is invalid")
         if not to_sheet:
             to_sheet = sheet_name

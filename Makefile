@@ -23,10 +23,13 @@ test:
 	python3 tests/test_spec2.py
 	python3 tests/test_move_copy.py
 	python3 tests/test_booleans.py
+	python3 tests/test_functions.py
 
 stresstest: clean
 	python3 tests/test_stresstest.py
-	python3 tests/test_system.py
+	
+stresstest2: clean
+	python3 tests/test_stresstest2.py
 
 .PHONY:
 lint:

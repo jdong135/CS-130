@@ -406,6 +406,20 @@ class LarkModuleTests(unittest.TestCase):
         self.assertTrue(value.get_type() ==
                         sheets.cell_error.CellErrorType.PARSE_ERROR)
 
+    def test_update_to_circ_ref(self):
+        wb = sheets.Workbook()
+        wb.new_sheet()
+        wb.set_cell_contents("sheet1", "A1", "=B1")
+        wb.set_cell_contents("sheet1", "B1", "=C1")
+        wb.set_cell_contents("sheet1", "B1", "=A1")
+        value_a = wb.get_cell_value('sheet1', 'A1')
+        self.assertTrue(isinstance(value_a, sheets.cell_error.CellError))
+        self.assertTrue(value_a.get_type() ==
+                        sheets.cell_error.CellErrorType.CIRCULAR_REFERENCE)
+        value_b = wb.get_cell_value('sheet1', 'A1')
+        self.assertTrue(isinstance(value_b, sheets.cell_error.CellError))
+        self.assertTrue(value_b.get_type() ==
+                        sheets.cell_error.CellErrorType.CIRCULAR_REFERENCE)
 
 if __name__ == "__main__":
     unittest.main()

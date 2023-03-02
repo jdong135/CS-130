@@ -38,6 +38,10 @@ class CellError:
         self._error_type = error_type
         self._detail = detail
         self._exception = exception
+        # True: Calling cell has initialized a circular reference itself
+        # False: Calling cell has inherited a circular reference via argument or propagation. It
+        # points to a cell that contains a circular reference
+        self.circref_type = False
 
     def get_type(self) -> CellErrorType:
         ''' The category of the cell error. '''
@@ -59,3 +63,7 @@ class CellError:
 
     def __repr__(self) -> str:
         return self.__str__()
+
+    def __lt__(self, other):
+        assert isinstance(other, CellError)
+        return self._error_type.value < other._error_type.value

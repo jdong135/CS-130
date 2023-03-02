@@ -1,0 +1,275 @@
+CS130 Project 4 - Design Document
+=================================
+
+Please answer all questions in this design document.  Note that the final
+feedback section is optional, and you are not required to answer it if you
+don't want to.
+
+Unanswered or incompletely answered questions, or answers that don't actually
+match the code/repository, will result in deductions.
+
+Answers don't have to be deeply detailed!  We are mainly looking for an
+overview or summary description of how your project works, and your team's
+experiences working on this project.
+
+Logistics (7 pts)
+-----------------
+
+L1.  [2pts] Enumerate all teammates here.
+
+Andy Sun, Jay Dong, Jake Goldman
+
+L2.  [2pts] What did each teammate focus on during this project?
+
+Jay Dong: Boolean type, functions, function class, updating Lark Grammar,
+speeding up performance
+Andy Sun: Boolean type, functions, performance tests, fixing lazy evaluation
+updates for IF function
+Jake Goldman: Function class, function directory class, functions
+
+
+L3.  [3pts] Approximately how many hours did each teammate spend on the project?
+
+Jay Dong: 35
+Andy Sun: 35
+Jake Goldman: 35
+
+Spreadsheet Engine Design (31 pts)
+----------------------------------
+
+D1.  [3pts] Briefly describe the changes you made to the Lark parser grammar
+     to support Boolean literals.
+
+We added a new terminal within the base values that attempted to match input
+strings with a regular expression equivalent to booleans. This expression would
+match with any input that was equal to the strings “true” or “false” – case
+insensitive. Then, depending on if the input was equal to “true” or “false,”
+we return the corresponding boolean value within our terminal.
+
+D2.  [4pts] Briefly describe the changes you made to the Lark parser grammar
+     to support conditional expressions.  How did you ensure that conditional
+     operations are lower precedence than arithmetic and string concatenation
+     operations?
+
+Our grammar is written such that a function is represented as:
+
+FUNC "(" (expression ("," expression)*)? ")"
+
+Where FUNC matches a function name (including whitespace). This ensures that
+expressions are prioritized over the actual function evaluation. Further, our
+boolean expressions are written into the grammar as:
+
+?bool_expr : (bool_expr BOOL_OP)? (add_expr | concat_expr)
+
+Which makes booleans lower precedence. 
+
+D3.  [6pts] Briefly describe how function invocation works in your spreadsheet
+     engine.  How easy or hard would it be for you to add new functions to your
+     engine?  What about a third-party developer?  How well does your code
+     follow the Open/Closed Principle?
+
+We have a FunctionDirectory class that every workbook instantiates.
+Within this class, there is a directory mapping function names to the
+actual function in FunctionDirectory. In Lark, when the grammar matches the
+cell contents to a function type, our interpreter evaluates all the arguments
+(if lazy evaluation isn’t necessary) and passes the evaluated arguments back
+to the FunctionDirectory. The corresponding function in FunctionDirectory then
+handles any logic or type casting needed. If the function requires lazy evaluation,
+the interpreter will only evaluate the minimum number of arguments needed,
+depending on the function name.
+
+It is easy to add new functions because you just add a new function in
+FunctionDirectory and add it to the mapping. For a third-party developer,
+it is also easy to write the function in FunctionDirectory. Since they
+know the interpreter will return evaluated arguments, they only have to be
+concerned with writing the logic around these arguments
+
+This doesn’t fully follow the Open/Closed principle because you still have
+to directly change FunctionDirectory. Further, suppose there’s a unique type
+of evaluation order where you want to order from right to left. Then you would
+have to modify the interpreter logic
+
+D4.  [4pts] Is your implementation able to lazily evaluate the arguments to
+     functions like IF(), CHOOSE() and IFERROR()?  (Recall from the Project 4
+     spec that your spreadsheet engine should not report cycles in cases where
+     an argument to these functions does not need to be evaluated.)  If so,
+     what changes to your design were required to achieve this?  If not, what
+     prevented your team from implementing this?
+
+Yes, our implementation is able to lazily evaluate the arguments to functions
+like IF(), CHOOSE(), and IFERROR(). In order to achieve this, we changed our
+lark module design and our set cell contents design. Firstly, in our lark module
+design, we changed how the parse tree is visited. We already use the lark
+interpreter. Unlike other endpoints such as cell, string, etc, we chose not
+to add the visit children decorator to the function endpoint. Instead, we
+manually visit the tree depending on the result of the first argument if the
+function is IF(), CHOOSE(), or IFERROR(). Firstly, we visit the parse tree for
+the first argument of the function. Then, depending on the value of the first
+argument, the implementation visits the tree of the proper argument. This allows
+us to lazily evaluate only the arguments that need to be evaluated. This also
+involved altering out set cell contents implementation. For the IF(), CHOOSE(),
+or IFERROR() functions, if the argument to be evaluated changes then the
+implementation updates the workbook’s adjacency list accordingly. For example,
+for the IF() function, if the first argument initially evaluates to true and
+the second argument references some cell, when the first argument no longer
+evaluates to true, then the adjacency list must be changed as the cell no longer
+references the cell which the second argument references.
+
+D5.  [4pts] Is your implementation able to evaluate the ISERROR() function
+     correctly, with respect to circular-reference errors?  (Recall from the
+     Project 4 spec that ISERROR() behaves differently when part of a cycle,
+     vs. being outside the cycle and referencing some cell in the cycle.)
+     If so, what changes to your design were required to achieve this?  If
+     not, what prevented your team from implementing this?
+
+Yes, our ISERROR() function is able to correctly detect circular-reference errors.
+This was done by modifying our cell_error class to contain an
+attribute – circref_type. This attribute is a boolean and is True if the
+calling cell has initialized a circular reference within itself (in its own
+contents/arguments) or False if the calling cell has received a circular
+reference error via a cell it inherits data from. So, when we are evaluating an
+ISERROR() function, we return a circular-reference if Lark detects a circular
+reference in a stage where it evaluates a cell to itself. We will return True
+if Lark instead detects a circular reference when it is evaluating its
+dependencies.
+
+D6.  [4pts] Is your implementation able to successfully identify cycles that
+     are not evident from static analysis of formulas containing INDIRECT()?
+     If so, what changes to your design were required, if any, to achieve this?
+     If not, what prevented your team from implementing this?
+
+We pass the tests listed under the “INDIRECT() and Cycles” section of the spec.
+Originally, we wrote a topological sort function that took in a cell and only
+returned the component it was in. However, with this project, we implemented
+Tarjan’s algorithm to get all strongly connected components. This allowed us
+to detect whether a given cell was part of a cycle or just pointing to a cycle,
+which allows us to accurately report or not report #CIRCREF!
+
+D7.  [6pts] Project 4 has a number of small but important operations to
+     implement.  Comparison operations include a number of comparison and type
+     conversion rules.  Different functions may require specific numbers and
+     types of arguments.  How did your team structure the implementation of
+     these operations?  How did your approach affect the reusability and
+     testability of these operations?
+
+We wrote a function called bool_cmpr that is called like this:
+
+
+bool_cmpr(left, right, lambda x, y: x > y, '>')
+
+
+We precompute the left and right arguments of the comparison, doing type casting
+when necessary. Then within bool_cmpr, we run the lambda function on the arguments
+if they are of the same type. Otherwise, we check what the operator string is and
+follow the rules that booleans > strings > numbers. This structure makes it simple
+to add a new comparison operator because you just have to write the lambda function
+of what the operator does.
+
+To address the issue of different functions requiring different numbers of
+arguments, in our FunctionDirectory, for each function definition, we check
+the number of arguments being passed in. Since the interpreter is giving the
+function the evaluated arguments, we can check if the correct number was passed
+in and throw an error if needed. It’s very easy to test individual functions
+because we can log what is happening within the function definition. For example,
+to figure out if “AND” is handling errors correctly, you can log the args being
+passed into the and_func(args) in FunctionDirectory.
+
+For both functions and comparisons, our code is very testable. Our code
+reusability could definitely be improved, as there’s a lot of overlap between
+functions when type casting and checking for errors. We ran out of time, but
+simply adding helper functions would make the code significantly more reusable. 
+
+Performance Analysis (12 pts)
+-----------------------------
+
+In this project you must measure and analyze the performance of features that
+generate large bulk changes to a workbook:  loading a workbook, copying or
+renaming a sheet, and moving or copying an area of cells.  Construct some
+performance tests to exercise these aspects of your engine, and use a profiler
+to identify where your program is spending the bulk of its time.
+
+A1.  [4pts] Briefly enumerate the performance tests you created to exercise
+     your implementation.
+
+We first created test json files of various large sizes and populated each cell.
+Then we wrote the following stress tests:
+
+stress_load_workbook: This test runs the load_workbook() function and outputs
+performance based on the size of the aforementioned json files.
+
+stress_move: We make a large spreadsheet, populate each cell, and then move the
+entire sheet over one cell. 
+
+stress_copy_sheet: This test is the same as stress_move, except we copy the
+entire sheet. 
+
+In addition to the above tests, we still run our previous stress tests from
+project 3, as those comprehensively test chains, large cycles, and multiple
+references
+
+
+
+A2.  [2pts] What profiler did you choose to run your performance tests with?
+     Why?  Give an example of how to invoke one of your tests with the profiler.
+
+We chose to use the cProfile that is already built in and we found it effective
+for past projects. Interpreting the output from the Cprofile profiler also
+required the built in pstats package. In order to use the profiler, we first
+initialize an instance of the profiler. Then, we enabled the profiler and ran
+the functions we are profiling. For example, one of our tests would move a large
+block of cells. Then, the profiler is disabled. The profiler stats are dumped in
+using dump_stats. Finally, the file is opened using pstats.Stats which creates a
+file with the profile statistics in a readable format.
+
+
+A3.  [6pts] What are ~3 of the most significant hot-spots you identified in your
+     performance testing?  Did you expect these hot-spots, or were they
+     surprising to you?
+
+Hashing our Cell objects
+	We found that when we ran our stress tests, __hash__ was taking a non-trivial
+    amount of time compared to the total run time. This was surprising because
+    all the hash does is take the string of a sheet object uuid and a cell object
+    uuid. However, by removing the string casting of the uuid, we were able to
+    speed up performance. 
+
+Updating the adjacency list
+	In our implementation, when a function requires lazy evaluation, we run an
+    additional update to the adjacency list after the function is evaluated to
+    update the dependencies. Worst case scenario, this can double run time. We
+    address this problem by only running the update if the function requires lazy
+    evaluation.
+
+Tarjan algorithm
+Besides set_cell_contents, our Tarjan algorithm takes up the most time. We
+will look into this to see if we are misinterpreting how to implement the
+algorithm and are doing unnecessary work. It is written non-recursively. 
+
+
+
+
+
+Section F:  CS130 Project 3 Feedback [OPTIONAL]
+-----------------------------------------------
+
+These questions are OPTIONAL, and you do not need to answer them.  Your grade
+will not be affected by answering or not answering them.  Also, your grade will
+not be affected by negative feedback - we want to know what went poorly so that
+we can improve future versions of the course.
+
+F1.  What parts of the assignment did you find highly enjoyable?  Conversely,
+     what parts of the assignment did you find unenjoyable?
+
+
+F2.  What parts of the assignment helped you learn more about software
+     engineering best-practices, or other useful development skills?
+     What parts were not helpful in learning these skills?
+
+
+F3.  Were there any parts of the assignment that seemed _unnecessarily_ tedious?
+     (Some parts of software development are always tedious, of course.)
+
+
+F4.  Do you have any feedback and/or constructive criticism about how this
+     project can be made better in future iterations of CS130?
+

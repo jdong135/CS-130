@@ -567,11 +567,11 @@ class WorkbookNotifyCellsChanged(unittest.TestCase):
             print(cells_changed)
         new_stdo, sys_out = store_stdout()
         wb = sheets.Workbook()
-        wb.new_sheet("sheet11")
-        wb.new_sheet("sheet12")
-        wb.set_cell_contents("sheet11", "A1", "=sheet12!A1")
+        wb.new_sheet("sheet1")
+        wb.new_sheet("sheet2")
+        wb.set_cell_contents("sheet1", "A1", "=sheet2!A1")
         wb.notify_cells_changed(on_cells_changed)
-        wb.rename_sheet("sheet12", "sheet13")
+        wb.rename_sheet("sheet2", "sheet3")
         output = restore_stdout(new_stdo, sys_out)
         self.assertEqual("", output)
 
@@ -647,9 +647,8 @@ class WorkbookNotifyCellsChanged(unittest.TestCase):
         wb.notify_cells_changed(on_cells_changed)
         wb.set_cell_contents("Sheet1", "A1", "=5")
         output = restore_stdout(new_stdo, sys_out)
-        expected = "[('Sheet1', 'A1'), ('Sheet1', 'B1'), ('Sheet1', 'C1'), " \
-            "('Sheet1', 'C2'), ('Sheet1', 'B2'), ('Sheet1', 'C3'), " \
-            "('Sheet1', 'C4')]\n"
+        expected = "[('Sheet1', 'A1'), ('Sheet1', 'B2'), ('Sheet1', 'C4')," \
+            " ('Sheet1', 'C3'), ('Sheet1', 'B1'), ('Sheet1', 'C2'), ('Sheet1', 'C1')]\n"
         self.assertEqual(expected, output)
 
     def test_delete_notify1(self):
@@ -736,6 +735,8 @@ class WorkbookNotifyCellsChanged(unittest.TestCase):
         ), sheets.cell_error.CellErrorType.CIRCULAR_REFERENCE)
         expected = "[('Sheet1', 'A1')]\n[('sheet1_1', 'A1'), ('Sheet1', 'A1')]\n"
         self.assertEqual(expected, output)
+
+
 
 
 if __name__ == "__main__":

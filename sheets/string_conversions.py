@@ -2,10 +2,11 @@
 Module containing functions involving converting strings between ints,
 errors, and numbers. Also contains method to strip zeros from string num. 
 """
+import re
 import decimal
-from typing import Tuple
+from typing import Tuple, Any, Union
 from functools import cache
-from sheets import cell_error
+from sheets import cell_error, unitialized_value
 
 
 ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
@@ -155,17 +156,63 @@ def strip_evaluation(evaluation):
         return decimal.Decimal(stripped)
     return evaluation
 
+
 def is_bool_expr(expr: str):
-    if expr.lower() == "false" or expr.lower() == "true":
-        return True
-    else:
-        return False
+    return bool(expr.lower() == "false" or expr.lower() == "true")
+
 
 def is_true_expr(expr: str):
-    if expr.lower() == "true":
-        return True
-    else:
+    return bool(expr.lower() == "true")
+
+
+def check_valid_location(location: str) -> bool:
+    """
+    Determine if a cell location is witin the range of ZZZZ9999.
+
+    Args:
+        location (str): string location on the sheet.
+
+    Returns:
+        bool: if the input location is in-bounds.
+    """
+    # Ensure a letter and number is specified
+    if not re.match(r'(?<!")\$?[A-Za-z]+\$?[1-9][0-9]*(?!")', location):
         return False
+    col, row = str_to_tuple(location)
+    if col > 475254 or row > 9999:
+        return False
+    if len(location.strip()) != len(location):
+        return False
+    return True
 
 
-    
+def check_for_true_arg(arg: Any) -> Union[bool, cell_error.CellError]:
+    """
+    Check if a function argument is True, or some equivalent evaluation to True. 
+
+    Args:
+        arg (Any): argument to check
+
+    Returns:
+        Union[bool, cell_error.CellError]: either the boolean value of the input, or a CellError
+        object if an invalid input is provided. 
+    """
+    if isinstance(arg, unitialized_value.UninitializedValue):
+        return False
+    if isinstance(arg, bool) and not arg:
+        return False
+    if isinstance(arg, cell_error.CellError):
+        return arg
+    if isinstance(arg, decimal.Decimal):
+        if arg == decimal.Decimal(0):
+            return False
+    if isinstance(arg, str) and is_number(arg):
+        if decimal.Decimal(arg) == decimal.Decimal(0):
+            return False
+    if isinstance(arg, str):
+        if arg.lower() == "false":
+            return False
+        if arg.lower() != "true":
+            return cell_error.CellError(
+                cell_error.CellErrorType.TYPE_ERROR, "Invalid string argument")
+    return True
