@@ -119,8 +119,7 @@ class FormulaEvaluator(lark.visitors.Interpreter):
                         ce = cell_error.CellError(
                             cell_error.CellErrorType.CIRCULAR_REFERENCE, "circular reference")
                         ce.circref_type = values[i].circref_type
-                        errs[cell_error.CellErrorType.CIRCULAR_REFERENCE.value] = \
-                            ce
+                        errs[cell_error.CellErrorType.CIRCULAR_REFERENCE.value] = ce
                     case cell_error.CellErrorType.BAD_REFERENCE:
                         errs[cell_error.CellErrorType.BAD_REFERENCE.value] = cell_error.CellError(
                             cell_error.CellErrorType.BAD_REFERENCE, "bad reference")
