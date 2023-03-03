@@ -721,5 +721,16 @@ class FunctionTests(unittest.TestCase):
         self.assertEqual(wb.get_cell_value("Sheet1", "A1").get_type(
         ), sheets.cell_error.CellErrorType.BAD_NAME)
 
+    def test_isblank_empty_string(self):
+        wb = sheets.Workbook()
+        wb.new_sheet()
+        wb.set_cell_contents("sheet1", "A1", "=ISBLANK(B1)")
+        wb.set_cell_contents("sheet1", "B1", "'")
+        self.assertEqual(wb.get_cell_value("sheet1", "A1"), False)
+        wb.set_cell_contents("sheet1", "B1", "=INDIRECT(C1)")
+        wb.set_cell_contents("sheet1", "C1", "D1")
+        wb.set_cell_contents("sheet1", "D1", "'")
+        self.assertEqual(wb.get_cell_value("sheet1", "A1"), False)
+        
 if __name__ == "__main__":
     unittest.main()

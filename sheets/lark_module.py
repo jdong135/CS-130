@@ -331,8 +331,6 @@ class FormulaEvaluator(lark.visitors.Interpreter):
             cell_ref = self.visit(
                 get_tree(self.parser, "=" + func.args[0]))
             func.args[0] = cell_ref
-        elif func.name == "ISBLANK":
-            pass
         return self.wb.function_directory.call_function(func)
 
     @visit_children_decor
@@ -378,8 +376,8 @@ class FormulaEvaluator(lark.visitors.Interpreter):
         # cell exists at location but is empty
         val = sheet.cells[location].value
         if not val and not isinstance(val, bool):
-            ret_val = val \
-                if val == decimal.Decimal(0) else unitialized_value.UninitializedValue()
+            ret_val = val if val in (
+                decimal.Decimal(0), "") else unitialized_value.UninitializedValue()
         else:
             ret_val = val
         return ret_val
