@@ -747,6 +747,16 @@ class FunctionTests(unittest.TestCase):
         self.assertEqual(wb.get_cell_value("sheet1", "A1"), False)
         wb.set_cell_contents("sheet1", "A1", "=EXACT(False, \"FALSE\")")
         self.assertEqual(wb.get_cell_value("sheet1", "A1"), False)
-        
+
+    def test_indirect_bool_arithmetic(self):
+        wb = sheets.Workbook()
+        wb.new_sheet()
+        wb.set_cell_contents("sheet1", "A1", "=INDIRECT(C1) + 3 * INDIRECT(D1)")
+        wb.set_cell_contents("sheet1", "B1", "=TRUE")
+        wb.set_cell_contents("sheet1", "C1", "B1")
+        wb.set_cell_contents("sheet1", "D1", "=C1")
+        self.assertEqual(wb.get_cell_value("sheet1", "A1"), decimal.Decimal("4"))
+
+
 if __name__ == "__main__":
     unittest.main()

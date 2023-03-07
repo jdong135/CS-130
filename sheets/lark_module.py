@@ -88,7 +88,7 @@ class FormulaEvaluator(lark.visitors.Interpreter):
             if isinstance(value, decimal.Decimal):
                 res[i] = value
             elif isinstance(value, bool):
-                res[i] = 1 if value else 0
+                res[i] = decimal.Decimal(1) if value else decimal.Decimal(0)
             elif isinstance(value, unitialized_value.UninitializedValue):
                 continue
             elif value and string_conversions.is_number(value):
