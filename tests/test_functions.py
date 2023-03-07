@@ -735,6 +735,18 @@ class FunctionTests(unittest.TestCase):
         wb.set_cell_contents("sheet1", "C1", "D1")
         wb.set_cell_contents("sheet1", "D1", "'")
         self.assertEqual(wb.get_cell_value("sheet1", "A1"), False)
+
+    def test_exact_multiple_types(self):
+        wb = sheets.Workbook()
+        wb.new_sheet()
+        wb.set_cell_contents("sheet1", "A1", "=EXACT(True, \"True\")")
+        self.assertEqual(wb.get_cell_value("sheet1", "A1"), False)
+        wb.set_cell_contents("sheet1", "A1", "=EXACT(True, \"TRUE\")")
+        self.assertEqual(wb.get_cell_value("sheet1", "A1"), False)
+        wb.set_cell_contents("sheet1", "A1", "=EXACT(False, \"False\")")
+        self.assertEqual(wb.get_cell_value("sheet1", "A1"), False)
+        wb.set_cell_contents("sheet1", "A1", "=EXACT(False, \"FALSE\")")
+        self.assertEqual(wb.get_cell_value("sheet1", "A1"), False)
         
 if __name__ == "__main__":
     unittest.main()

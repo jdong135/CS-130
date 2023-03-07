@@ -10,6 +10,13 @@ from lark.exceptions import UnexpectedInput
 from sheets import cell_error, cell, string_conversions, unitialized_value, functions
 
 
+import logging
+logging.basicConfig(filename="logs/results.log",
+                    format='%(asctime)s %(message)s',
+                    filemode='w')
+logger = logging.getLogger()
+logger.setLevel(logging.DEBUG)
+
 class FormulaEvaluator(lark.visitors.Interpreter):
     """
     This class evaluates cell contents that begin with "=".
