@@ -235,9 +235,9 @@ class FormulaEvaluator(lark.visitors.Interpreter):
             original_types_equal = True
         if isinstance(left, str):
             left = left.lower()
-            if left == "true":
+            if left == "true" and not isinstance(right, bool):
                 left = True
-            elif left == "false":
+            elif left == "false" and not isinstance(right, bool):
                 left = False
         elif isinstance(left, unitialized_value.UninitializedValue):
             if isinstance(right, str):
@@ -248,9 +248,9 @@ class FormulaEvaluator(lark.visitors.Interpreter):
                 left = False
         if isinstance(right, str):
             right = right.lower()
-            if right == "true":
+            if right == "true" and not isinstance(left, bool):
                 right = True
-            elif right == "false":
+            elif right == "false" and not isinstance(left, bool):
                 right = False
         elif isinstance(right, unitialized_value.UninitializedValue):
             if isinstance(left, str):
