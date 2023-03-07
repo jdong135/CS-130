@@ -223,6 +223,9 @@ class FormulaEvaluator(lark.visitors.Interpreter):
         if potential_error:
             return potential_error
         left, operator, right = values
+        original_types_equal = False
+        if type(left) == type(right):
+            original_types_equal = True
         if isinstance(left, str):
             left = left.lower()
             if left == "true":
@@ -250,9 +253,9 @@ class FormulaEvaluator(lark.visitors.Interpreter):
             elif isinstance(left, bool):
                 right = False
         if operator in ("=", "=="):
-            return left == right
+            return left == right and original_types_equal
         if operator in ("<>", "!="):
-            return left != right
+            return left != right or not original_types_equal
         if operator == ">":
             return self.__bool_cmpr(left, right, lambda x, y: x > y, '>')
         if operator == ">=":
@@ -353,7 +356,7 @@ class FormulaEvaluator(lark.visitors.Interpreter):
             return cell_error.CellError(cell_error.CellErrorType.BAD_REFERENCE, "invalid location")
         if self.calling_cell and self.calling_cell.sheet.name.lower() == sheet_name \
                 and self.calling_cell.location == location:
-            ce =  cell_error.CellError(
+            ce = cell_error.CellError(
                 cell_error.CellErrorType.CIRCULAR_REFERENCE, "circular reference")
             ce.circref_type = True
             return ce

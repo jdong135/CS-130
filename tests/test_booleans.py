@@ -10,6 +10,7 @@ class BooleanTests(unittest.TestCase):
     """
     Tests for booleans in lark module.
     """
+
     def test_basic_bool_inputs(self):
         wb = sheets.Workbook()
         wb.new_sheet()
@@ -55,6 +56,22 @@ class BooleanTests(unittest.TestCase):
         wb.set_cell_contents('sheet1', 'a1', '\'tru')
         wb.set_cell_contents('sheet1', 'b1', '=A1 & "e"')
         self.assertEqual(wb.get_cell_value('sheet1', 'b1'), "true")
+
+    def test_equality_of_diff_types(self):
+        wb = sheets.Workbook()
+        wb.new_sheet()
+        wb.set_cell_contents('sheet1', 'a1', '=True == "True"')
+        self.assertEqual(wb.get_cell_value('sheet1', 'a1'), False)
+        wb.set_cell_contents('sheet1', 'a1', '=True = "True"')
+        self.assertEqual(wb.get_cell_value('sheet1', 'a1'), False)
+
+    def test_inequality_of_diff_types(self):
+        wb = sheets.Workbook()
+        wb.new_sheet()
+        wb.set_cell_contents('sheet1', 'a1', '=True != "True"')
+        self.assertEqual(wb.get_cell_value('sheet1', 'a1'), True)
+        wb.set_cell_contents('sheet1', 'a1', '=True <> "True"')
+        self.assertEqual(wb.get_cell_value('sheet1', 'a1'), True)
 
 
 if __name__ == "__main__":
