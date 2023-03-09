@@ -7,8 +7,15 @@ import json
 import re
 from contextlib import contextmanager, suppress
 from sheets import cell, topo_sort, cell_error, lark_module, sheet, \
-    string_conversions, unitialized_value, tarjan
+    string_conversions, unitialized_value, tarjan, row
 from sheets.functions import FunctionDirectory
+
+import logging
+logging.basicConfig(filename="logs/results.log",
+                    format='%(asctime)s %(message)s',
+                    filemode='w')
+logger = logging.getLogger()
+logger.setLevel(logging.DEBUG)
 
 
 ALLOWED_PUNC = set([".", "?", "!", ",", ":", ";", "@", "#",
@@ -554,8 +561,8 @@ class Workbook:
                 if len(island) > 1:
                     for c in island:
                         cell_dependents.append(c)
-                        c.set_fields(value=cell_error.CellError(\
-                        cell_error.CellErrorType.CIRCULAR_REFERENCE, \
+                        c.set_fields(value=cell_error.CellError(
+                            cell_error.CellErrorType.CIRCULAR_REFERENCE,
                             "circular reference"))
                 else:
                     c = island[0]
@@ -962,3 +969,40 @@ class Workbook:
             affected_cells = self.__copy_cell_block(spreadsheet, start_location,
                                                     end_location, to_location, to_sheet, False)
         self.__generate_notifications(affected_cells)
+
+    def sort_region(self, sheet_name: str, start_location: str, end_location: str, sort_cols: List[int]):
+        if sheet_name.lower() not in self.spreadsheets:
+            raise KeyError(f"{sheet_name} is invalid")
+        spreadsheet = self.spreadsheets[sheet_name.lower()]
+        for location in [start_location, end_location]:
+            if not string_conversions.check_valid_location(location):
+                raise ValueError(f"Cell location {location} is invalid")
+        unique_cols = set()
+        for col in sort_cols:
+            if abs(col) in unique_cols:
+                raise ValueError("Duplicate sort col provided")
+            unique_cols.add(abs(col))
+        start_location = start_location.upper()
+        end_location = end_location.upper()
+        top_left_col, top_left_row, bottom_right_col, bottom_right_row = \
+            self.__get_selection_corners(start_location, end_location)
+
+        row_list = []
+        for i in range(top_left_row, bottom_right_row + 1):
+            cur_row = []  # list of Cell objects
+            for j in range(top_left_col, bottom_right_col + 1):
+                start_cell_col = string_conversions.num_to_col(j)
+                cell_loc = start_cell_col + str(i)
+                cur_row.append(spreadsheet.cells[cell_loc])
+            row_list.append(row.Row(sort_cols, i, cur_row))
+            # logger.info('Cur row')
+            # for c in row_list[-1].sorting_cell_list:
+            #     logger.info(f'{c}')
+            # logger.info(f'End cur row')
+
+        row_list.sort()
+        for r in row_list:
+            logger.info('---')
+            for c in r.cell_list:
+                logger.info(c)
+            logger.info('---')

@@ -2,6 +2,7 @@
 
 import enum
 import uuid
+from sheets import unitialized_value
 
 
 class CellType(enum.Enum):
@@ -20,9 +21,24 @@ class Cell:
     Cells are uniquely identified by the sheet they're in and their location.
     """
 
+    def __repr__(self):
+        return f"Cell location: {self.location}\tCell value: {self.value}"
+
     def __eq__(self, obj):
         """Override equality for user defined class"""
         return isinstance(obj, Cell) and obj.__dict__ == self.__dict__
+
+    def __lt__(self, obj):
+        assert isinstance(obj, Cell)
+        # boolean > str > decimal > error > uninitialized (blank)
+        # if isinstance(obj.value, unitialized_value.UninitializedValue):
+        #     if isinstance(self.value, unitialized_value.UninitializedValue):
+        #         return True
+        #     return False
+        # if isinstance(self.value, unitialized_value.UninitializedValue):
+        #     return True
+        if type(self.value) == type(obj.value):
+            return self.value < obj.value
 
     def __hash__(self):
         """Hash based off of the cell's sheet's id and the cell's location"""
