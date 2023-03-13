@@ -395,7 +395,7 @@ class FunctionTests(unittest.TestCase):
         expected = ["'Sheet1', 'A1'", "'Sheet1', 'A2'", "'Sheet1', 'B1'"]
         self.assertEqual(expected, output)
 
-    def test_iferror_circ_ref(self):
+    def test_iserror_circ_ref(self):
         wb = sheets.Workbook()
         wb.new_sheet()
         wb.set_cell_contents("Sheet1", "A1", "=ISERROR(A1)")
@@ -771,6 +771,13 @@ class FunctionTests(unittest.TestCase):
         wb.set_cell_contents("sheet1", "A2", "=INDIRECT(sheet2!A1)")
         self.assertEqual(wb.get_cell_value("sheet1", "A1"), "B10")
         self.assertEqual(wb.get_cell_value("sheet1", "A2"), decimal.Decimal(0))
+
+    def test_iferror_circ_ref(self):
+        wb = sheets.Workbook()
+        wb.new_sheet()
+        wb.set_cell_contents("sheet1", "A1", "=iferror(A1)")
+        self.assertEqual(wb.get_cell_value('sheet1', 'A1').get_type(
+        ), sheets.cell_error.CellErrorType.CIRCULAR_REFERENCE)
 
 
 if __name__ == "__main__":

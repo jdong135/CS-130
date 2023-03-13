@@ -306,6 +306,8 @@ class FormulaEvaluator(lark.visitors.Interpreter):
                         cell_error.CellErrorType.TYPE_ERROR, "Invalid argument count")
                 with self.__ignore_error_literals():
                     res = self.visit(values.children[1])
+                if isinstance(res, cell_error.CellError) and res.get_type() == cell_error.CellErrorType.CIRCULAR_REFERENCE:
+                    return cell_error.CellError(cell_error.CellErrorType.CIRCULAR_REFERENCE, "Circular Reference")
                 if not isinstance(res, cell_error.CellError):
                     func.args.append(res)
                 elif len(values.children[1:]) == 2:
