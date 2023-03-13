@@ -1020,30 +1020,23 @@ class Workbook:
                     item2 = item2.value
                 val1 = type_map[type(item1)]
                 val2 = type_map[type(item2)]
-                logger.info(f'{item1}: {val1}, {item2}: {val2}')
                 reverse = obj1.rev_list[idx]
                 return_val = None
-                if isinstance(item1, unitialized_value.UninitializedValue):
-                    if not isinstance(item2, unitialized_value.UninitializedValue):
-                        return -1
-                elif type(item1) == type(item2):
-                    # What happens if both are cell errors? Do we go by enum ordering?
-                    if item1 < item2:
+                if val1 == val2:
+                    if val1 == 2:
+                        if item1._error_type.value < item2._error_type.value:
+                            return_val = -1
+                        elif item1._error_type.value > item2._error_type.value:
+                            return_val = 1
+                    elif val1 != 1:
+                        if item1 < item2:
+                            return_val = -1
+                        elif item1 > item2:
+                            return_val = 1
+                else:
+                    if val1 < val2:
                         return_val = -1
-                    elif item1 > item2:
-                        return_val = 1
-                elif isinstance(item1, cell_error.CellError):
-                    if isinstance(item2, unitialized_value.UninitializedValue):
-                        return_val = 1
-                    else:
-                        return_val = -1
-                elif isinstance(item1, str):
-                    if isinstance(item2, Decimal):
-                        return_val = 1
-                elif isinstance(item1, Decimal):
-                    if isinstance(item2, str):
-                        return_val = -1
-                    elif isinstance(item2, unitialized_value.UninitializedValue):
+                    elif val1 > val2:
                         return_val = 1
 
                 # If return value isn't null, return -1 or 1
