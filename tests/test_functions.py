@@ -12,6 +12,7 @@ class FunctionTests(unittest.TestCase):
     """
     Tests for Functions in lark
     """
+
     def test_bad_func_name(self):
         wb = sheets.Workbook()
         wb.new_sheet()
@@ -558,7 +559,8 @@ class FunctionTests(unittest.TestCase):
     def test_logic_error_propagation(self):
         wb = sheets.Workbook()
         wb.new_sheet()
-        wb.set_cell_contents("sheet1", "A1", "=NOT(AND(1, 2, XOR(1, 2, (OR(1, 1/0)), 1)))")
+        wb.set_cell_contents(
+            "sheet1", "A1", "=NOT(AND(1, 2, XOR(1, 2, (OR(1, 1/0)), 1)))")
         self.assertEqual(wb.get_cell_value('sheet1', 'a1').get_type(
         ), sheets.cell_error.CellErrorType.DIVIDE_BY_ZERO)
 
@@ -703,7 +705,8 @@ class FunctionTests(unittest.TestCase):
     def test_exact_nested_if(self):
         wb = sheets.Workbook()
         wb.new_sheet()
-        wb.set_cell_contents("sheet1", "A1", "=EXACT(IF(B1, C1, D1), IF(B2, C2, D2))")
+        wb.set_cell_contents(
+            "sheet1", "A1", "=EXACT(IF(B1, C1, D1), IF(B2, C2, D2))")
         wb.set_cell_contents("sheet1", "C1", "dog")
         wb.set_cell_contents("sheet1", "C2", "=BADFUNC(1)")
         wb.set_cell_contents("sheet1", "D1", "=1/0")
@@ -751,11 +754,23 @@ class FunctionTests(unittest.TestCase):
     def test_indirect_bool_arithmetic(self):
         wb = sheets.Workbook()
         wb.new_sheet()
-        wb.set_cell_contents("sheet1", "A1", "=INDIRECT(C1) + 3 * INDIRECT(D1)")
+        wb.set_cell_contents(
+            "sheet1", "A1", "=INDIRECT(C1) + 3 * INDIRECT(D1)")
         wb.set_cell_contents("sheet1", "B1", "=TRUE")
         wb.set_cell_contents("sheet1", "C1", "B1")
         wb.set_cell_contents("sheet1", "D1", "=C1")
-        self.assertEqual(wb.get_cell_value("sheet1", "A1"), decimal.Decimal("4"))
+        self.assertEqual(wb.get_cell_value(
+            "sheet1", "A1"), decimal.Decimal("4"))
+
+    def test_indirect_diff_sheet(self):
+        wb = sheets.Workbook()
+        wb.new_sheet()
+        wb.new_sheet()
+        wb.set_cell_contents("sheet2", "A1", "B10")
+        wb.set_cell_contents("sheet1", "A1", "=INDIRECT(\"sheet2!A1\")")
+        wb.set_cell_contents("sheet1", "A2", "=INDIRECT(sheet2!A1)")
+        self.assertEqual(wb.get_cell_value("sheet1", "A1"), "B10")
+        self.assertEqual(wb.get_cell_value("sheet1", "A2"), decimal.Decimal(0))
 
 
 if __name__ == "__main__":
