@@ -9,6 +9,7 @@ from contextlib import contextmanager, suppress
 from sheets import cell, topo_sort, cell_error, lark_module, sheet, \
     string_conversions, unitialized_value, tarjan, row
 from sheets.functions import FunctionDirectory
+from functools import cmp_to_key
 
 import logging
 logging.basicConfig(filename="logs/results.log",
@@ -993,14 +994,68 @@ class Workbook:
             for j in range(top_left_col, bottom_right_col + 1):
                 start_cell_col = string_conversions.num_to_col(j)
                 cell_loc = start_cell_col + str(i)
-                cur_row.append(spreadsheet.cells[cell_loc])
+                if cell_loc in spreadsheet.cells:
+                    cur_row.append(spreadsheet.cells[cell_loc])
+                else:
+                    cur_row.append(unitialized_value.UninitializedValue())
             row_list.append(row.Row(sort_cols, i, cur_row))
-            # logger.info('Cur row')
-            # for c in row_list[-1].sorting_cell_list:
-            #     logger.info(f'{c}')
-            # logger.info(f'End cur row')
 
-        row_list.sort()
+        # Make hashmap from type to number
+        # Use map to compare types
+        def compare(obj1, obj2):
+            # boolean > str > decimal > error > uninitialized (blank)
+            type_map = {
+                unitialized_value.UninitializedValue: 1,
+                cell_error.CellError: 2,
+                Decimal: 3,
+                str: 4,
+                bool: 5
+            }
+            for i in obj1.sort_cols:
+                idx = abs(i) - 1
+                item1, item2 = obj1.cell_list[idx], obj2.cell_list[idx]
+                if isinstance(item1, cell.Cell):
+                    item1 = item1.value
+                if isinstance(item2, cell.Cell):
+                    item2 = item2.value
+                val1 = type_map[type(item1)]
+                val2 = type_map[type(item2)]
+                logger.info(f'{item1}: {val1}, {item2}: {val2}')
+                reverse = obj1.rev_list[idx]
+                return_val = None
+                if isinstance(item1, unitialized_value.UninitializedValue):
+                    if not isinstance(item2, unitialized_value.UninitializedValue):
+                        return -1
+                elif type(item1) == type(item2):
+                    # What happens if both are cell errors? Do we go by enum ordering?
+                    if item1 < item2:
+                        return_val = -1
+                    elif item1 > item2:
+                        return_val = 1
+                elif isinstance(item1, cell_error.CellError):
+                    if isinstance(item2, unitialized_value.UninitializedValue):
+                        return_val = 1
+                    else:
+                        return_val = -1
+                elif isinstance(item1, str):
+                    if isinstance(item2, Decimal):
+                        return_val = 1
+                elif isinstance(item1, Decimal):
+                    if isinstance(item2, str):
+                        return_val = -1
+                    elif isinstance(item2, unitialized_value.UninitializedValue):
+                        return_val = 1
+
+                # If return value isn't null, return -1 or 1
+                if return_val and reverse:
+                    return -1 * return_val
+                elif return_val:
+                    return return_val
+            # All checks for inequality fail, two lists must be equal
+            return 0
+
+        # row_list.sort(key=compare)
+        row_list = sorted(row_list, key=cmp_to_key(compare))
         for r in row_list:
             logger.info('---')
             for c in r.cell_list:

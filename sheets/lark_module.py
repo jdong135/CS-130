@@ -17,6 +17,7 @@ logging.basicConfig(filename="logs/results.log",
 logger = logging.getLogger()
 logger.setLevel(logging.DEBUG)
 
+
 class FormulaEvaluator(lark.visitors.Interpreter):
     """
     This class evaluates cell contents that begin with "=".
@@ -334,7 +335,11 @@ class FormulaEvaluator(lark.visitors.Interpreter):
             if not isinstance(func.args[0], str):
                 return cell_error.CellError(
                     cell_error.CellErrorType.BAD_REFERENCE, "Bad reference")
-            if not string_conversions.check_valid_location(func.args[0]):
+            if '!' in func.args[0]:
+                exclamation_idx = func.args[0].index('!')
+            else:
+                exclamation_idx = -1
+            if not string_conversions.check_valid_location(func.args[0][exclamation_idx + 1:]):
                 return cell_error.CellError(
                     cell_error.CellErrorType.BAD_REFERENCE, "Bad reference")
             cell_ref = self.visit(

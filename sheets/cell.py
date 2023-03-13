@@ -3,6 +3,7 @@
 import enum
 import uuid
 from sheets import unitialized_value
+import decimal
 
 
 class CellType(enum.Enum):
