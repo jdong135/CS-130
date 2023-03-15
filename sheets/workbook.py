@@ -1093,7 +1093,7 @@ class Workbook:
                             re.escape(loc), new_loc, c.contents, flags=re.IGNORECASE)
                 if isinstance(c, unitialized_value.UninitializedValue):
                     self.set_cell_contents(
-                        sheet_name.lower(), new_location, unitialized_value.UninitializedValue)
+                        sheet_name.lower(), new_location, "")
                 else:
                     self.set_cell_contents(
                         sheet_name.lower(), new_location, c.contents)
