@@ -1056,7 +1056,13 @@ class Workbook:
         #         logger.info(c)
         #     logger.info('---')
 
-        # HANDLE UNINITIALIZED VALUES WHEN ACCESSING C.LOCATION
+        # Initially set block to uninitialized values (ignore notifications)
+        for j in range(top_left_col, bottom_right_col + 1):
+            column = string_conversions.num_to_col(j)
+            for i in range(top_left_row, bottom_right_row + 1):
+                location = column + str(i)
+                self.set_cell_contents(sheet_name.lower(), location, "")
+
         for i, row_obj in enumerate(row_list):
             for j, c in enumerate(row_obj.cell_list):
                 new_row = top_left_row + i
@@ -1091,16 +1097,14 @@ class Workbook:
                         # Normally, you'd have to escape $A$1 like \$A\$1
                         c.contents = re.sub(
                             re.escape(loc), new_loc, c.contents, flags=re.IGNORECASE)
-                if isinstance(c, unitialized_value.UninitializedValue):
-                    self.set_cell_contents(
-                        sheet_name.lower(), new_location, "")
-                else:
+
+                if not isinstance(c, unitialized_value.UninitializedValue):
                     self.set_cell_contents(
                         sheet_name.lower(), new_location, c.contents)
 
-        # for r in range(1, 4):
-        #     for c in ['A', 'B', 'C']:
-        #         loc = c + str(r)
-        #         val = self.get_cell_value(spreadsheet.name, loc)
-        #         cont = self.get_cell_contents(spreadsheet.name, loc)
-        #         logger.info(f'{loc}: ({cont}, {val})')
+        for r in range(1, 5):
+            for c in ['A', 'B', 'C']:
+                loc = c + str(r)
+                val = self.get_cell_value(spreadsheet.name, loc)
+                cont = self.get_cell_contents(spreadsheet.name, loc)
+                logger.info(f'{loc}: ({cont}, {val})')
