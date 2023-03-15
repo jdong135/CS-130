@@ -22,3 +22,20 @@ class UninitializedValue():
 
     def __str__(self):
         return ""
+    
+class EmptySortCell():
+    """
+    Placeholder value for any empty cell during sort.
+    """
+
+    def __init__(self):
+        return
+
+    def __eq__(self, other):
+        return isinstance(other, EmptySortCell)
+
+    def __ne__(self, other):
+        return not isinstance(other, EmptySortCell)
+
+    def __str__(self):
+        return ""

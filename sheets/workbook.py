@@ -1001,13 +1001,15 @@ class Workbook:
                     deep_copy = copy.deepcopy(spreadsheet.cells[cell_loc])
                     cur_row.append(deep_copy)
                 else:
-                    cur_row.append(unitialized_value.UninitializedValue())
+                    cur_row.append(unitialized_value.EmptySortCell())
             row_list.append(row.Row(sort_cols, i, cur_row))
 
         def compare(obj1, obj2):
             # boolean > str > decimal > error > uninitialized (blank)
             type_map = {
-                unitialized_value.UninitializedValue: 1,
+                unitialized_value.EmptySortCell: 1,
+                unitialized_value.UninitializedValue : 1,
+                type(None) : 1,
                 cell_error.CellError: 2,
                 Decimal: 3,
                 str: 4,
@@ -1068,7 +1070,7 @@ class Workbook:
                 new_row = top_left_row + i
                 new_col = string_conversions.num_to_col(top_left_col + j)
                 new_location = new_col + str(new_row)
-                if not isinstance(c, unitialized_value.UninitializedValue):
+                if not isinstance(c, unitialized_value.EmptySortCell) and c.cell_type == cell.CellType.FORMULA:
                     old_col, old_row = string_conversions.str_to_tuple(
                         c.location)
                     delta_row = new_row - old_row
@@ -1082,9 +1084,9 @@ class Workbook:
                         # In the regex, () defines the two groups
                         match = re.match(
                             r"(\$?[A-Za-z]+)(\$?[1-9][0-9]*)", loc)
+                        col_match = match.group(1)
                         row_match = match.group(2)
-                        new_loc = string_conversions.num_to_col(
-                            top_left_col + j)
+                        new_loc = col_match
                         if row_match[0] != "$":
                             # row_match = top_left_row + i
                             row_match = delta_row + int(row_match)
@@ -1098,7 +1100,7 @@ class Workbook:
                         c.contents = re.sub(
                             re.escape(loc), new_loc, c.contents, flags=re.IGNORECASE)
 
-                if not isinstance(c, unitialized_value.UninitializedValue):
+                if not isinstance(c, unitialized_value.EmptySortCell):
                     self.set_cell_contents(
                         sheet_name.lower(), new_location, c.contents)
 
