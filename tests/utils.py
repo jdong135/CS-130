@@ -5,6 +5,8 @@ Utility functions and helpers for test files.
 import sys
 import io
 import re
+import decimal
+from context import sheets
 from typing import Tuple, TextIO, List
 
 
@@ -63,5 +65,29 @@ def sort_notify_list(notify_list: str) -> List[str]:
 
 
 def on_cells_changed(workbook, cells_changed):
+    """Standard notification function."""
     _ = workbook
     print(cells_changed)
+
+def block_equal(wb, unittest, vals, sheet_name=None):
+    """
+    Assert that a block of values in the A-B-C columns are equal to a provided list
+    of values, which are ordered as (A1, B1, C1, A2, B2, ...). If a value is a CellError,
+    compare with its type.
+
+    Args:
+        wb (Workbook): Instance of workbook class
+        unittest (WorkbookSortCells): Instance of unittesting class
+        vals (List[Any]): list of values to check
+    """
+    cols_by_mod = {0: 'A', 1: 'B', 2: 'C'}
+    if not sheet_name:
+        sheet_name = "sheet1"
+    for i in range(len(vals)):
+        loc = str(cols_by_mod[i % 3]) + str((i // 3) + 1)
+        value = wb.get_cell_value(sheet_name, loc)
+        if isinstance(value, sheets.cell_error.CellError):
+            value = value.get_type()
+        if isinstance(vals[i], (int, float)):
+            vals[i] = decimal.Decimal(vals[i])
+        unittest.assertEqual(value, vals[i])
