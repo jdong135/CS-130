@@ -973,6 +973,8 @@ class Workbook:
         self.__generate_notifications(affected_cells)
 
     def sort_region(self, sheet_name: str, start_location: str, end_location: str, sort_cols: List[int]):
+        if len(sort_cols) == 0:
+            raise KeyError("Must have at least one sort_col")
         if sheet_name.lower() not in self.spreadsheets:
             raise KeyError(f"{sheet_name} is invalid")
         spreadsheet = self.spreadsheets[sheet_name.lower()]
@@ -1091,9 +1093,9 @@ class Workbook:
                 self.set_cell_contents(
                     sheet_name.lower(), new_location, c.contents)
 
-        for r in range(1, 4):
-            for c in ['A', 'B', 'C']:
-                loc = c + str(r)
-                val = self.get_cell_value(spreadsheet.name, loc)
-                cont = self.get_cell_contents(spreadsheet.name, loc)
-                logger.info(f'{loc}: ({cont}, {val})')
+        # for r in range(1, 4):
+        #     for c in ['A', 'B', 'C']:
+        #         loc = c + str(r)
+        #         val = self.get_cell_value(spreadsheet.name, loc)
+        #         cont = self.get_cell_contents(spreadsheet.name, loc)
+        #         logger.info(f'{loc}: ({cont}, {val})')
