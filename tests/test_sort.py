@@ -60,26 +60,26 @@ class WorkbookSortCells(unittest.TestCase):
         #  4  | 2000|    1|    3|
         wb.sort_region('Sheet1', 'A1', 'C4', [-1])
 
-    # def test_sort_uninitialized(self):
-    #     wb = sheets.Workbook()
-    #     wb.new_sheet()
-    #     wb.set_cell_contents("sheet1", "A1", "7")
-    #     wb.set_cell_contents("sheet1", "B1", "8")
-    #     wb.set_cell_contents("sheet1", "C1", "3")
-    #     wb.set_cell_contents("sheet1", "B2", "20")
-    #     wb.set_cell_contents("sheet1", "C2", "6")
-    #     wb.set_cell_contents("sheet1", "A3", "STRING")
-    #     wb.set_cell_contents("sheet1", "B3", "4")
-    #     wb.set_cell_contents("sheet1", "C3", "8")
-    #     wb.set_cell_contents("sheet1", "A4", "2000")
-    #     wb.set_cell_contents("sheet1", "B4", "1")
-    #     wb.set_cell_contents("sheet1", "C4", "3")
-    #     #     |  A  |  B  |  C  |
-    #     #  1  |    7|    8|    3|
-    #     #  2  |     |    6|    6|
-    #     #  3  |STRIN|    4|    8|
-    #     #  4  | 2000|    1|    3|
-    #     wb.sort_region('Sheet1', 'A1', 'C4', [1])
+    def test_sort_uninitialized(self):
+        wb = sheets.Workbook()
+        wb.new_sheet()
+        wb.set_cell_contents("sheet1", "A1", "7")
+        wb.set_cell_contents("sheet1", "B1", "8")
+        wb.set_cell_contents("sheet1", "C1", "3")
+        wb.set_cell_contents("sheet1", "B2", "20")
+        wb.set_cell_contents("sheet1", "C2", "6")
+        wb.set_cell_contents("sheet1", "A3", "STRING")
+        wb.set_cell_contents("sheet1", "B3", "4")
+        wb.set_cell_contents("sheet1", "C3", "8")
+        wb.set_cell_contents("sheet1", "A4", "2000")
+        wb.set_cell_contents("sheet1", "B4", "1")
+        wb.set_cell_contents("sheet1", "C4", "3")
+        #     |  A  |  B  |  C  |
+        #  1  |    7|    8|    3|
+        #  2  |     |    6|    6|
+        #  3  |STRIN|    4|    8|
+        #  4  | 2000|    1|    3|
+        wb.sort_region('Sheet1', 'A1', 'C4', [1])
 
     def test_sort_error(self):
         wb = sheets.Workbook()
@@ -142,6 +142,13 @@ class WorkbookSortCells(unittest.TestCase):
                             [3, 7, 1, 
                             6, 7, 1, 
                             2, 9, 10])
+
+    def test_sort_single_cell(self):
+        wb = sheets.Workbook()
+        wb.new_sheet()
+        wb.set_cell_contents("sheet1", "A1", "3")
+        wb.sort_region('Sheet1', 'A1', 'A1', [1])
+        block_equal(wb, self, [3])
 
 
 if __name__ == "__main__":
