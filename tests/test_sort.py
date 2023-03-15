@@ -33,10 +33,10 @@ class WorkbookSortCells(unittest.TestCase):
         #  3  |    7|    4|    8|
         #  4  | 2000|    1|    3|
         wb.sort_region('Sheet1', 'A1', 'C4', [1, -2])
-        block_equal(wb, self, [7,    20, 6,
-                               7,    8,  3,
-                               7,    4,  8,
-                               2000, 1,  3])
+        block_equal(wb, self, [7, 20, 6,
+                               7, 8, 3,
+                               7, 4, 8,
+                               2000, 1, 3])
 
     def test_sort_str_and_ints_sort(self):
         wb = sheets.Workbook()
@@ -98,10 +98,10 @@ class WorkbookSortCells(unittest.TestCase):
         wb.set_cell_contents("sheet1", "C4", "3")
         wb.sort_region('Sheet1', 'A1', 'C4', [-1])
         block_equal(wb, self, [2000, 1, 3,
-                               7,    8, 3,
-                               7,    20, 6,
+                               7, 8, 3,
+                               7, 20, 6,
                                sheets.cell_error.CellErrorType.DIVIDE_BY_ZERO, 4, 8])
-    
+
     def test_sort_1_cell_ref(self):
         wb = sheets.Workbook()
         wb.new_sheet()
@@ -115,11 +115,10 @@ class WorkbookSortCells(unittest.TestCase):
         wb.set_cell_contents("sheet1", "B3", "9")
         wb.set_cell_contents("sheet1", "C3", "10")
         wb.sort_region('Sheet1', 'A1', 'C3', [-1])
-        block_equal(wb, self, 
-                            [6, sheets.cell_error.CellErrorType.BAD_REFERENCE, 1, 
-                             3, 7, 1, 
-                             2, 9, 10])
-
+        block_equal(wb, self,
+                    [6, sheets.cell_error.CellErrorType.BAD_REFERENCE, 1,
+                     3, 7, 1,
+                     2, 9, 10])
 
     def test_sort_on_col_with_ref(self):
         wb = sheets.Workbook()
@@ -138,10 +137,10 @@ class WorkbookSortCells(unittest.TestCase):
         #  2  |  6  |  7  |  1  |
         #  3  |  2  |  9  | 10  |
         wb.sort_region('Sheet1', 'A1', 'C3', [2])
-        block_equal(wb, self, 
-                            [3, 7, 1, 
-                            6, 7, 1, 
-                            2, 9, 10])
+        block_equal(wb, self,
+                    [3, 7, 1,
+                     6, 7, 1,
+                     2, 9, 10])
 
     def test_sort_single_cell(self):
         wb = sheets.Workbook()
