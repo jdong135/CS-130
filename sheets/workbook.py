@@ -10,6 +10,7 @@ from sheets import cell, topo_sort, cell_error, lark_module, sheet, \
     string_conversions, unitialized_value, tarjan, row
 from sheets.functions import FunctionDirectory
 from functools import cmp_to_key
+import copy
 
 import logging
 logging.basicConfig(filename="logs/results.log",
@@ -995,13 +996,12 @@ class Workbook:
                 start_cell_col = string_conversions.num_to_col(j)
                 cell_loc = start_cell_col + str(i)
                 if cell_loc in spreadsheet.cells:
-                    cur_row.append(spreadsheet.cells[cell_loc])
+                    deep_copy = copy.deepcopy(spreadsheet.cells[cell_loc])
+                    cur_row.append(deep_copy)
                 else:
                     cur_row.append(unitialized_value.UninitializedValue())
             row_list.append(row.Row(sort_cols, i, cur_row))
 
-        # Make hashmap from type to number
-        # Use map to compare types
         def compare(obj1, obj2):
             # boolean > str > decimal > error > uninitialized (blank)
             type_map = {
@@ -1047,10 +1047,53 @@ class Workbook:
             # All checks for inequality fail, two lists must be equal
             return 0
 
-        # row_list.sort(key=compare)
         row_list = sorted(row_list, key=cmp_to_key(compare))
-        for r in row_list:
-            logger.info('---')
-            for c in r.cell_list:
-                logger.info(c)
-            logger.info('---')
+        # for r in row_list:
+        #     logger.info('---')
+        #     for c in r.cell_list:
+        #         logger.info(c)
+        #     logger.info('---')
+
+        # HANDLE UNINITIALIZED VALUES WHEN ACCESSING C.LOCATION
+        for i, row_obj in enumerate(row_list):
+            for j, c in enumerate(row_obj.cell_list):
+                new_row = top_left_row + i
+                new_col = string_conversions.num_to_col(top_left_col + j)
+                new_location = new_col + str(new_row)
+                old_col, old_row = string_conversions.str_to_tuple(c.location)
+                delta_row = new_row - old_row
+                if not isinstance(c, unitialized_value.UninitializedValue):
+                    sheetname_pattern = r"\'[^']*\'!|[A-Za-z_][A-Za-z0-9_]*!"
+                    cell_pattern = r'(?<!")\$?[A-Za-z]+\$?[1-9][0-9]*(?!")'
+                    pattern = f"(?:{sheetname_pattern})?({cell_pattern})"
+                    locations = re.findall(pattern, c.contents)
+                    for loc in locations:
+                        loc = loc.upper()
+                        # If $ precedes col or row, do not update relative location
+                        # In the regex, () defines the two groups
+                        match = re.match(
+                            r"(\$?[A-Za-z]+)(\$?[1-9][0-9]*)", loc)
+                        row_match = match.group(2)
+                        new_loc = string_conversions.num_to_col(
+                            top_left_col + j)
+                        if row_match[0] != "$":
+                            # row_match = top_left_row + i
+                            row_match = delta_row + int(row_match)
+                            new_loc += str(row_match)
+                        else:
+                            new_loc += row_match
+                        if not string_conversions.check_valid_location(new_loc):
+                            new_loc = "#REF!"
+                        # Note that re.escape ensures we can properly search for $ in loc
+                        # Normally, you'd have to escape $A$1 like \$A\$1
+                        c.contents = re.sub(
+                            re.escape(loc), new_loc, c.contents, flags=re.IGNORECASE)
+                self.set_cell_contents(
+                    sheet_name.lower(), new_location, c.contents)
+
+        for r in range(1, 4):
+            for c in ['A', 'B', 'C']:
+                loc = c + str(r)
+                val = self.get_cell_value(spreadsheet.name, loc)
+                cont = self.get_cell_contents(spreadsheet.name, loc)
+                logger.info(f'{loc}: ({cont}, {val})')
