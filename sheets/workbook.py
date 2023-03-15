@@ -1011,16 +1011,16 @@ class Workbook:
                 str: 4,
                 bool: 5
             }
-            for i in obj1.sort_cols:
-                idx = abs(i) - 1
-                item1, item2 = obj1.cell_list[idx], obj2.cell_list[idx]
+            for i, sort_col in enumerate(obj1.sort_cols):
+                index = abs(sort_col) - 1
+                item1, item2 = obj1.cell_list[index], obj2.cell_list[index]
                 if isinstance(item1, cell.Cell):
                     item1 = item1.value
                 if isinstance(item2, cell.Cell):
                     item2 = item2.value
                 val1 = type_map[type(item1)]
                 val2 = type_map[type(item2)]
-                reverse = obj1.rev_list[idx]
+                reverse = obj1.rev_list[i]
                 return_val = None
                 if val1 == val2:
                     if val1 == 2:

@@ -79,7 +79,21 @@ class WorkbookSortCells(unittest.TestCase):
     #     wb.set_cell_contents("sheet1", "C4", "3")
     #     wb.sort_region('Sheet1', 'A1', 'C4', [-1])
 
-    def test_sort_1_cell_ref(self):
+    # def test_sort_1_cell_ref(self):
+    #     wb = sheets.Workbook()
+    #     wb.new_sheet()
+    #     wb.set_cell_contents("sheet1", "A1", "3")
+    #     wb.set_cell_contents("sheet1", "B1", "7")
+    #     wb.set_cell_contents("sheet1", "C1", "1")
+    #     wb.set_cell_contents("sheet1", "A2", "6")
+    #     wb.set_cell_contents("sheet1", "B2", "=B1")
+    #     wb.set_cell_contents("sheet1", "C2", "1")
+    #     wb.set_cell_contents("sheet1", "A3", "2")
+    #     wb.set_cell_contents("sheet1", "B3", "9")
+    #     wb.set_cell_contents("sheet1", "C3", "10")
+    #     wb.sort_region('Sheet1', 'A1', 'C3', [-1])
+
+    def test_sort_on_col_with_ref(self):
         wb = sheets.Workbook()
         wb.new_sheet()
         wb.set_cell_contents("sheet1", "A1", "3")
@@ -91,7 +105,7 @@ class WorkbookSortCells(unittest.TestCase):
         wb.set_cell_contents("sheet1", "A3", "2")
         wb.set_cell_contents("sheet1", "B3", "9")
         wb.set_cell_contents("sheet1", "C3", "10")
-        wb.sort_region('Sheet1', 'A1', 'C3', [-1])
+        wb.sort_region('Sheet1', 'A1', 'C3', [2])
 
 
 if __name__ == "__main__":
