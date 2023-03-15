@@ -170,6 +170,13 @@ class WorkbookSortCells(unittest.TestCase):
         #              6, 7, 1,
         #              2, 9, 10])
 
+    def test_sort_single_cell(self):
+        wb = sheets.Workbook()
+        wb.new_sheet()
+        wb.set_cell_contents("sheet1", "A1", "3")
+        wb.sort_region('Sheet1', 'A1', 'A1', [1])
+        block_equal(wb, self, [3])
+
 
 if __name__ == "__main__":
     unittest.main()

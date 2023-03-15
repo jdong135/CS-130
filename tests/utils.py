@@ -7,7 +7,7 @@ import io
 import re
 import decimal
 from context import sheets
-from typing import Tuple, TextIO, List
+from typing import Tuple, TextIO, List, Any
 
 
 def store_stdout() -> Tuple[io.StringIO, TextIO]:
@@ -69,7 +69,7 @@ def on_cells_changed(workbook, cells_changed):
     _ = workbook
     print(cells_changed)
 
-def block_equal(wb, unittest, vals, sheet_name=None):
+def block_equal(wb, unittest, vals: List[Any], sheet_name: str=None):
     """
     Assert that a block of values in the A-B-C columns are equal to a provided list
     of values, which are ordered as (A1, B1, C1, A2, B2, ...). If a value is a CellError,
