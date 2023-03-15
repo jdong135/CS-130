@@ -1062,9 +1062,10 @@ class Workbook:
                 new_row = top_left_row + i
                 new_col = string_conversions.num_to_col(top_left_col + j)
                 new_location = new_col + str(new_row)
-                old_col, old_row = string_conversions.str_to_tuple(c.location)
-                delta_row = new_row - old_row
                 if not isinstance(c, unitialized_value.UninitializedValue):
+                    old_col, old_row = string_conversions.str_to_tuple(
+                        c.location)
+                    delta_row = new_row - old_row
                     sheetname_pattern = r"\'[^']*\'!|[A-Za-z_][A-Za-z0-9_]*!"
                     cell_pattern = r'(?<!")\$?[A-Za-z]+\$?[1-9][0-9]*(?!")'
                     pattern = f"(?:{sheetname_pattern})?({cell_pattern})"
@@ -1090,8 +1091,12 @@ class Workbook:
                         # Normally, you'd have to escape $A$1 like \$A\$1
                         c.contents = re.sub(
                             re.escape(loc), new_loc, c.contents, flags=re.IGNORECASE)
-                self.set_cell_contents(
-                    sheet_name.lower(), new_location, c.contents)
+                if isinstance(c, unitialized_value.UninitializedValue):
+                    self.set_cell_contents(
+                        sheet_name.lower(), new_location, unitialized_value.UninitializedValue)
+                else:
+                    self.set_cell_contents(
+                        sheet_name.lower(), new_location, c.contents)
 
         # for r in range(1, 4):
         #     for c in ['A', 'B', 'C']:
