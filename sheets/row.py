@@ -1,7 +1,10 @@
-import decimal
+"""Implementation of row object for cell sorting"""
 
 
-class Row():
+class Row:
+    """
+    Instance of Row class
+    """
     def __init__(self, sort_cols, row_idx, cell_list) -> None:
         self.sort_cols = sort_cols
         self.row_idx = row_idx

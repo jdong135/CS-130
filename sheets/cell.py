@@ -2,8 +2,6 @@
 
 import enum
 import uuid
-from sheets import unitialized_value
-import decimal
 
 
 class CellType(enum.Enum):
@@ -31,15 +29,9 @@ class Cell:
 
     def __lt__(self, obj):
         assert isinstance(obj, Cell)
-        # boolean > str > decimal > error > uninitialized (blank)
-        # if isinstance(obj.value, unitialized_value.UninitializedValue):
-        #     if isinstance(self.value, unitialized_value.UninitializedValue):
-        #         return True
-        #     return False
-        # if isinstance(self.value, unitialized_value.UninitializedValue):
-        #     return True
-        if type(self.value) == type(obj.value):
+        if type(self.value) == type(obj.value): # pylint: disable=unidiomatic-typecheck
             return self.value < obj.value
+        assert False, "Cannot compare different types"
 
     def __hash__(self):
         """Hash based off of the cell's sheet's id and the cell's location"""

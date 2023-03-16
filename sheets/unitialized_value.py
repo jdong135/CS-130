@@ -22,7 +22,7 @@ class UninitializedValue():
 
     def __str__(self):
         return ""
-    
+
 class EmptySortCell():
     """
     Placeholder value for any empty cell during sort.

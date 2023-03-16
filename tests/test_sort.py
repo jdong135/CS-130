@@ -6,12 +6,6 @@ import decimal
 from context import sheets
 from utils import block_equal, store_stdout, restore_stdout, on_cells_changed, sort_notify_list
 
-import logging
-logging.basicConfig(filename="logs/results.log",
-                    format='%(asctime)s %(message)s',
-                    filemode='w')
-logger = logging.getLogger()
-logger.setLevel(logging.DEBUG)
 
 class WorkbookSortCells(unittest.TestCase):
     """
@@ -78,20 +72,12 @@ class WorkbookSortCells(unittest.TestCase):
                                7, 8, 3,
                                7, 20, 6
                                ])
-        expected = ["'Sheet1', 'A1'", "'Sheet1', 'A2'", "'Sheet1', 'A3'", "'Sheet1', 'A4'", 
+        expected = ["'Sheet1', 'A1'", "'Sheet1', 'A2'", "'Sheet1', 'A3'", "'Sheet1', 'A4'",
                     "'Sheet1', 'B1'", "'Sheet1', 'B2'", "'Sheet1', 'B3'", "'Sheet1', 'B4'", 
                     "'Sheet1', 'C1'", "'Sheet1', 'C2'", "'Sheet1', 'C3'", "'Sheet1', 'C4'"]
         self.assertEqual(expected, output)
 
     def test_sort_uninitialized(self):
-        # wb = sheets.Workbook()
-        # wb.new_sheet()
-        # wb.set_cell_contents("sheet1", "A2", "=A1")
-        # logger.info(wb.get_cell_contents("sheet1", "A1"))
-        # logger.info(wb.get_cell_value("sheet1", "A1"))
-        # logger.info(wb.get_cell_contents("sheet1", "A2"))
-        # logger.info(wb.get_cell_value("sheet1", "A2"))
-
         wb = sheets.Workbook()
         wb.new_sheet()
         new_stdo, sys_out = store_stdout()
@@ -118,7 +104,7 @@ class WorkbookSortCells(unittest.TestCase):
                                7, 8, 3,
                                2000, 1, 3,
                                "STRING", 4, 3])
-        expected = ["'Sheet1', 'A1'", "'Sheet1', 'A2'", "'Sheet1', 'A3'", "'Sheet1', 'A4'", 
+        expected = ["'Sheet1', 'A1'", "'Sheet1', 'A2'", "'Sheet1', 'A3'", "'Sheet1', 'A4'",
                     "'Sheet1', 'B1'", "'Sheet1', 'B2'", "'Sheet1', 'B3'", "'Sheet1', 'B4'", 
                     "'Sheet1', 'C1'", "'Sheet1', 'C2'"]
         self.assertEqual(expected, output)
@@ -146,7 +132,7 @@ class WorkbookSortCells(unittest.TestCase):
                                7, 8, 3,
                                7, 20, 6,
                                sheets.cell_error.CellErrorType.DIVIDE_BY_ZERO, 4, 8])
-        expected = ["'Sheet1', 'A1'", "'Sheet1', 'A3'", "'Sheet1', 'A4'", 
+        expected = ["'Sheet1', 'A1'", "'Sheet1', 'A3'", "'Sheet1', 'A4'",
                     "'Sheet1', 'B1'", "'Sheet1', 'B2'", "'Sheet1', 'B3'", 
                     "'Sheet1', 'B4'", "'Sheet1', 'C2'", "'Sheet1', 'C3'", "'Sheet1', 'C4'"]
         self.assertEqual(expected, output)
@@ -222,7 +208,7 @@ class WorkbookSortCells(unittest.TestCase):
                      7, 8, 3,
                     "STRING", 4, 8])
         output = sort_notify_list(restore_stdout(new_stdo, sys_out))
-        expected = ["'Sheet1', 'A1'", "'Sheet1', 'A3'", "'Sheet1', 'A4'", 
+        expected = ["'Sheet1', 'A1'", "'Sheet1', 'A3'", "'Sheet1', 'A4'",
                     "'Sheet1', 'B1'", "'Sheet1', 'B2'", "'Sheet1', 'B3'", "'Sheet1', 'B4'", 
                     "'Sheet1', 'C1'", "'Sheet1', 'C2'", "'Sheet1', 'C3'", "'Sheet1', 'C4'"]
         self.assertEqual(expected, output)
@@ -291,12 +277,12 @@ class WorkbookSortCells(unittest.TestCase):
         wb.sort_region('Sheet1', 'A1', 'C4', [1, 2, -3])
         output = sort_notify_list(restore_stdout(new_stdo, sys_out))
         zero_div = sheets.cell_error.CellErrorType.DIVIDE_BY_ZERO
-        block_equal(wb, self, 
+        block_equal(wb, self,
                     [zero_div, False, zero_div,
                      1, True, 3,
                      1, True, 2,
                      "STRING", False, "STRING"])
-        expected = ["'Sheet1', 'A1'", "'Sheet1', 'A2'", 
+        expected = ["'Sheet1', 'A1'", "'Sheet1', 'A2'",
                     "'Sheet1', 'B1'", "'Sheet1', 'B2'", 
                     "'Sheet1', 'C1'", "'Sheet1', 'C2'", "'Sheet1', 'C3'"]
         self.assertEqual(expected, output)

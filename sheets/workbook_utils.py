@@ -1,3 +1,4 @@
+"""Selection of utility functions for Workbook class."""
 import copy
 import re
 from decimal import Decimal
@@ -35,7 +36,7 @@ def check_valid_sheet_name(wb, sheet_name: str) -> None:
         raise ValueError("Sheet name ends with white space")
     if sheet_name.lower() in wb.spreadsheets:
         raise ValueError("Duplicate spreadsheet name")
-    
+
 
 def update_extent(spreadsheet: sheet.Sheet, location: str, deleting_cell: bool):
     """
@@ -43,9 +44,9 @@ def update_extent(spreadsheet: sheet.Sheet, location: str, deleting_cell: bool):
     """
     if deleting_cell:
         sheet_col, sheet_row = spreadsheet.extent_col, spreadsheet.extent_row
-        col, row = string_conversions.str_to_tuple(location)
+        loc_col, loc_row = string_conversions.str_to_tuple(location)
         max_col, max_row = 0, 0
-        if col == sheet_col or row == sheet_row:
+        if loc_col == sheet_col or loc_row == sheet_row:
             for c in spreadsheet.cells:
                 if spreadsheet.cells[c].cell_type != cell.CellType.EMPTY:
                     c_col, c_row = string_conversions.str_to_tuple(
@@ -60,7 +61,7 @@ def update_extent(spreadsheet: sheet.Sheet, location: str, deleting_cell: bool):
         spreadsheet.extent_row = max(curr_row, spreadsheet.extent_row)
 
 
-def create_row_list(top_left_col, top_left_row, bottom_right_col, bottom_right_row, 
+def create_row_list(top_left_col, top_left_row, bottom_right_col, bottom_right_row,
                     spreadsheet, sort_cols) -> List[row.Row]:
     row_list = []
     for i in range(top_left_row, bottom_right_row + 1):
@@ -116,7 +117,7 @@ def update_all_block_contents(wb, sheet_name, row_list, top_left_col, top_left_r
             if not isinstance(c, unitialized_value.EmptySortCell):
                 wb.set_cell_contents(
                     sheet_name.lower(), new_location, c.contents)
-                
+
 
 def compare(obj1, obj2):
     # boolean > str > decimal > error > uninitialized (blank)
@@ -160,7 +161,7 @@ def compare(obj1, obj2):
         # If return value isn't null, return -1 or 1
         if return_val and reverse:
             return -1 * return_val
-        elif return_val:
+        if return_val:
             return return_val
     # All checks for inequality fail, two lists must be equal
     return 0

@@ -5,12 +5,6 @@ from typing import List, Dict, Callable, Any
 from decimal import Decimal
 from sheets import cell_error, string_conversions, unitialized_value, version
 
-import logging
-logging.basicConfig(filename="logs/results.log",
-                    format='%(asctime)s %(message)s',
-                    filemode='w')
-logger = logging.getLogger()
-logger.setLevel(logging.DEBUG)
 
 class Function:
     """
@@ -122,7 +116,8 @@ class FunctionDirectory:
             return args[0]
         if error_found_1:
             return args[1]
-        return str(args[0]) == str(args[1]) and type(args[0]) == type(args[1])
+        return str(args[0]) == str(args[1]) and \
+            type(args[0]) == type(args[1]) # pylint: disable=unidiomatic-typecheck
 
     def is_blank(self, args: List):
         if len(args) != 1:

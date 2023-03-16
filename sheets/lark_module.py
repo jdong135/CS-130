@@ -10,14 +10,6 @@ from lark.exceptions import UnexpectedInput
 from sheets import cell_error, cell, string_conversions, unitialized_value, functions
 
 
-import logging
-logging.basicConfig(filename="logs/results.log",
-                    format='%(asctime)s %(message)s',
-                    filemode='w')
-logger = logging.getLogger()
-logger.setLevel(logging.DEBUG)
-
-
 class FormulaEvaluator(lark.visitors.Interpreter):
     """
     This class evaluates cell contents that begin with "=".
@@ -306,8 +298,10 @@ class FormulaEvaluator(lark.visitors.Interpreter):
                         cell_error.CellErrorType.TYPE_ERROR, "Invalid argument count")
                 with self.__ignore_error_literals():
                     res = self.visit(values.children[1])
-                if isinstance(res, cell_error.CellError) and res.get_type() == cell_error.CellErrorType.CIRCULAR_REFERENCE:
-                    return cell_error.CellError(cell_error.CellErrorType.CIRCULAR_REFERENCE, "Circular Reference")
+                if isinstance(res, cell_error.CellError
+                              ) and res.get_type() == cell_error.CellErrorType.CIRCULAR_REFERENCE:
+                    return cell_error.CellError(
+                        cell_error.CellErrorType.CIRCULAR_REFERENCE, "Circular Reference")
                 if not isinstance(res, cell_error.CellError):
                     func.args.append(res)
                 elif len(values.children[1:]) == 2:

@@ -105,13 +105,13 @@ class BooleanTests(unittest.TestCase):
         wb.set_cell_contents('sheet1', 'a1', '=3 < 5')
         self.assertEqual(wb.get_cell_value('sheet1', 'a1'), True)
 
-    def test_string_greater_than_number(self):
+    def test_string_greater_than_number1(self):
         wb = sheets.Workbook()
         wb.new_sheet()
         wb.set_cell_contents('sheet1', 'a1', '="12" > 12')
         self.assertEqual(wb.get_cell_value('sheet1', 'a1'), True)
 
-    def test_string_greater_than_number(self):
+    def test_string_greater_than_number2(self):
         wb = sheets.Workbook()
         wb.new_sheet()
         wb.set_cell_contents('sheet1', 'a1', '="TRUE" > False')

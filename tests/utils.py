@@ -6,8 +6,8 @@ import sys
 import io
 import re
 import decimal
-from context import sheets
 from typing import Tuple, TextIO, List, Any
+from context import sheets
 
 
 def store_stdout() -> Tuple[io.StringIO, TextIO]:
@@ -83,7 +83,7 @@ def block_equal(wb, unittest, vals: List[Any], sheet_name: str=None):
     cols_by_mod = {0: 'A', 1: 'B', 2: 'C'}
     if not sheet_name:
         sheet_name = "sheet1"
-    for i in range(len(vals)):
+    for i, _ in enumerate(vals):
         loc = str(cols_by_mod[i % 3]) + str((i // 3) + 1)
         value = wb.get_cell_value(sheet_name, loc)
         if isinstance(value, sheets.cell_error.CellError):
