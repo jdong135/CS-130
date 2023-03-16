@@ -1,0 +1,124 @@
+CS130 Project Review
+====================
+
+Team performing review:  fairywren
+Work being reviewed:  crocodile
+
+The first two sections are for reviewing the `sheets` library code itself,
+excluding the test code and other aspects of the project.  The remaining
+sections are for those other supporting parts of the project.
+
+Feedback comments on design aspects of the `sheets` library
+-----------------------------------------------------------
+
+Consider the overall design and structure of the `sheets` library from
+the perspective of the GRASP principles (Lecture 20) - in particular the
+principles of high cohesion and low coupling.  What areas of the project
+codebase are structured in a highly effective way?  What areas of the
+codebase could be restructured to have higher cohesion and/or lower
+coupling?  Give specific suggestions for how to achieve this in the code.
+
+We think they do a good job of keeping low coupling. With the high number of modules, it makes it much easier for
+every module to have a distinct purpose, with strong independence in every module. For example, when reviewing their
+set_cell_contents_delay_updates function, we recognize that the function calls on helper functions from a variety of
+different modules when working with different components of the spreadsheet. Another example is when accessing a cell
+at a given location, they call the get_cell_at_location function from the sheet module and alternate between functions
+from sheet and functions from the workbook module depending on which object is being updated. This indicates that the
+workbook module itself isn’t attempting to modify fields of the sheets class or attempting to work too deeply into the
+sheet itself, but is relying on the sheet class to do it itself. 
+
+One great example of removing coupling is their project 2 changes, where they refactored rename sheets. They realized
+that their rename code would update a single cell multiple times, so they pulled out all of the cell updating
+functionality into a separate module. This module takes in a list of cells and handles the updating all together to
+reduce repetitive work, which decouples the relationship with workbook. 
+
+One design decision that might be useful for decoupling is extracting the graph information to a separate module.
+Currently, each cell has two lists that track which neighbors that cell has. It would be easier to keep this
+information outside the Cell class because then you could write graph functions inside this external module. 
+
+Feedback comments on implementation aspects of the `sheets` library
+-------------------------------------------------------------------
+
+Consider the actual implementation of the project from the perspectives
+of coding style (naming, commenting, code formatting, decomposition into
+functions, etc.), and idiomatic use of the Python language and language
+features.  What practices are used effectively in the codebase to make
+for concise, readable and maintainable code?  What practices could or
+should be incorporated to improve the quality, expressiveness, readability
+and maintainability of the code?
+
+In cell.py, there are a lot of getters and setters, which are not needed in Python. The Pythonic way would be to use
+plain attributes to access the field. The use of getters and setters is a little excessive and does reduce the ease
+of understanding of the code.
+
+ErrorMap.py may not be needed since it is defined again in the init method of Workbook.py. Another small nit is that
+the parser util could be renamed to something more general since it is used in places other than the Interpreter. 
+
+We think that there could be more docstrings in general for functions. For example, in Workbook.py, there are a lot of
+function calls to other helper functions, which is good because it keeps the function lengths shorter, but it isn’t
+clear what each function does. The function names themselves are descriptive, but it would be nice to get a summary
+at the top of the function to help follow the logic. 
+
+
+Feedback comments on testing aspects of the project
+---------------------------------------------------
+
+Consider the testing aspects of the project, from the perspective of "testing
+best practices" (Lectures 4-6):  completeness/thoroughness of testing,
+automation of testing, focus on testing the "most valuable" functionality vs.
+"trivial code," following the Arrange-Act-Assert pattern in individual tests,
+etc.  What testing practices are employed effectively in the project?  What
+testing practices should be incorporated to improve the quality-assurance
+aspects of the project?
+
+We like that you have several different test files that are clearly named to show what they’re testing. This makes it
+easy to figure out which file to add a new test to. There are also some helper functions in the test file
+(i.e. `backbone`) that make it easy to see what the test is really doing without having to read through all of the
+setup code. Another thing we like is that your tests have very little overlap, so different tests don’t test for the
+same functionality. 
+
+In test_cell_notifications_spec.py, a lot of the tests use multiple assert statements in the same test, which violates
+the AAA pattern. However, we think that your use of multiple asserts is justified, as it wouldn’t make sense to set
+up and tear down the sheet several times just to test the values of different cells. Another file where you could
+consider separating out the multiple asserts is test_informational_functions.py. The asserts in
+test_function_isblank() aren’t dependent on each other, so you could write multiple functions for this. 
+
+One test file your group could consider adding is a system test that performs all of the functionalities from
+project 1 to 4. Your other tests show that your code works when testing the functions in isolation, but a system
+test may reveal some unanticipated results or reveal areas of code that could be sped up. 
+
+Consider the implementation quality of the testing code itself, in the same
+areas described in the previous section.  What practices are used effectively
+in the testing code to make it concise, readable and maintainable?  What
+practices could or should be incorporated to improve the quality of the
+testing code?
+
+Good practices:
+
+You use helper functions (backbone) to extract the setup and only keep the actual tests in the testing functions.
+This makes it easy to discern what is actually being tested. The helper functions also help reduce the lines of code
+since a lot of tests are very repetitive in setup and the actual testing. This demonstrates a good use of
+compartmentalization. There is a good mix of testing the public API methods of the workbook class as well as
+tests for the helper methods that those tests rely on. It seems like it would make it easier to diagnose a problem
+when dealing with a failure in API tests. 
+
+Potential changes to improve quality of testing code:
+
+Overall the testing framework is pretty solid. With cell notification tests, I think you should have put the helper
+functions, (i.e. parse_updated_cells_from_file and parse_notification_functions_from_file) in their own separate
+utility file, just to make it easier to find and so they’re not just group with other tests when looking for them,
+especially since they are used in multiple files. Overall, it’d probably be best to put all helper functions in one
+separate utilities file, but for some of them it makes sense to have them in the actual testing file when they’re
+only used in that file. It looks like there is a utility.py file in the testing directory, but it would be helpful to
+put all helper functions in the utility file. Also, in your test_integration.py file, it’s not really clear what the
+integration test is actually doing. The function name isn’t that descriptive and there’s no comments indicating what
+is actually being tested or even done in the function itself. It’s also pretty unclear what the sanity checker helper
+function actually does - some documentation there would definitely help. 
+
+Feedback comments on other aspects of the project
+-------------------------------------------------
+
+If you have any other comments - compliments or suggestions for improvement -
+that aren't covered by previous sections, please include them here.
+
+Your repository is really nice! :)

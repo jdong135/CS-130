@@ -1,0 +1,147 @@
+CS130 Project 5 - Design Document
+=================================
+
+Please answer all questions in this design document.  Note that the final
+feedback section is optional, and you are not required to answer it if you
+don't want to.
+
+Unanswered or incompletely answered questions, or answers that don't actually
+match the code/repository, will result in deductions.
+
+Answers don't have to be deeply detailed!  We are mainly looking for an
+overview or summary description of how your project works, and your team's
+experiences working on this project.
+
+Logistics (7 points)
+--------------------
+
+L1.  [2pts] Enumerate all teammates here.
+
+Jay Dong, Jake Goldman, Andy Sun
+
+
+L2.  [2pts] What did each teammate focus on during this project?
+
+Jay Dong: Review of other team’s work, Implement sort, performance upgrades
+Jake Goldman: Review of other team’s work, Test sort functionality, implement cell notifications
+Andy Sun: Review of other team’s work, Implement sort, performance upgrades
+
+L3.  [3pts] Approximately how many hours did each teammate spend on the project?
+
+Each teammate spent approximately 20 hours on this project.
+
+Spreadsheet Engine Design (10 points)
+-------------------------------------
+
+D1.  [4pts] Give an overview of how you implemented sorting.  Do you sort the
+     rows directly?  Do you use adapter objects instead?  Some other technique?
+
+We first get the top left corner and bottom right corner of the sorting cell block. Then we go row by row and create
+a Row object, which contains the cells of that row. We then used Python’s sorted(list, key=cmp_to_key(compare)), where
+we defined our own custom compare function. This custom compare function compares two row objects by going through the
+indices at the specified sort columns. It then checks to see if the types are the same and returns -1 or 1
+appropriately. If the sort column is negative, then we negate the result. Finally, after going through all the sort
+columns, if everything is equal, our compare function returns 0. 
+
+When the sorting is done, we proceed to overwrite the original block that was sorted. We do this by first overwriting
+the entire block with empty cells. Then we iterate through the list of sorted rows and iterate through the cells in
+those rows, overriding the corresponding cell in the spreadsheet with the corresponding cell in the row list. We also
+ensure that any relative cell references are updated. 
+
+D2.  [3pts] How does your implementation solve the problem of supporting the
+     user-specified row ordering based on both the columns and the ordering to
+     sort by?  Did you create any classes or functions to help specifically with
+     this task?
+
+When we create our Row objects, we also instantiate a field that tracks whether the given sort column needs to be
+reversed (sort column is negative). With this field, when our compare function reaches a sort column, it can refer to
+this list to see whether to negate the comparison. 
+
+We compare different types by creating a type map that maps different object types to numbers. This allows us to
+directly compare cell value types. Because sorted() uses stable sort, if we return 0 for a tie between two Row
+objects, then the rows will not move relative to each other, which is what the spec specifies.  
+
+
+D3.  [3pts] Briefly describe the changes you made to your spreadsheet engine to
+     satisfy the stricter cell-change notification behaviors.  Did you find this
+     to be largely straightforward to change?  Why or why not?
+
+From previous projects and testing, our cell notifications were already strict enough for projects 1-4. We
+implemented two important features early on to guarantee correct notifications. First, we check if a cell’s value
+is actually updated when setting its contents, before determining if we should send a notification for that cell.
+For example, changing a cell’s contents from =4+3 to =5+2 shouldn’t send a notification. Then, we also have a global
+variable to disable automatic notifications in set_cell_contents when moving and copying cells. This is because we
+have to set the contents of some cells multiple times as the entire block of cells is continually updated in some
+functions such as move. So, we accumulate all changed cells and wait until the very end of the function to actually
+create a notification. We had to implement a similar functionality for sort_region, since cells can be updated
+multiple times or not at all. The changes we made to this function were largely straightforward, since it didn’t
+involve changing the code we already had – we just had to add extra checks at the beginning and end of the function.
+At the start of sort_region, we record all original values of cells in our sorting block. At the end, we compare the
+final values with the original values, and only send a notification if the value has changed.
+
+Performance Improvement (13 pts)
+--------------------------------
+
+In this project you must improve the performance of operations that involve
+bulk updating of cell formulas and/or values.  In the previous project your
+team should have written some performance-testing code in preparation for this
+effort, and should have run it under a profiler to get an initial sense of
+where improvements can be made.  In this project you need to follow through on
+this setup, and address performance issues in your code.
+
+P1.  [7pts] Give a brief overview of 2-3 of the worst hot-spots you identified
+     in your performance testing and analysis.  For each one, describe how your
+     team was able to resolve it.
+
+Rename sheets
+We sped up our rename sheets operation by removing one extraneous for loop. We realized that by generalizing our
+helper function that identified cells with the old sheet name, we could do everything in one loop rather than two.
+We searched for both cells that needed to be updated and cells that were previously cell refs in one loop.
+Set cell contents
+We run Tarjan’s algorithm twice for every call to set cell contents. We implement a check that goes through the
+results of Tarjan’s algorithm to determine whether we need to run it again due to the presence of a lazy evaluation
+function. The presence is marked with a flag that is reset with every call to set cell contents. 
+
+
+P2.  [3pts] Did your team try anything to address performance issues and find
+     that it didn't improve things at all?  If so, were you able to identify why
+     the intended fix didn't produce the desired benefit?
+
+Yes. In our rename sheets method, we have a helper function that finds cells containing the original sheet name.
+This helper function returns a list. Later in rename sheets, we reference this list again to see if any cells need
+to be reevaluated for cell ref errors. We thought making the helper function return a set would be faster for lookup
+times, but the performance was too variable to conclude that it helped. Our theory is that the overhead of creating
+the set overruled any potential benefit from converting list to set. 
+
+P3.  [3pts] Did your performance updates cause any regressions in functionality?
+     If so, briefly describe any issues that emerged.  How were these issues
+     identified (e.g. automated test failures, manual testing, etc.)?  How
+     quickly were issues identified?
+
+No, as we were making changes, we made sure that our previous tests were still passing. After each experiment,
+if a test failed, we would revert back to the original state. 
+
+Section F:  CS130 Project 4 Feedback [OPTIONAL]
+-----------------------------------------------
+
+These questions are OPTIONAL, and you do not need to answer them.  Your grade
+will not be affected by answering or not answering them.  Also, your grade will
+not be affected by negative feedback - we want to know what went poorly so that
+we can improve future versions of the course.
+
+F1.  What parts of the assignment did you find highly enjoyable?  Conversely,
+     what parts of the assignment did you find unenjoyable?
+
+
+F2.  What parts of the assignment helped you learn more about software
+     engineering best-practices, or other useful development skills?
+     What parts were not helpful in learning these skills?
+
+
+F3.  Were there any parts of the assignment that seemed _unnecessarily_ tedious?
+     (Some parts of software development are always tedious, of course.)
+
+
+F4.  Do you have any feedback and/or constructive criticism about how this
+     project can be made better in future iterations of CS130?
+

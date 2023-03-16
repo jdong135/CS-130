@@ -1,0 +1,113 @@
+CS130 Project Review
+====================
+
+Team performing review:  platypus
+Work being reviewed:  fairywren
+
+The first two sections are for reviewing the `sheets` library code itself,
+excluding the test code and other aspects of the project.  The remaining
+sections are for those other supporting parts of the project.
+
+Feedback comments on design aspects of the `sheets` library
+-----------------------------------------------------------
+
+Consider the overall design and structure of the `sheets` library from
+the perspective of the GRASP principles (Lecture 20) - in particular the
+principles of high cohesion and low coupling.  What areas of the project
+codebase are structured in a highly effective way?  What areas of the
+codebase could be restructured to have higher cohesion and/or lower
+coupling?  Give specific suggestions for how to achieve this in the code.
+
+Team fairywren's code is structured well, consisting of three main classes in 
+the implementation of the problem. Splitting into Workbook, Sheet and Cell 
+classes which demonstrates the Information Expert principal in GRASP and makes
+it easy to comprehend the code and functions that are assigned to each class.
+It also means there is high cohesion as each object has its own functionality 
+and they are mostly isolated to deal with their own values. The splitting of 
+the tarjan.py class is also structured effectively because it is completely 
+isolated. The use of private functions in the classes follows the protected 
+variations principles. One thing that can be improved is their structure of 
+the functions in lark. The "function" call consists of repetitive if/elif 
+statements which could potentially could be split into multiple helper 
+functions that can be called in each case. In general, the use of helper 
+functions in the lark_module file could be very helpful. Overall, however,
+design and structure of the `sheets` library is very efficient and clean.
+It follows the GRASP principles effectively; specifically, it follows the 
+principles of high cohesion and low coupling very well.
+
+Feedback comments on implementation aspects of the `sheets` library
+-------------------------------------------------------------------
+
+Consider the actual implementation of the project from the perspectives
+of coding style (naming, commenting, code formatting, decomposition into
+functions, etc.), and idiomatic use of the Python language and language
+features.  What practices are used effectively in the codebase to make
+for concise, readable and maintainable code?  What practices could or
+should be incorporated to improve the quality, expressiveness, readability
+and maintainability of the code?
+
+The implementation of the project employs a good naming scheme to effectively 
+describe the purpose of functions and variables, demonstrating good employment
+of the idiomatic use of the Python language. There is also generally good 
+commenting throughout the codebase. While there is some function 
+decomposition, some longer functions exceed 100 lines, indicating a possible
+need for further decomposition. Inconsistent use of docstrings is observed,
+and incorporating them consistently would enhance the readability of the 
+codebase, particularly when initially understanding a function. Overall, 
+the codebase demonstrates effective practices for creating concise, 
+readable, and maintainable code, with only a few areas here and there 
+that could benefit from further attention to improve the quality and 
+readability of the code.
+
+Feedback comments on testing aspects of the project
+---------------------------------------------------
+
+Consider the testing aspects of the project, from the perspective of "testing
+best practices" (Lectures 4-6):  completeness/thoroughness of testing,
+automation of testing, focus on testing the "most valuable" functionality vs.
+"trivial code," following the Arrange-Act-Assert pattern in individual tests,
+etc.  What testing practices are employed effectively in the project?  What
+testing practices should be incorporated to improve the quality-assurance
+aspects of the project?
+
+Team fairywren's tests are very thorough and complete. They have a full folder
+of test files, each file containing tests on a different section of the
+workbook. Inside each of these files are very extensive tests, testing each
+potential edge case and the general functionality of the function being tested.
+They have a Makefile which allows for the automatic testing of all of the 
+tests written. Additionally, the team seems to have focused on testing the most 
+valuable functionality, as opposed to trivial code, which is a good testing 
+practice. They have also followed the Arrange-Act-Assert pattern in individual 
+tests, which helps make the tests more readable and easier to maintain. 
+However, one potential improvement could be to incorporate more integration 
+testing, where multiple components are tested together to ensure they work 
+seamlessly. This would help catch any potential bugs that may arise when 
+different components interact with each other. This is done for the first and
+second projects, but not for the later ones.
+
+Consider the implementation quality of the testing code itself, in the same
+areas described in the previous section.  What practices are used effectively
+in the testing code to make it concise, readable and maintainable?  What
+practices could or should be incorporated to improve the quality of the
+testing code?
+
+The implementation quality of the testing code is very high. Team fairywren
+carries over their use of good naming to clearly indicate the purpose of their
+tests. Additionally, test functions are simple and thorough, testing specific
+functionality with each test, and testing behavior for many possibilities of
+potential functionality. Since tests are generally concise, no further function
+decomposition seems to be required. We make note of the lack of comments in
+their testing files, but argue by good naming practices and the idiomatic use
+of Python, the function names are mostly indicative enough of the purpose of
+each test. If there is a case where the team feels that a  function name may
+not encompass a test's purpose, we would recommend a short 1-2 line docustring
+for further elaboration.
+
+Feedback comments on other aspects of the project
+-------------------------------------------------
+
+If you have any other comments - compliments or suggestions for improvement -
+that aren't covered by previous sections, please include them here.
+
+Overall, great job on the code! It is clear that your code is well maintained
+and organized. 

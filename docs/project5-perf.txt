@@ -1,0 +1,33 @@
+Theory - Anywhere where we check if something is in a list, we can replace that with a set, as long as order doesn’t
+matter.
+Rationale - We noticed that in our rename sheet stress test profiles, a helper function
+__get_cells_containing_sheetname makes up the entirety of the time when the stress test is run. 
+Outcome - This change was a 2.6% improvement in week 2 stress tests, but it did not speed up our performance from
+week 4 stress tests. Thus, we considered this to be a failed experiment. 
+
+Theory - In our rename sheet operation, we iterate through the spreadsheet twice. First, we check which cells contain
+the old sheet name. We then update these cells. Then we check the spreadsheet for cells that have the new sheet name
+but weren’t originally in that list.
+Rationale - We noticed that in our rename sheet stress test profiles, a helper function
+__get_cells_containing_sheetname makes up the entirety of the time when the stress test is run. We didn’t think this
+would be an issue but were curious because in the cProfile, we noticed this function getting called twice.
+Outcome - This led to a 12% improvement for our project 4 stress tests. 
+
+Theory - Our set cell contents function currently runs tarjan's algorithm twice. We added this after implementing
+conditionals in the last project to handle the case if updating a cell’s value changes which argument is evaluated
+in a conditional function in a separate cell. Then, the second Tarjan's algorithm correctly identifies any circular
+references.
+Rationale - In our load workbook stress test profiles, set_cell_contents takes up the entirety of the time during the
+stress test. In general, set cell contents is called in many different functions. Our solution is to set a flag which
+detects if any of the cells encountered in the output of the first Tarjan's run is a “lazy evaluate” function. If not,
+then it is not necessary to run the second iteration of Tarjan’s.
+Outcome - This led to a 1% improvement for our project 4 stress tests. 
+
+Theory - Similar to the above performance improvement, we run tarjan’s algorithm twice when it is not necessarily
+necessary. Another improvement is to set a flag that detects the presence of a “lazy evaluate” function during the
+first Tarjan’s algorithm run, negating the need to iterate through the output of the first Tarjan’s run which our
+previous solution does.
+Rationale - In our load workbook, move and other stress test profiler data, set_cell_contents takes up the
+entirety/majority of the time during the stress tests. In general, set cell contents functionality is utilized in
+many of our implementations and called in many different functions. 
+Outcome - This did not improve our project 4 stress tests but led to a 30% improvement in our project 2 stresstests.
