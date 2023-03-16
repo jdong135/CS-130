@@ -23,7 +23,7 @@ class Cell:
     """
 
     def __repr__(self):
-        return f"Cell location: {self.location}\tCell value: {self.value}"
+        return f"CELL[location: {self.location}, value: {self.value}]"
 
     def __eq__(self, obj):
         """Override equality for user defined class"""

@@ -7,10 +7,11 @@ import json
 import re
 from contextlib import contextmanager, suppress
 from sheets import cell, topo_sort, cell_error, lark_module, sheet, \
-    string_conversions, unitialized_value, tarjan, row
+    string_conversions, unitialized_value, tarjan
 from sheets.functions import FunctionDirectory
+from sheets.workbook_utils import check_valid_sheet_name, update_extent, compare, \
+    create_row_list, update_all_block_contents
 from functools import cmp_to_key
-import copy
 
 import logging
 logging.basicConfig(filename="logs/results.log",
@@ -18,10 +19,6 @@ logging.basicConfig(filename="logs/results.log",
                     filemode='w')
 logger = logging.getLogger()
 logger.setLevel(logging.DEBUG)
-
-
-ALLOWED_PUNC = set([".", "?", "!", ",", ":", ";", "@", "#",
-                    "$", "%", "^", "&", "*", "(", ")", "-", "_"])
 
 
 class Workbook:
@@ -54,54 +51,6 @@ class Workbook:
         self.__call_notify = False
         yield
         self.__call_notify = True
-
-    def __check_valid_sheet_name(self, sheet_name: str):
-        """
-        Check if a sheet name is valid.
-
-        Args:
-            sheet_name (str): Sheet name to check
-
-        Raises:
-            ValueError: Invalid character is used
-            ValueError: Sheet name starts with white space
-            ValueError: Sheet name ends with white space
-            ValueError: Duplicate sheet name
-        """
-        if len(sheet_name) < 1 or not sheet_name:
-            raise ValueError("Empty string for sheet name.")
-        for ch in sheet_name:
-            if not ch.isalnum() and ch != " " and ch not in ALLOWED_PUNC:
-                raise ValueError(
-                    f"Invalid character in name: {ch} not allowed")
-        if sheet_name[0] == " ":
-            raise ValueError("Sheet name starts with white space")
-        if sheet_name[-1] == " ":
-            raise ValueError("Sheet name ends with white space")
-        if sheet_name.lower() in self.spreadsheets:
-            raise ValueError("Duplicate spreadsheet name")
-
-    def __update_extent(self, spreadsheet: sheet.Sheet, location: str, deleting_cell: bool):
-        """
-        Update the extent of a sheet if we are deleting a cell
-        """
-        if deleting_cell:
-            sheet_col, sheet_row = spreadsheet.extent_col, spreadsheet.extent_row
-            col, row = string_conversions.str_to_tuple(location)
-            max_col, max_row = 0, 0
-            if col == sheet_col or row == sheet_row:
-                for c in spreadsheet.cells:
-                    if spreadsheet.cells[c].cell_type != cell.CellType.EMPTY:
-                        c_col, c_row = string_conversions.str_to_tuple(
-                            spreadsheet.cells[c].location)
-                        max_col = max(max_col, c_col)
-                        max_row = max(max_row, c_row)
-                spreadsheet.extent_col = max_col
-                spreadsheet.extent_row = max_row
-        else:
-            curr_col, curr_row = string_conversions.str_to_tuple(location)
-            spreadsheet.extent_col = max(curr_col, spreadsheet.extent_col)
-            spreadsheet.extent_row = max(curr_row, spreadsheet.extent_row)
 
     def __generate_notifications(self, cell_list: Iterable[cell.Cell]):
         """Given a list of cells, create a corresponding list of tuples containing
@@ -439,7 +388,7 @@ class Workbook:
         if sheet_name == "":
             raise ValueError("Sheet name is empty string")
         if sheet_name:
-            self.__check_valid_sheet_name(sheet_name)
+            check_valid_sheet_name(self, sheet_name)
         else:  # handle null input
             i = 1
             while True:
@@ -543,7 +492,7 @@ class Workbook:
                 if not self.adjacency_list[existing_cell]:
                     del spreadsheet.cells[location]
                     del self.adjacency_list[existing_cell]
-                    self.__update_extent(spreadsheet, location, True)
+                    update_extent(spreadsheet, location, True)
                     if self.__call_notify:
                         self.__generate_notifications([existing_cell])
                     return
@@ -571,7 +520,7 @@ class Workbook:
                     cell_dependents.append(c)
                     if c != existing_cell:
                         self.__set_cell_value_and_type(c)
-            self.__update_extent(spreadsheet, location, False)
+            update_extent(spreadsheet, location, False)
             # include the existing cell iff its value is updated
             if self.__call_notify and val_updated:
                 self.__generate_notifications(cell_dependents)
@@ -581,7 +530,7 @@ class Workbook:
             if new_cell.cell_type != cell.CellType.EMPTY:
                 self.adjacency_list[new_cell] = []
                 spreadsheet.cells[location] = new_cell
-            self.__update_extent(spreadsheet, location, False)
+            update_extent(spreadsheet, location, False)
             if self.__call_notify:
                 self.__generate_notifications([new_cell])
 
@@ -772,7 +721,7 @@ class Workbook:
         # ValueError is raised.
         if sheet_name.lower() not in self.spreadsheets:
             raise KeyError(f"Sheet name \"{sheet_name}\" not found.")
-        self.__check_valid_sheet_name(new_sheet_name)
+        check_valid_sheet_name(self, new_sheet_name)
         # Get current index of our original sheet
         index = list(self.spreadsheets.keys()).index(sheet_name.lower())
 
@@ -973,6 +922,7 @@ class Workbook:
         self.__generate_notifications(affected_cells)
 
     def sort_region(self, sheet_name: str, start_location: str, end_location: str, sort_cols: List[int]):
+        # THIS IS WHERE SORT REGION IS !!!
         if len(sort_cols) == 0:
             raise KeyError("Must have at least one sort_col")
         if sheet_name.lower() not in self.spreadsheets:
@@ -990,123 +940,38 @@ class Workbook:
         end_location = end_location.upper()
         top_left_col, top_left_row, bottom_right_col, bottom_right_row = \
             self.__get_selection_corners(start_location, end_location)
-
-        row_list = []
-        for i in range(top_left_row, bottom_right_row + 1):
-            cur_row = []  # list of Cell objects
-            for j in range(top_left_col, bottom_right_col + 1):
-                start_cell_col = string_conversions.num_to_col(j)
-                cell_loc = start_cell_col + str(i)
-                if cell_loc in spreadsheet.cells:
-                    deep_copy = copy.deepcopy(spreadsheet.cells[cell_loc])
-                    cur_row.append(deep_copy)
-                else:
-                    cur_row.append(unitialized_value.EmptySortCell())
-            row_list.append(row.Row(sort_cols, i, cur_row))
-
-        def compare(obj1, obj2):
-            # boolean > str > decimal > error > uninitialized (blank)
-            type_map = {
-                unitialized_value.EmptySortCell: 1,
-                unitialized_value.UninitializedValue : 1,
-                type(None) : 1,
-                cell_error.CellError: 2,
-                Decimal: 3,
-                str: 4,
-                bool: 5
-            }
-            for i, sort_col in enumerate(obj1.sort_cols):
-                index = abs(sort_col) - 1
-                item1, item2 = obj1.cell_list[index], obj2.cell_list[index]
-                if isinstance(item1, cell.Cell):
-                    item1 = item1.value
-                if isinstance(item2, cell.Cell):
-                    item2 = item2.value
-                val1 = type_map[type(item1)]
-                val2 = type_map[type(item2)]
-                reverse = obj1.rev_list[i]
-                return_val = None
-                if val1 == val2:
-                    if val1 == 2:
-                        if item1._error_type.value < item2._error_type.value:
-                            return_val = -1
-                        elif item1._error_type.value > item2._error_type.value:
-                            return_val = 1
-                    elif val1 != 1:
-                        if item1 < item2:
-                            return_val = -1
-                        elif item1 > item2:
-                            return_val = 1
-                else:
-                    if val1 < val2:
-                        return_val = -1
-                    elif val1 > val2:
-                        return_val = 1
-
-                # If return value isn't null, return -1 or 1
-                if return_val and reverse:
-                    return -1 * return_val
-                elif return_val:
-                    return return_val
-            # All checks for inequality fail, two lists must be equal
-            return 0
-
-        row_list = sorted(row_list, key=cmp_to_key(compare))
-        # for r in row_list:
-        #     logger.info('---')
-        #     for c in r.cell_list:
-        #         logger.info(c)
-        #     logger.info('---')
-
-        # Initially set block to uninitialized values (ignore notifications)
+        row_list = create_row_list(top_left_col, top_left_row, bottom_right_col, 
+                                   bottom_right_row, spreadsheet, sort_cols)
+        
+        dummy_cells = {}
+        original_vals = {}
+        # Get the original value of every cell in our sorting block 
         for j in range(top_left_col, bottom_right_col + 1):
             column = string_conversions.num_to_col(j)
             for i in range(top_left_row, bottom_right_row + 1):
                 location = column + str(i)
-                self.set_cell_contents(sheet_name.lower(), location, "")
+                original_vals[location] = self.get_cell_value(sheet_name.lower(), location)
 
-        for i, row_obj in enumerate(row_list):
-            for j, c in enumerate(row_obj.cell_list):
-                new_row = top_left_row + i
-                new_col = string_conversions.num_to_col(top_left_col + j)
-                new_location = new_col + str(new_row)
-                if not isinstance(c, unitialized_value.EmptySortCell) and c.cell_type == cell.CellType.FORMULA:
-                    old_col, old_row = string_conversions.str_to_tuple(
-                        c.location)
-                    delta_row = new_row - old_row
-                    sheetname_pattern = r"\'[^']*\'!|[A-Za-z_][A-Za-z0-9_]*!"
-                    cell_pattern = r'(?<!")\$?[A-Za-z]+\$?[1-9][0-9]*(?!")'
-                    pattern = f"(?:{sheetname_pattern})?({cell_pattern})"
-                    locations = re.findall(pattern, c.contents)
-                    for loc in locations:
-                        loc = loc.upper()
-                        # If $ precedes col or row, do not update relative location
-                        # In the regex, () defines the two groups
-                        match = re.match(
-                            r"(\$?[A-Za-z]+)(\$?[1-9][0-9]*)", loc)
-                        col_match = match.group(1)
-                        row_match = match.group(2)
-                        new_loc = col_match
-                        if row_match[0] != "$":
-                            # row_match = top_left_row + i
-                            row_match = delta_row + int(row_match)
-                            new_loc += str(row_match)
-                        else:
-                            new_loc += row_match
-                        if not string_conversions.check_valid_location(new_loc):
-                            new_loc = "#REF!"
-                        # Note that re.escape ensures we can properly search for $ in loc
-                        # Normally, you'd have to escape $A$1 like \$A\$1
-                        c.contents = re.sub(
-                            re.escape(loc), new_loc, c.contents, flags=re.IGNORECASE)
+        with self.__disable_notify_calls():
+            row_list = sorted(row_list, key=cmp_to_key(compare))
+            # Initially set block to uninitialized values (ignore notifications)
+            # For later notifcations, we add a 'dummy' cell to act as a placeholder.
+            for j in range(top_left_col, bottom_right_col + 1):
+                column = string_conversions.num_to_col(j)
+                for i in range(top_left_row, bottom_right_row + 1):
+                    location = column + str(i)
+                    self.set_cell_contents(sheet_name.lower(), location, "")
+                    dummy_cells[location] = cell.Cell(spreadsheet, location, None, None, None)
+            update_all_block_contents(self, sheet_name, row_list, top_left_col, top_left_row)
 
-                if not isinstance(c, unitialized_value.EmptySortCell):
-                    self.set_cell_contents(
-                        sheet_name.lower(), new_location, c.contents)
-
-        for r in range(1, 5):
-            for c in ['A', 'B', 'C']:
-                loc = c + str(r)
-                val = self.get_cell_value(spreadsheet.name, loc)
-                cont = self.get_cell_contents(spreadsheet.name, loc)
-                logger.info(f'{loc}: ({cont}, {val})')
+        # Iterate through all cells in the block again. If its value is different
+        # from its original value, then send a notification. Otherwise, remove it
+        # from the set of original cells 
+        for j in range(top_left_col, bottom_right_col + 1):
+            column = string_conversions.num_to_col(j)
+            for i in range(top_left_row, bottom_right_row + 1):
+                location = column + str(i)
+                new_value = self.get_cell_value(sheet_name.lower(), location)
+                if original_vals[location] == new_value:
+                    del dummy_cells[location]
+        self.__generate_notifications(list(dummy_cells.values()))      
