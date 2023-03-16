@@ -922,7 +922,7 @@ class Workbook:
         self.__generate_notifications(affected_cells)
 
     def sort_region(self, sheet_name: str, start_location: str, end_location: str, sort_cols: List[int]):
-        # THIS IS WHERE SORT REGION IS !!!
+        # Sort a region of cells.
         if len(sort_cols) == 0:
             raise KeyError("Must have at least one sort_col")
         if sheet_name.lower() not in self.spreadsheets:
@@ -943,9 +943,8 @@ class Workbook:
         row_list = create_row_list(top_left_col, top_left_row, bottom_right_col, 
                                    bottom_right_row, spreadsheet, sort_cols)
         
-        dummy_cells = {}
-        original_vals = {}
         # Get the original value of every cell in our sorting block 
+        original_vals = {}
         for j in range(top_left_col, bottom_right_col + 1):
             column = string_conversions.num_to_col(j)
             for i in range(top_left_row, bottom_right_row + 1):
@@ -961,17 +960,17 @@ class Workbook:
                 for i in range(top_left_row, bottom_right_row + 1):
                     location = column + str(i)
                     self.set_cell_contents(sheet_name.lower(), location, "")
-                    dummy_cells[location] = cell.Cell(spreadsheet, location, None, None, None)
             update_all_block_contents(self, sheet_name, row_list, top_left_col, top_left_row)
 
         # Iterate through all cells in the block again. If its value is different
         # from its original value, then send a notification. Otherwise, remove it
         # from the set of original cells 
+        dummy_cells = set()
         for j in range(top_left_col, bottom_right_col + 1):
             column = string_conversions.num_to_col(j)
             for i in range(top_left_row, bottom_right_row + 1):
                 location = column + str(i)
                 new_value = self.get_cell_value(sheet_name.lower(), location)
-                if original_vals[location] == new_value:
-                    del dummy_cells[location]
-        self.__generate_notifications(list(dummy_cells.values()))      
+                if original_vals[location] != new_value:
+                    dummy_cells.add(cell.Cell(spreadsheet, location, None, None, None))
+        self.__generate_notifications(dummy_cells)      

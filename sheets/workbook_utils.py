@@ -1,7 +1,7 @@
 import copy
 import re
 from decimal import Decimal
-from typing import Dict, Tuple
+from typing import List
 from sheets import cell, cell_error, sheet, \
     string_conversions, unitialized_value, row
 
@@ -61,7 +61,7 @@ def update_extent(spreadsheet: sheet.Sheet, location: str, deleting_cell: bool):
 
 
 def create_row_list(top_left_col, top_left_row, bottom_right_col, bottom_right_row, 
-                    spreadsheet, sort_cols):
+                    spreadsheet, sort_cols) -> List[row.Row]:
     row_list = []
     for i in range(top_left_row, bottom_right_row + 1):
         cur_row = []  # list of Cell objects
@@ -77,7 +77,7 @@ def create_row_list(top_left_col, top_left_row, bottom_right_col, bottom_right_r
     return row_list
 
 
-def update_all_block_contents(wb, sheet_name, row_list, top_left_col, top_left_row):
+def update_all_block_contents(wb, sheet_name, row_list, top_left_col, top_left_row) -> None:
     for i, row_obj in enumerate(row_list):
         for j, c in enumerate(row_obj.cell_list):
             new_row = top_left_row + i
