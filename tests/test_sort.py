@@ -238,6 +238,69 @@ class WorkbookSortCells(unittest.TestCase):
         block_equal(wb, self, [3])
         self.assertEqual([], output)
 
+    def test_sort_single_cell_with_ref(self):
+        wb = sheets.Workbook()
+        wb.new_sheet()
+        new_stdo, sys_out = store_stdout()
+        wb.set_cell_contents("sheet1", "A1", "3")
+        wb.set_cell_contents("sheet1", "B1", "=A1")
+        wb.notify_cells_changed(on_cells_changed)
+        wb.sort_region('Sheet1', 'A1', 'B1', [1])
+        output = sort_notify_list(restore_stdout(new_stdo, sys_out))
+        self.assertEqual(wb.get_cell_value("sheet1", "A1"), decimal.Decimal("3"))
+        self.assertEqual(wb.get_cell_value("sheet1", "B1"), decimal.Decimal("3"))
+        self.assertEqual([], output)
+
+    def test_sort_ref_to_empty(self):
+        wb = sheets.Workbook()
+        wb.new_sheet()
+        new_stdo, sys_out = store_stdout()
+        wb.set_cell_contents("sheet1", "A1", "=3")
+        wb.set_cell_contents("sheet1", "A2", "=B2")
+        wb.notify_cells_changed(on_cells_changed)
+        wb.sort_region('Sheet1', 'A1', 'A2', [1])
+        output = sort_notify_list(restore_stdout(new_stdo, sys_out))
+        self.assertEqual(wb.get_cell_contents("sheet1", "A1"), "=B1")
+        self.assertEqual(wb.get_cell_value("sheet1", "A1"), decimal.Decimal("0"))
+        self.assertEqual(wb.get_cell_value("sheet1", "A2"), decimal.Decimal("3"))
+        expected = ["'Sheet1', 'A1'", "'Sheet1', 'A2'"]
+        self.assertEqual(expected, output)
+
+    def test_sort_with_functions(self):
+        wb = sheets.Workbook()
+        wb.new_sheet()
+        new_stdo, sys_out = store_stdout()
+        wb.set_cell_contents("sheet1", "A1", "=IF(B1, 1, C1)")
+        wb.set_cell_contents("sheet1", "B1", "TRUE")
+        wb.set_cell_contents("sheet1", "C1", "2")
+        wb.set_cell_contents("sheet1", "A2", "=IF(B2, 1, C2)")
+        wb.set_cell_contents("sheet1", "B2", "FALSE")
+        wb.set_cell_contents("sheet1", "C2", "=1/0")
+        wb.set_cell_contents("sheet1", "A3", "=IF(B3, 1, C3)")
+        wb.set_cell_contents("sheet1", "B3", "TRUE")
+        wb.set_cell_contents("sheet1", "C3", "=3")
+        wb.set_cell_contents("sheet1", "A4", "=IF(B4, 1, C4)")
+        wb.set_cell_contents("sheet1", "B4", "FALSE")
+        wb.set_cell_contents("sheet1", "C4", "'STRING")
+        #     |  A  |  B  |  C  |
+        #  1  |    1| TRUE|    2|
+        #  2  |#DIV/|FALSE|#DIV/|
+        #  3  |    1| TRUE|    3|
+        #  4  |STRIN|FALSE|STRIN|
+        wb.notify_cells_changed(on_cells_changed)
+        wb.sort_region('Sheet1', 'A1', 'C4', [1, 2, -3])
+        output = sort_notify_list(restore_stdout(new_stdo, sys_out))
+        zero_div = sheets.cell_error.CellErrorType.DIVIDE_BY_ZERO
+        block_equal(wb, self, 
+                    [zero_div, False, zero_div,
+                     1, True, 3,
+                     1, True, 2,
+                     "STRING", False, "STRING"])
+        expected = ["'Sheet1', 'A1'", "'Sheet1', 'A2'", 
+                    "'Sheet1', 'B1'", "'Sheet1', 'B2'", 
+                    "'Sheet1', 'C1'", "'Sheet1', 'C2'", "'Sheet1', 'C3'"]
+        self.assertEqual(expected, output)
+
 
 if __name__ == "__main__":
     unittest.main()
