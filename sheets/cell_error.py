@@ -50,6 +50,10 @@ class CellError:
     def get_detail(self) -> str:
         ''' More detail about the cell error. '''
         return self._detail
+    
+    def get_value(self) -> int:
+        ''' The category of the cell error. '''
+        return self._error_type.value
 
     def get_exception(self) -> Optional[Exception]:
         '''

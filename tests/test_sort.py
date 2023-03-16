@@ -301,6 +301,34 @@ class WorkbookSortCells(unittest.TestCase):
                     "'Sheet1', 'C1'", "'Sheet1', 'C2'", "'Sheet1', 'C3'"]
         self.assertEqual(expected, output)
 
+    def test_sort_error_types(self):
+        wb = sheets.Workbook()
+        wb.new_sheet()
+        new_stdo, sys_out = store_stdout()
+        wb.set_cell_contents("sheet1", "A1", "#DIV/0!")
+        wb.set_cell_contents("sheet1", "A2", "#VALUE!")
+        wb.set_cell_contents("sheet1", "A3", "#REF!")
+        wb.set_cell_contents("sheet1", "A4", "#NAME?")
+        wb.set_cell_contents("sheet1", "A5", "#CIRCREF!")
+        wb.set_cell_contents("sheet1", "A6", "#ERROR!")
+        wb.notify_cells_changed(on_cells_changed)
+        wb.sort_region('Sheet1', 'A1', 'A6', [1])
+        output = sort_notify_list(restore_stdout(new_stdo, sys_out))
+        self.assertEqual(wb.get_cell_value("sheet1", "A1"
+        ).get_type(), sheets.cell_error.CellErrorType.PARSE_ERROR)
+        self.assertEqual(wb.get_cell_value("sheet1", "A2"
+        ).get_type(), sheets.cell_error.CellErrorType.CIRCULAR_REFERENCE)
+        self.assertEqual(wb.get_cell_value("sheet1", "A3"
+        ).get_type(), sheets.cell_error.CellErrorType.BAD_REFERENCE)
+        self.assertEqual(wb.get_cell_value("sheet1", "A4"
+        ).get_type(), sheets.cell_error.CellErrorType.BAD_NAME)
+        self.assertEqual(wb.get_cell_value("sheet1", "A5"
+        ).get_type(), sheets.cell_error.CellErrorType.TYPE_ERROR)
+        self.assertEqual(wb.get_cell_value("sheet1", "A6"
+        ).get_type(), sheets.cell_error.CellErrorType.DIVIDE_BY_ZERO)
+        expected = ["'Sheet1', 'A1'", "'Sheet1', 'A2'", "'Sheet1', 'A5'", "'Sheet1', 'A6'"]
+        self.assertEqual(expected, output)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -5,20 +5,13 @@ from copy import deepcopy
 from decimal import Decimal
 import json
 import re
+from functools import cmp_to_key
 from contextlib import contextmanager, suppress
 from sheets import cell, topo_sort, cell_error, lark_module, sheet, \
     string_conversions, unitialized_value, tarjan
 from sheets.functions import FunctionDirectory
 from sheets.workbook_utils import check_valid_sheet_name, update_extent, compare, \
     create_row_list, update_all_block_contents
-from functools import cmp_to_key
-
-import logging
-logging.basicConfig(filename="logs/results.log",
-                    format='%(asctime)s %(message)s',
-                    filemode='w')
-logger = logging.getLogger()
-logger.setLevel(logging.DEBUG)
 
 
 class Workbook:
@@ -921,7 +914,8 @@ class Workbook:
                                                     end_location, to_location, to_sheet, False)
         self.__generate_notifications(affected_cells)
 
-    def sort_region(self, sheet_name: str, start_location: str, end_location: str, sort_cols: List[int]):
+    def sort_region(self, sheet_name: str, start_location: str, end_location: str,
+                    sort_cols: List[int]):
         # Sort a region of cells.
         if len(sort_cols) == 0:
             raise KeyError("Must have at least one sort_col")
@@ -940,10 +934,10 @@ class Workbook:
         end_location = end_location.upper()
         top_left_col, top_left_row, bottom_right_col, bottom_right_row = \
             self.__get_selection_corners(start_location, end_location)
-        row_list = create_row_list(top_left_col, top_left_row, bottom_right_col, 
+        row_list = create_row_list(top_left_col, top_left_row, bottom_right_col,
                                    bottom_right_row, spreadsheet, sort_cols)
-        
-        # Get the original value of every cell in our sorting block 
+
+        # Get the original value of every cell in our sorting block
         original_vals = {}
         for j in range(top_left_col, bottom_right_col + 1):
             column = string_conversions.num_to_col(j)
@@ -964,13 +958,18 @@ class Workbook:
 
         # Iterate through all cells in the block again. If its value is different
         # from its original value, then send a notification. Otherwise, remove it
-        # from the set of original cells 
+        # from the set of original cells
         dummy_cells = set()
         for j in range(top_left_col, bottom_right_col + 1):
             column = string_conversions.num_to_col(j)
             for i in range(top_left_row, bottom_right_row + 1):
                 location = column + str(i)
                 new_value = self.get_cell_value(sheet_name.lower(), location)
-                if original_vals[location] != new_value:
+                old_val = original_vals[location]
+                if isinstance(old_val, cell_error.CellError) and isinstance(
+                    new_value, cell_error.CellError):
+                    if old_val.get_type() != new_value.get_type():
+                        dummy_cells.add(cell.Cell(spreadsheet, location, None, None, None))
+                elif old_val != new_value:
                     dummy_cells.add(cell.Cell(spreadsheet, location, None, None, None))
-        self.__generate_notifications(dummy_cells)      
+        self.__generate_notifications(dummy_cells)

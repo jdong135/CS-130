@@ -142,9 +142,9 @@ def compare(obj1, obj2):
         return_val = None
         if val1 == val2:
             if val1 == 2:
-                if item1._error_type.value < item2._error_type.value:
+                if item1.get_value() < item2.get_value():
                     return_val = -1
-                elif item1._error_type.value > item2._error_type.value:
+                elif item1.get_value() > item2.get_value():
                     return_val = 1
             elif val1 != 1:
                 if item1 < item2:
